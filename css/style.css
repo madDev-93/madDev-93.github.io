@@ -2034,7 +2034,7 @@ p { color: var(--text-secondary); }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-8);
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
@@ -2053,6 +2053,8 @@ p { color: var(--text-secondary); }
   padding: var(--space-8);
   backdrop-filter: blur(10px);
   transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
 }
 
 .pricing-card:hover {
@@ -2123,6 +2125,8 @@ p { color: var(--text-secondary); }
   flex-direction: column;
   gap: var(--space-3);
   margin-bottom: var(--space-8);
+  flex: 1;
+  min-height: 200px;
 }
 
 .pricing-card__features li {
