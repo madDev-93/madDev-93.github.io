@@ -817,15 +817,16 @@ p { color: var(--text-secondary); }
   margin-top: var(--space-6);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  height: 280px;
+  height: 320px;
   box-shadow: var(--shadow-card);
 }
 
 .bento-card__visual img {
   width: 100%;
-  height: auto;
+  height: 150%;
+  object-fit: cover;
+  object-position: center 18%;
   display: block;
-  margin-top: -80px; /* Crop out status bar, show content */
 }
 
 /* --------------------------------------------------------------------------
