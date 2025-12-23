@@ -645,15 +645,58 @@ p { color: var(--text-secondary); }
 }
 
 .floating-card--calories {
-  top: 15%;
+  top: 10%;
   left: -20%;
   animation-delay: 0s;
 }
 
+.floating-card--calories .floating-card__icon {
+  background: rgba(20, 184, 166, 0.2);
+  color: var(--teal);
+}
+
 .floating-card--workout {
-  bottom: 20%;
+  bottom: 25%;
   right: -15%;
   animation-delay: -2s;
+}
+
+.floating-card--workout .floating-card__icon {
+  background: rgba(249, 115, 22, 0.2);
+  color: var(--coral);
+}
+
+.floating-card--protein {
+  top: 40%;
+  left: -25%;
+  animation-delay: -1s;
+}
+
+.floating-card--protein .floating-card__icon {
+  background: rgba(236, 72, 153, 0.2);
+  color: #EC4899;
+}
+
+.floating-card--streak {
+  top: 5%;
+  right: -10%;
+  animation-delay: -3s;
+}
+
+.floating-card--streak .floating-card__icon {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+}
+
+.floating-card--ai {
+  bottom: 5%;
+  left: -15%;
+  animation-delay: -4s;
+}
+
+.floating-card--ai .floating-card__icon {
+  background: rgba(139, 92, 246, 0.2);
+  color: #8B5CF6;
 }
 
 @keyframes float-card {
