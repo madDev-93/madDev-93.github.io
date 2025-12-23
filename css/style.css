@@ -566,10 +566,10 @@ p { color: var(--text-secondary); }
 
 .phone-frame {
   position: relative;
-  width: 320px;
-  padding: 14px;
+  width: 280px;
+  padding: 10px;
   background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
-  border-radius: 55px;
+  border-radius: 45px;
   box-shadow:
     var(--shadow-card),
     var(--shadow-glow),
@@ -585,33 +585,37 @@ p { color: var(--text-secondary); }
 .phone-frame::before {
   content: '';
   position: absolute;
-  top: 14px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 100px;
-  height: 32px;
+  width: 80px;
+  height: 26px;
   background: #0a0a0a;
-  border-radius: 20px;
+  border-radius: 15px;
   z-index: 10;
 }
 
 .phone-frame::after {
   content: '';
   position: absolute;
-  inset: 3px;
-  border-radius: 52px;
+  inset: 2px;
+  border-radius: 43px;
   border: 1px solid rgba(255,255,255,0.1);
   pointer-events: none;
 }
 
 .phone-screen {
-  border-radius: 42px;
+  border-radius: 36px;
   overflow: hidden;
   background: #000;
+  aspect-ratio: 9 / 19.5;
 }
 
 .phone-screen img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
   display: block;
 }
 
@@ -822,10 +826,14 @@ p { color: var(--text-secondary); }
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
+  max-height: 280px;
 }
 
 .bento-card__visual img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
   display: block;
 }
 
@@ -869,7 +877,11 @@ p { color: var(--text-secondary); }
 }
 
 .screenshot-card img {
-  width: 280px;
+  width: 240px;
+  height: auto;
+  max-height: 520px;
+  object-fit: cover;
+  object-position: top;
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-card);
   transition: all var(--transition-base);
@@ -969,7 +981,10 @@ p { color: var(--text-secondary); }
 }
 
 .spotlight__phone {
-  width: 280px;
+  width: 260px;
+  max-height: 560px;
+  object-fit: cover;
+  object-position: top;
   border-radius: var(--radius-3xl);
   box-shadow: var(--shadow-card), var(--shadow-glow);
 }
