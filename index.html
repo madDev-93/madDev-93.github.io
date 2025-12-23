@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Qwota - Your all-in-one fitness companion. Track nutrition, log workouts, and get AI-powered coaching to reach your fitness goals.">
+  <meta name="keywords" content="fitness app, nutrition tracker, workout log, calorie counter, AI fitness coach, meal tracking, exercise tracker">
+  <meta name="author" content="Qwota">
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://maddev-93.github.io/">
+  <meta property="og:title" content="Qwota - Smart Fitness & Nutrition Tracking">
+  <meta property="og:description" content="Your all-in-one fitness companion. Track nutrition, log workouts, and get AI-powered coaching.">
+  <meta property="og:image" content="images/og-image.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Qwota - Smart Fitness & Nutrition Tracking">
+  <meta name="twitter:description" content="Your all-in-one fitness companion. Track nutrition, log workouts, and get AI-powered coaching.">
+
+  <title>Qwota - Smart Fitness & Nutrition Tracking</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="header__logo">
+        <img src="images/app-icon.png" alt="Qwota" onerror="this.style.display='none'">
+        <span>Qwota</span>
+      </a>
+
+      <nav class="nav">
+        <a href="#features" class="nav__link">Features</a>
+        <a href="#screenshots" class="nav__link">Screenshots</a>
+        <a href="#ai-coach" class="nav__link">AI Coach</a>
+        <a href="support.html" class="nav__link">Support</a>
+        <button class="theme-toggle" aria-label="Toggle dark mode">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </nav>
+
+      <button class="mobile-menu-btn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="section section--hero hero">
+    <div class="container">
+      <div class="hero__content" data-animate>
+        <div class="hero__badge">
+          <span class="hero__badge-dot"></span>
+          Now Available on iOS
+        </div>
+
+        <h1 class="hero__title">
+          Your Fitness Journey,<br>
+          <span class="text-gradient">Powered by AI</span>
+        </h1>
+
+        <p class="hero__subtitle">
+          Track nutrition, log workouts, and get personalized coaching from Qwota Trainer.
+          Everything you need to reach your fitness goals in one beautiful app.
+        </p>
+
+        <div class="hero__cta">
+          <a href="#" class="app-store-badge" aria-label="Download on the App Store">
+            <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
+          </a>
+          <a href="#features" class="btn btn--secondary">Learn More</a>
+        </div>
+      </div>
+
+      <div class="hero__mockup" data-animate>
+        <div class="device-frame">
+          <img src="images/screenshots/home.png" alt="Qwota App Dashboard" onerror="this.src='https://placehold.co/390x844/14B8A6/white?text=Qwota+Home'">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section features">
+    <div class="container">
+      <div class="features__header" data-animate>
+        <h2>Everything You Need to <span class="text-gradient">Succeed</span></h2>
+        <p>Comprehensive tools designed to make tracking effortless and achieving your goals inevitable.</p>
+      </div>
+
+      <div class="features__grid" data-animate-stagger>
+        <div class="feature-card">
+          <div class="feature-card__icon">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3 class="feature-card__title">Smart Nutrition Tracking</h3>
+          <p class="feature-card__description">Log meals with barcode scanning, AI photo recognition, or search our database of over 1 million foods.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>
+          </div>
+          <h3 class="feature-card__title">Complete Workout Logging</h3>
+          <p class="feature-card__description">Track strength training, cardio, sports, classes, and more. Build custom templates or use proven programs.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3 class="feature-card__title">AI-Powered Coaching</h3>
+          <p class="feature-card__description">Get personalized insights, workout suggestions, and meal recommendations from Qwota Trainer.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <h3 class="feature-card__title">Advanced Analytics</h3>
+          <p class="feature-card__description">Visualize your progress with detailed charts, track PRs, and see calorie breakdowns by activity.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <h3 class="feature-card__title">Workout Programs</h3>
+          <p class="feature-card__description">Follow popular programs like nSuns, 5/3/1, PHUL, and more. Or create your own custom schedules.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">
+            <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-card__title">Apple Health Sync</h3>
+          <p class="feature-card__description">Seamlessly sync with Apple Health to import weight, steps, sleep data, and workouts automatically.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots Section -->
+  <section id="screenshots" class="section screenshots">
+    <div class="container">
+      <div class="screenshots__header" data-animate>
+        <h2>Beautiful Design, <span class="text-gradient">Powerful Features</span></h2>
+        <p>Every detail crafted for the best fitness tracking experience on iOS.</p>
+      </div>
+
+      <div class="screenshots__carousel">
+        <div class="screenshot-item">
+          <img src="images/screenshots/home.png" alt="Home Dashboard" onerror="this.src='https://placehold.co/280x560/14B8A6/white?text=Home'">
+        </div>
+        <div class="screenshot-item">
+          <img src="images/screenshots/nutrition.png" alt="Nutrition Tracking" onerror="this.src='https://placehold.co/280x560/0D9488/white?text=Nutrition'">
+        </div>
+        <div class="screenshot-item">
+          <img src="images/screenshots/workouts.png" alt="Workout Logging" onerror="this.src='https://placehold.co/280x560/14B8A6/white?text=Workouts'">
+        </div>
+        <div class="screenshot-item">
+          <img src="images/screenshots/trainer.png" alt="AI Coach" onerror="this.src='https://placehold.co/280x560/0D9488/white?text=AI+Coach'">
+        </div>
+        <div class="screenshot-item">
+          <img src="images/screenshots/scanner.png" alt="Food Scanner" onerror="this.src='https://placehold.co/280x560/14B8A6/white?text=Scanner'">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Coach Spotlight -->
+  <section id="ai-coach" class="section spotlight">
+    <div class="container">
+      <div class="spotlight__inner">
+        <div class="spotlight__content" data-animate>
+          <h2>Meet <span class="text-gradient">Qwota Trainer</span></h2>
+          <p>Your personal AI coach that learns from your habits, understands your goals, and provides actionable guidance every step of the way.</p>
+
+          <div class="spotlight__features">
+            <div class="spotlight__feature">
+              <span class="spotlight__feature-icon">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span>Daily personalized insights</span>
+            </div>
+            <div class="spotlight__feature">
+              <span class="spotlight__feature-icon">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span>Smart workout suggestions</span>
+            </div>
+            <div class="spotlight__feature">
+              <span class="spotlight__feature-icon">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span>Meal recommendations based on your macros</span>
+            </div>
+            <div class="spotlight__feature">
+              <span class="spotlight__feature-icon">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span>Weekly focus goals to keep you on track</span>
+            </div>
+            <div class="spotlight__feature">
+              <span class="spotlight__feature-icon">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <span>Post-workout analysis and recovery tips</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="spotlight__image" data-animate>
+          <img src="images/screenshots/trainer.png" alt="Qwota Trainer AI Coach" onerror="this.src='https://placehold.co/300x600/14B8A6/white?text=AI+Coach'">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="section stats">
+    <div class="container">
+      <div class="stats__grid" data-animate-stagger>
+        <div class="stat-item">
+          <div class="stat-item__number">1M+</div>
+          <div class="stat-item__label">Foods in Database</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item__number">100+</div>
+          <div class="stat-item__label">Exercise Library</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item__number">8</div>
+          <div class="stat-item__label">Activity Types</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item__number">10+</div>
+          <div class="stat-item__label">Metabolic Factors</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="section cta">
+    <div class="container">
+      <div class="cta__content" data-animate>
+        <h2>Ready to Transform Your Fitness?</h2>
+        <p>Join thousands of users who are achieving their goals with Qwota. Download now and start your journey today.</p>
+
+        <div class="cta__buttons">
+          <a href="#" class="app-store-badge" aria-label="Download on the App Store">
+            <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__inner">
+        <div class="footer__brand">
+          <a href="/" class="footer__logo">
+            <img src="images/app-icon.png" alt="Qwota" onerror="this.style.display='none'">
+            <span>Qwota</span>
+          </a>
+          <p class="footer__tagline">Your all-in-one fitness companion. Track nutrition, log workouts, and get AI-powered coaching.</p>
+        </div>
+
+        <div class="footer__column">
+          <h4>Product</h4>
+          <nav class="footer__links">
+            <a href="#features" class="footer__link">Features</a>
+            <a href="#screenshots" class="footer__link">Screenshots</a>
+            <a href="#ai-coach" class="footer__link">AI Coach</a>
+          </nav>
+        </div>
+
+        <div class="footer__column">
+          <h4>Support</h4>
+          <nav class="footer__links">
+            <a href="support.html" class="footer__link">Help Center</a>
+            <a href="support.html#faq" class="footer__link">FAQ</a>
+            <a href="support.html#contact" class="footer__link">Contact Us</a>
+          </nav>
+        </div>
+
+        <div class="footer__column">
+          <h4>Legal</h4>
+          <nav class="footer__links">
+            <a href="privacy.html" class="footer__link">Privacy Policy</a>
+            <a href="terms.html" class="footer__link">Terms of Service</a>
+          </nav>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <p class="footer__copyright">&copy; 2024 Qwota. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
