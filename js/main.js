@@ -189,6 +189,103 @@ const HeaderScroll = {
 };
 
 // ==========================================================================
+// Counter Animation
+// ==========================================================================
+const CounterAnimation = {
+  init() {
+    this.counters = document.querySelectorAll('[data-count]');
+    if (this.counters.length === 0) return;
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+            this.animateCounter(entry.target);
+            entry.target.classList.add('counted');
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    this.counters.forEach(counter => this.observer.observe(counter));
+  },
+
+  animateCounter(el) {
+    const target = parseInt(el.getAttribute('data-count'));
+    const duration = 2000;
+    const startTime = performance.now();
+
+    const formatNumber = (num) => {
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(0) + 'M+';
+      } else if (num >= 1000) {
+        return num.toLocaleString() + '+';
+      }
+      return num.toString() + '+';
+    };
+
+    const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeOutQuart(progress);
+      const current = Math.floor(easedProgress * target);
+
+      el.textContent = formatNumber(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        el.textContent = formatNumber(target);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }
+};
+
+// ==========================================================================
+// Animated Progress Bars (Quota Theme)
+// ==========================================================================
+const QuotaProgress = {
+  init() {
+    this.bars = document.querySelectorAll('.quota-progress__fill');
+    if (this.bars.length === 0) return;
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const fill = entry.target;
+            const target = fill.getAttribute('data-progress');
+            fill.style.width = target + '%';
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    this.bars.forEach(bar => this.observer.observe(bar));
+  }
+};
+
+// ==========================================================================
+// Floating Cards Animation
+// ==========================================================================
+const FloatingCards = {
+  init() {
+    const cards = document.querySelectorAll('.floating-card');
+    if (cards.length === 0) return;
+
+    cards.forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.3}s`;
+    });
+  }
+};
+
+// ==========================================================================
 // Initialize Everything
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -198,4 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
   FAQ.init();
   SmoothScroll.init();
   HeaderScroll.init();
+  CounterAnimation.init();
+  QuotaProgress.init();
+  FloatingCards.init();
 });
