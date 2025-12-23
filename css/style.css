@@ -315,9 +315,7 @@ p { color: var(--text-secondary); }
   height: 44px;
   border-radius: var(--radius-lg);
   object-fit: cover;
-  object-position: center;
-  clip-path: inset(15%); /* Crop edges to remove tan artifacts */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  object-position: 40% 40%;
 }
 
 .nav {
@@ -645,8 +643,8 @@ p { color: var(--text-secondary); }
 }
 
 .floating-card--calories {
-  top: 10%;
-  left: -20%;
+  top: 8%;
+  left: -60px;
   animation-delay: 0s;
 }
 
@@ -656,8 +654,8 @@ p { color: var(--text-secondary); }
 }
 
 .floating-card--workout {
-  bottom: 25%;
-  right: -15%;
+  bottom: 20%;
+  right: -60px;
   animation-delay: -2s;
 }
 
@@ -667,8 +665,8 @@ p { color: var(--text-secondary); }
 }
 
 .floating-card--protein {
-  top: 40%;
-  left: -25%;
+  top: 45%;
+  left: -80px;
   animation-delay: -1s;
 }
 
@@ -678,8 +676,8 @@ p { color: var(--text-secondary); }
 }
 
 .floating-card--streak {
-  top: 5%;
-  right: -10%;
+  top: 3%;
+  right: -40px;
   animation-delay: -3s;
 }
 
@@ -689,14 +687,20 @@ p { color: var(--text-secondary); }
 }
 
 .floating-card--ai {
-  bottom: 5%;
-  left: -15%;
+  bottom: 3%;
+  left: -50px;
   animation-delay: -4s;
 }
 
 .floating-card--ai .floating-card__icon {
   background: rgba(139, 92, 246, 0.2);
   color: #8B5CF6;
+}
+
+@media (max-width: 1024px) {
+  .floating-card {
+    display: none;
+  }
 }
 
 @keyframes float-card {
@@ -1335,8 +1339,7 @@ p { color: var(--text-secondary); }
   height: 40px;
   border-radius: var(--radius-md);
   object-fit: cover;
-  object-position: center;
-  clip-path: inset(15%);
+  object-position: 40% 40%;
 }
 
 .footer__tagline {
