@@ -314,8 +314,9 @@ p { color: var(--text-secondary); }
   width: 44px;
   height: 44px;
   border-radius: var(--radius-lg);
-  object-fit: contain;
-  background: transparent;
+  object-fit: cover;
+  object-position: center;
+  background: #0a0f1a;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -828,14 +829,14 @@ p { color: var(--text-secondary); }
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  max-height: 280px;
+  height: 300px;
 }
 
 .bento-card__visual img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: center 15%;
   display: block;
 }
 
@@ -1294,8 +1295,9 @@ p { color: var(--text-secondary); }
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
-  object-fit: contain;
-  background: transparent;
+  object-fit: cover;
+  object-position: center;
+  background: #0a0f1a;
 }
 
 .footer__tagline {
@@ -1572,32 +1574,37 @@ p { color: var(--text-secondary); }
    Hero Trust Bar
    -------------------------------------------------------------------------- */
 .hero__trust {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   margin-top: var(--space-8);
 }
 
+.hero__features-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
 @media (max-width: 1024px) {
-  .hero__trust {
+  .hero__features-mini {
     justify-content: center;
   }
 }
 
-.hero__stars {
-  display: flex;
-  gap: 2px;
-}
-
-.hero__stars svg {
-  width: 18px;
-  height: 18px;
-  fill: #FBBF24;
-}
-
-.hero__rating {
+.hero__feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.hero__feature-tag svg {
+  width: 14px;
+  height: 14px;
+  color: var(--teal);
 }
 
 /* --------------------------------------------------------------------------
@@ -1955,84 +1962,69 @@ p { color: var(--text-secondary); }
 }
 
 /* --------------------------------------------------------------------------
-   Testimonials
+   Built For Fitness Section
    -------------------------------------------------------------------------- */
-.testimonials {
+.built-for {
   background: var(--bg-primary);
 }
 
-.testimonials__grid {
+.built-for__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-8);
 }
 
 @media (max-width: 900px) {
-  .testimonials__grid {
+  .built-for__grid {
     grid-template-columns: 1fr;
   }
 }
 
-.testimonial-card {
+.built-for__card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-2xl);
   padding: var(--space-8);
   backdrop-filter: blur(10px);
   transition: all var(--transition-base);
+  text-align: center;
 }
 
-.testimonial-card:hover {
+.built-for__card:hover {
   border-color: var(--border-glow);
   transform: translateY(-4px);
+  box-shadow: var(--shadow-glow);
 }
 
-.testimonial-card__stars {
-  display: flex;
-  gap: 2px;
-  margin-bottom: var(--space-4);
-}
-
-.testimonial-card__stars svg {
-  width: 18px;
-  height: 18px;
-  fill: #FBBF24;
-}
-
-.testimonial-card__text {
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-  line-height: 1.7;
-  margin-bottom: var(--space-6);
-}
-
-.testimonial-card__author {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.testimonial-card__avatar {
-  width: 48px;
-  height: 48px;
-  background: var(--gradient-brand);
-  border-radius: var(--radius-full);
+.built-for__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-6);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-lg);
-  font-weight: 700;
-  color: #000;
 }
 
-.testimonial-card__name {
+.built-for__icon svg {
+  width: 32px;
+  height: 32px;
+  color: var(--teal);
+}
+
+.built-for__card h4 {
+  font-size: var(--text-xl);
   font-weight: 600;
   color: var(--text-primary);
+  margin-bottom: var(--space-3);
 }
 
-.testimonial-card__role {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
+.built-for__card p {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 /* --------------------------------------------------------------------------
