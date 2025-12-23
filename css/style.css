@@ -826,16 +826,25 @@ p { color: var(--text-secondary); }
 
 .bento-card__visual {
   margin-top: var(--space-6);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
+  display: flex;
+  justify-content: center;
 }
 
-.bento-card__visual img {
+.bento-phone {
+  width: 200px;
+  padding: 8px;
+  background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  border-radius: 28px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.bento-phone img {
   width: 100%;
   height: auto;
   display: block;
-  border-radius: var(--radius-lg);
+  border-radius: 20px;
 }
 
 /* --------------------------------------------------------------------------
@@ -877,15 +886,25 @@ p { color: var(--text-secondary); }
   position: relative;
 }
 
-.screenshot-card img {
+.screenshot-phone {
   width: 240px;
-  height: auto;
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-card);
+  padding: 8px;
+  background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  border-radius: 32px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: all var(--transition-base);
 }
 
-.screenshot-card:hover img {
+.screenshot-phone img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 24px;
+}
+
+.screenshot-card:hover .screenshot-phone {
   transform: scale(1.02) translateY(-10px);
   box-shadow: var(--shadow-glow);
 }
