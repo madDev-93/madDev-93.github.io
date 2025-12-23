@@ -829,15 +829,13 @@ p { color: var(--text-secondary); }
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  height: 300px;
 }
 
 .bento-card__visual img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 15%;
+  height: auto;
   display: block;
+  border-radius: var(--radius-lg);
 }
 
 /* --------------------------------------------------------------------------
@@ -882,9 +880,6 @@ p { color: var(--text-secondary); }
 .screenshot-card img {
   width: 240px;
   height: auto;
-  max-height: 520px;
-  object-fit: cover;
-  object-position: top;
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-card);
   transition: all var(--transition-base);
