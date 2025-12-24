@@ -654,112 +654,67 @@ p { color: var(--text-secondary); }
   }
 }
 
-/* Floating feature cards around phone */
-/* Accent Stripe Cards */
-.stripe-card {
-  position: absolute;
-  padding: 12px 16px 12px 14px;
-  background: rgba(15, 20, 30, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 12px;
-  border-left: 3px solid var(--teal);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  z-index: 3;
-  animation: stripe-float 5s ease-in-out infinite;
-  min-width: 110px;
+/* Hero Stats Row */
+.hero-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: var(--space-6);
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
 }
 
-.stripe-card__label {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.5);
-  margin-bottom: 4px;
+.hero-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.stripe-card__value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
+.hero-stat__icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
-@keyframes stripe-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(1deg); }
+.hero-stat__text {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-/* Color variants */
-.stripe-card--teal { border-left-color: var(--teal); }
-.stripe-card--coral { border-left-color: var(--coral); }
-.stripe-card--purple { border-left-color: #8B5CF6; }
-.stripe-card--pink { border-left-color: #EC4899; }
-
-/* Positions */
-.stripe-card--1 {
-  top: 8%;
-  left: -60px;
-  animation-delay: 0s;
+.hero-stats__divider {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
 }
 
-.stripe-card--2 {
-  bottom: 20%;
-  left: -70px;
-  animation-delay: -1.5s;
+/* Light mode */
+[data-theme="light"] .hero-stats {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
-.stripe-card--3 {
-  top: 25%;
-  right: -65px;
-  animation-delay: -0.8s;
+[data-theme="light"] .hero-stat__text {
+  color: rgba(0, 0, 0, 0.8);
 }
 
-.stripe-card--4 {
-  bottom: 8%;
-  right: -55px;
-  animation-delay: -2.2s;
-}
-
-@media (max-width: 1100px) {
-  .stripe-card--1 { left: -30px; }
-  .stripe-card--2 { left: -40px; }
-  .stripe-card--3 { right: -35px; }
-  .stripe-card--4 { right: -30px; }
+[data-theme="light"] .hero-stats__divider {
+  color: rgba(0, 0, 0, 0.25);
 }
 
 @media (max-width: 768px) {
-  .stripe-card {
+  .hero-stats {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 16px;
+  }
+
+  .hero-stats__divider {
     display: none;
   }
-}
-
-/* Light mode stripe cards */
-[data-theme="light"] .stripe-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  border-left: 3px solid var(--teal) !important;
-}
-
-[data-theme="light"] .stripe-card--coral {
-  border-left-color: var(--coral) !important;
-}
-
-[data-theme="light"] .stripe-card--purple {
-  border-left-color: #8B5CF6 !important;
-}
-
-[data-theme="light"] .stripe-card--pink {
-  border-left-color: #EC4899 !important;
-}
-
-[data-theme="light"] .stripe-card__label {
-  color: rgba(0, 0, 0, 0.55) !important;
-}
-
-[data-theme="light"] .stripe-card__value {
-  color: #111 !important;
 }
 
 /* Legacy floating cards - hidden, replaced by hero-badge */
