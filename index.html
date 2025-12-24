@@ -21,7 +21,7 @@
 
   <link rel="icon" type="image/png" href="images/app-icon.png">
   <link rel="apple-touch-icon" href="images/app-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body>
   <div class="bg-mesh"></div>
@@ -177,95 +177,60 @@
       </div>
 
       <div class="bento-grid" data-animate-stagger>
-        <!-- Row 1: Workout Log (narrow/tall) + AI Coach (wide) -->
-        <div class="bento-card bento-card--narrow bento-card--visual">
-          <div class="bento-card__icon bento-card__icon--teal">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>
-          </div>
-          <h3 class="bento-card__title">Workout Logging</h3>
-          <p class="bento-card__desc">Track sets, reps, weight, and RPE.</p>
-          <div class="bento-card__image">
-            <img src="images/features/workout-log.jpg" alt="Workout Logging">
-          </div>
-        </div>
-
-        <div class="bento-card bento-card--narrow bento-card--visual">
-          <span class="bento-card__badge">AI Powered</span>
-          <div class="bento-card__icon bento-card__icon--purple">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/></svg>
-          </div>
-          <h3 class="bento-card__title">AI Weekly Planner</h3>
-          <p class="bento-card__desc">Personalized plans based on your goals.</p>
-          <div class="bento-card__image">
-            <img src="images/features/ai-coach.jpg" alt="AI Coach">
-          </div>
-        </div>
-
-        <div class="bento-card bento-card--narrow bento-card--visual">
-          <div class="bento-card__icon bento-card__icon--pink">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </div>
-          <h3 class="bento-card__title">Apple Health</h3>
-          <p class="bento-card__desc">Sync weight, steps, sleep & more.</p>
-          <div class="bento-card__image">
-            <img src="images/features/apple-health.jpg" alt="Apple Health Sync">
-          </div>
-        </div>
-
-        <!-- Row 2: Stats cards -->
-        <div class="bento-card bento-card--quarter">
-          <div class="bento-card__icon bento-card__icon--coral">
+        <div class="bento-card bento-card--wide">
+          <div class="bento-card__icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.06 22.99h1.66c.84 0 1.53-.64 1.63-1.46L23 5.05l-5 2v15.94zM1 21.99h1.66l.24-2.36c.06-.51.45-.95.96-1.06l5.14-1.22V5.99l-8 3v13z"/></svg>
           </div>
-          <div class="bento-card__stat">1M+</div>
-          <h3 class="bento-card__title">Foods</h3>
-          <p class="bento-card__desc">USDA & Open Food Facts</p>
+          <h3 class="bento-card__title">Smart Nutrition Tracking</h3>
+          <p class="bento-card__desc">Log meals with barcode scanning, AI photo recognition, or search our database of over 1 million foods from USDA and Open Food Facts.</p>
         </div>
 
-        <div class="bento-card bento-card--quarter">
-          <div class="bento-card__icon bento-card__icon--blue">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        <div class="bento-card bento-card--narrow">
+          <div class="bento-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/></svg>
           </div>
-          <div class="bento-card__stat">7+</div>
-          <h3 class="bento-card__title">Programs</h3>
-          <p class="bento-card__desc">nSuns, 5/3/1, PHUL & more</p>
+          <h3 class="bento-card__title">Complete Workout Logging</h3>
+          <p class="bento-card__desc">Track any activity type with sets, reps, weight, RPE, and more. Supersets, circuits, and timed exercises all supported.</p>
         </div>
 
-        <div class="bento-card bento-card--quarter">
-          <div class="bento-card__icon bento-card__icon--green">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-          </div>
-          <div class="bento-card__stat">10+</div>
-          <h3 class="bento-card__title">Factors</h3>
-          <p class="bento-card__desc">For accurate calories</p>
-        </div>
-
-        <div class="bento-card bento-card--quarter">
-          <div class="bento-card__icon bento-card__icon--teal">
+        <div class="bento-card bento-card--third">
+          <div class="bento-card__icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
           </div>
           <h3 class="bento-card__title">iCloud Sync</h3>
-          <p class="bento-card__desc">All your devices</p>
+          <p class="bento-card__desc">Your data syncs automatically across all your Apple devices.</p>
         </div>
 
-        <!-- Row 3: Progress compare (wide) + Scanner -->
-        <div class="bento-card bento-card--half bento-card--visual">
-          <div class="bento-card__icon bento-card__icon--green">
+        <div class="bento-card bento-card--third">
+          <div class="bento-card__icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
           </div>
-          <h3 class="bento-card__title">Track Progress</h3>
-          <p class="bento-card__desc">Compare workouts and watch your volume increase.</p>
-          <div class="bento-card__image">
-            <img src="images/features/compare.jpg" alt="Progress Comparison">
+          <h3 class="bento-card__title">Progress Analytics</h3>
+          <p class="bento-card__desc">Charts, trends, PRs, and insights. See exactly how you're progressing.</p>
+        </div>
+
+        <div class="bento-card bento-card--third">
+          <div class="bento-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
           </div>
+          <h3 class="bento-card__title">Apple Health</h3>
+          <p class="bento-card__desc">Sync weight, steps, sleep, heart rate, and workouts with HealthKit.</p>
         </div>
 
         <div class="bento-card bento-card--half">
-          <div class="bento-card__icon bento-card__icon--purple">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13z"/></svg>
+          <div class="bento-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          </div>
+          <h3 class="bento-card__title">Proven Workout Programs</h3>
+          <p class="bento-card__desc">Follow popular programs like nSuns 5/3/1, Starting Strength, StrongLifts, GZCLP, Wendler 5/3/1, PHUL, and Arnold Split. Or create custom programs with fixed or rotating schedules.</p>
+        </div>
+
+        <div class="bento-card bento-card--half">
+          <div class="bento-card__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
           </div>
           <h3 class="bento-card__title">Smart Food Scanner</h3>
-          <p class="bento-card__desc">Barcode scanning, nutrition label OCR, or AI photo analysis that identifies foods and estimates portions automatically.</p>
+          <p class="bento-card__desc">Three ways to scan: Barcode lookup from Open Food Facts, OCR for nutrition labels, or AI photo analysis that identifies foods and estimates portions automatically.</p>
         </div>
       </div>
     </div>
