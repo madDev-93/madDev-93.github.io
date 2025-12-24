@@ -657,7 +657,7 @@ p { color: var(--text-secondary); }
 /* Hero Vertical Stack */
 .hero-stack {
   position: absolute;
-  right: -140px;
+  right: -30px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -732,7 +732,7 @@ p { color: var(--text-secondary); }
 
 @media (max-width: 1200px) {
   .hero-stack {
-    right: -100px;
+    right: -20px;
   }
 }
 
