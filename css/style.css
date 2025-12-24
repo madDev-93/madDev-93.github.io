@@ -601,7 +601,8 @@ p { color: var(--text-secondary); }
   aspect-ratio: 9 / 19.5;
 }
 
-.phone-screen img {
+.phone-screen img,
+.phone-screen video {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -609,33 +610,8 @@ p { color: var(--text-secondary); }
   display: block;
 }
 
-/* Theme-switching mockup crossfade */
-.phone-screen__dark,
-.phone-screen__light {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transition: opacity 0.5s ease-in-out;
-}
-
-.phone-screen__dark {
-  opacity: 1;
-  z-index: 2;
-}
-
-.phone-screen__light {
-  opacity: 0;
-  z-index: 1;
-}
-
-[data-theme="light"] .phone-screen__dark {
-  opacity: 0;
-}
-
-[data-theme="light"] .phone-screen__light {
-  opacity: 1;
+.phone-video {
+  pointer-events: none;
 }
 
 /* Phone glow effects */
