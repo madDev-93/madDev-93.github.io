@@ -859,8 +859,8 @@ p { color: var(--text-secondary); }
 }
 
 /* Bento sizes */
-.bento-card--wide { grid-column: span 8; }
-.bento-card--narrow { grid-column: span 4; }
+.bento-card--wide { grid-column: span 6; }
+.bento-card--narrow { grid-column: span 6; }
 .bento-card--half { grid-column: span 6; }
 .bento-card--third { grid-column: span 4; }
 
