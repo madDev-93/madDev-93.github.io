@@ -951,23 +951,25 @@ p { color: var(--text-secondary); }
 
 /* Image container */
 .bento-card__image {
-  margin-top: var(--space-4);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-top: auto;
+  padding-top: var(--space-4);
+  display: flex;
+  justify-content: center;
 }
 
 .bento-card__image img {
+  max-width: 300px;
   width: 100%;
-  max-width: 320px;
   height: auto;
   display: block;
-  margin: 0 auto;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
 /* Smaller images for half-width cards */
 .bento-card--half .bento-card__image img {
-  max-width: 280px;
+  max-width: 260px;
+  border-radius: 12px;
 }
 
 .bento-card__title {
