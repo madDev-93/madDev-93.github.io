@@ -895,7 +895,21 @@ p { color: var(--text-secondary); }
 
 .bento-card__visual img {
   width: 100%;
-  margin-top: -60px;
+  height: auto;
+  display: block;
+}
+
+/* Nutrition card - crop to show calorie ring area */
+.bento-card__visual--nutrition {
+  height: 240px !important;
+  overflow: hidden !important;
+}
+
+.bento-card__visual--nutrition img {
+  width: 100% !important;
+  height: 700px !important;
+  object-fit: cover !important;
+  object-position: center 50% !important;
 }
 
 /* --------------------------------------------------------------------------
