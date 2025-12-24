@@ -653,14 +653,75 @@ p { color: var(--text-secondary); }
 }
 
 /* Floating feature cards around phone */
-.floating-card {
+/* Hero Floating Emoji Badges */
+.hero-badge {
   position: absolute;
+  width: 56px;
+  height: 56px;
   background: var(--bg-card);
   backdrop-filter: blur(var(--blur-glass));
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-4);
+  border-radius: 50%;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: var(--shadow-card);
+  z-index: 3;
+  animation: badge-float 5s ease-in-out infinite;
+  cursor: default;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-badge:hover {
+  transform: scale(1.15);
+  box-shadow: var(--shadow-glow);
+}
+
+@keyframes badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.hero-badge--1 {
+  top: 5%;
+  left: -30px;
+  animation-delay: 0s;
+}
+
+.hero-badge--2 {
+  top: 35%;
+  left: -50px;
+  animation-delay: -1s;
+}
+
+.hero-badge--3 {
+  bottom: 15%;
+  left: -25px;
+  animation-delay: -2s;
+}
+
+.hero-badge--4 {
+  top: 10%;
+  right: -35px;
+  animation-delay: -0.5s;
+}
+
+.hero-badge--5 {
+  bottom: 25%;
+  right: -45px;
+  animation-delay: -1.5s;
+}
+
+@media (max-width: 768px) {
+  .hero-badge {
+    display: none;
+  }
+}
+
+/* Legacy floating cards - hidden, replaced by hero-badge */
+.floating-card {
+  display: none !important;
   align-items: center;
   gap: var(--space-3);
   animation: float-card 5s ease-in-out infinite;
