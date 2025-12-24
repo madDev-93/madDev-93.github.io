@@ -859,10 +859,11 @@ p { color: var(--text-secondary); }
 }
 
 /* Bento sizes */
-.bento-card--wide { grid-column: span 6; }
-.bento-card--narrow { grid-column: span 6; }
+.bento-card--wide { grid-column: span 8; }
+.bento-card--narrow { grid-column: span 4; }
 .bento-card--half { grid-column: span 6; }
 .bento-card--third { grid-column: span 4; }
+.bento-card--quarter { grid-column: span 3; }
 
 @media (max-width: 1024px) {
   .bento-card--wide,
@@ -953,9 +954,12 @@ p { color: var(--text-secondary); }
 /* Image container */
 .bento-card__image {
   margin-top: var(--space-4);
+  display: flex;
+  justify-content: center;
 }
 
 .bento-card__image img {
+  max-width: 220px;
   width: 100%;
   height: auto;
   display: block;
