@@ -564,6 +564,7 @@ p { color: var(--text-secondary); }
   justify-content: center;
   align-items: center;
   overflow: visible;
+  margin-left: -60px;
 }
 
 .phone-mockup {
@@ -665,6 +666,29 @@ p { color: var(--text-secondary); }
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   min-width: 160px;
+  opacity: 0;
+  transform: translateX(30px);
+  animation: card-slide-in 0.6s ease-out forwards;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.hero-stack__card:nth-child(1) { animation-delay: 0.1s; }
+.hero-stack__card:nth-child(2) { animation-delay: 0.2s; }
+.hero-stack__card:nth-child(3) { animation-delay: 0.3s; }
+.hero-stack__card:nth-child(4) { animation-delay: 0.4s; }
+.hero-stack__card:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes card-slide-in {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.hero-stack__card:hover {
+  transform: translateX(-8px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .hero-stack__icon {
