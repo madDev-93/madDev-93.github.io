@@ -951,25 +951,24 @@ p { color: var(--text-secondary); }
 
 /* Image container */
 .bento-card__image {
-  margin-top: auto;
-  padding-top: var(--space-4);
+  margin-top: var(--space-3);
   display: flex;
   justify-content: center;
 }
 
 .bento-card__image img {
-  max-width: 300px;
+  max-width: 240px;
   width: 100%;
   height: auto;
   display: block;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* Smaller images for half-width cards */
 .bento-card--half .bento-card__image img {
-  max-width: 260px;
-  border-radius: 12px;
+  max-width: 200px;
+  border-radius: 10px;
 }
 
 .bento-card__title {
@@ -988,7 +987,12 @@ p { color: var(--text-secondary); }
 .bento-card--visual {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  padding: var(--space-6);
+}
+
+.bento-card--visual.bento-card--wide,
+.bento-card--visual.bento-card--narrow {
+  padding: var(--space-5);
 }
 
 .bento-card__visual {
