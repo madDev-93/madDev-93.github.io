@@ -878,21 +878,89 @@ p { color: var(--text-secondary); }
 }
 
 .bento-card__icon {
-  width: 56px;
-  height: 56px;
-  background: var(--gradient-brand);
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-6);
-  box-shadow: 0 0 30px rgba(20, 184, 166, 0.3);
+  margin-bottom: var(--space-4);
 }
 
 .bento-card__icon svg {
-  width: 28px;
-  height: 28px;
-  color: #000;
+  width: 24px;
+  height: 24px;
+}
+
+/* Colored icon variants */
+.bento-card__icon--teal {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal);
+}
+
+.bento-card__icon--coral {
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--coral);
+}
+
+.bento-card__icon--purple {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8B5CF6;
+}
+
+.bento-card__icon--pink {
+  background: rgba(236, 72, 153, 0.15);
+  color: #EC4899;
+}
+
+.bento-card__icon--green {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22C55E;
+}
+
+.bento-card__icon--blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3B82F6;
+}
+
+/* Badge for special cards */
+.bento-card__badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(139, 92, 246, 0.15);
+  color: #8B5CF6;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-3);
+}
+
+/* Stats number */
+.bento-card__stat {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+
+/* Image container */
+.bento-card__image {
+  margin-top: var(--space-4);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.bento-card__image img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .bento-card__title {
