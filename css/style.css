@@ -318,8 +318,24 @@ p { color: var(--text-secondary); }
   width: 44px;
   height: 44px;
   border-radius: var(--radius-lg);
-  object-fit: cover;
-  object-position: 40% 40%;
+  object-fit: contain;
+}
+
+/* Logo theme switching */
+.logo-dark {
+  display: block;
+}
+
+.logo-light {
+  display: none;
+}
+
+[data-theme="light"] .logo-dark {
+  display: none;
+}
+
+[data-theme="light"] .logo-light {
+  display: block;
 }
 
 .nav {
