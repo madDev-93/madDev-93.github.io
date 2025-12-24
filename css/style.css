@@ -634,6 +634,7 @@ p { color: var(--text-secondary); }
 
   .hero__visual {
     margin-top: var(--space-8);
+    margin-left: 0;
   }
 }
 
