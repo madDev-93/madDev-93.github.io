@@ -1003,7 +1003,11 @@ p { color: var(--text-secondary); }
 
 @media (max-width: 900px) {
   .spotlight__features {
-    align-items: center;
+    width: 100%;
+  }
+
+  .spotlight__feature {
+    width: 100%;
   }
 }
 
