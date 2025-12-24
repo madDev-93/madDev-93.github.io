@@ -286,57 +286,6 @@ const FloatingCards = {
 };
 
 // ==========================================================================
-// Hero Stack Autoplay
-// ==========================================================================
-const HeroStackAutoplay = {
-  init() {
-    this.cards = document.querySelectorAll('.hero-stack__card');
-    if (this.cards.length === 0) return;
-
-    this.currentIndex = 0;
-    this.interval = null;
-    this.isPaused = false;
-
-    // Wait for initial slide-in animation to complete
-    setTimeout(() => {
-      this.startAutoplay();
-    }, 1500);
-
-    // Pause on hover
-    this.cards.forEach(card => {
-      card.addEventListener('mouseenter', () => {
-        this.isPaused = true;
-        this.clearActive();
-        card.classList.add('active');
-      });
-
-      card.addEventListener('mouseleave', () => {
-        this.isPaused = false;
-        card.classList.remove('active');
-      });
-    });
-  },
-
-  startAutoplay() {
-    this.interval = setInterval(() => {
-      if (!this.isPaused) {
-        this.showNext();
-      }
-    }, 2500);
-  },
-
-  showNext() {
-    this.clearActive();
-    this.cards[this.currentIndex].classList.add('active');
-    this.currentIndex = (this.currentIndex + 1) % this.cards.length;
-  },
-
-  clearActive() {
-    this.cards.forEach(card => card.classList.remove('active'));
-  }
-};
-
-// ==========================================================================
 // Initialize Everything
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -349,5 +298,4 @@ document.addEventListener('DOMContentLoaded', () => {
   CounterAnimation.init();
   QuotaProgress.init();
   FloatingCards.init();
-  HeroStackAutoplay.init();
 });
