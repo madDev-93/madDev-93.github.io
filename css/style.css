@@ -466,7 +466,8 @@ p { color: var(--text-secondary); }
   align-items: center;
   padding-top: var(--header-height);
   position: relative;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .hero__grid {
@@ -562,6 +563,7 @@ p { color: var(--text-secondary); }
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: visible;
 }
 
 .phone-mockup {
