@@ -952,24 +952,15 @@ p { color: var(--text-secondary); }
 
 /* Image container */
 .bento-card__image {
-  margin-top: var(--space-3);
-  display: flex;
-  justify-content: center;
+  margin-top: var(--space-4);
 }
 
 .bento-card__image img {
-  max-width: 240px;
   width: 100%;
   height: auto;
   display: block;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-/* Smaller images for half-width cards */
-.bento-card--half .bento-card__image img {
-  max-width: 200px;
-  border-radius: 10px;
 }
 
 .bento-card__title {
