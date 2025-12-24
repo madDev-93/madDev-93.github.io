@@ -736,17 +736,30 @@ p { color: var(--text-secondary); }
 
 /* Light mode stripe cards */
 [data-theme="light"] .stripe-card {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-  border-color: var(--teal);
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-left: 3px solid var(--teal) !important;
+}
+
+[data-theme="light"] .stripe-card--coral {
+  border-left-color: var(--coral) !important;
+}
+
+[data-theme="light"] .stripe-card--purple {
+  border-left-color: #8B5CF6 !important;
+}
+
+[data-theme="light"] .stripe-card--pink {
+  border-left-color: #EC4899 !important;
 }
 
 [data-theme="light"] .stripe-card__label {
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(0, 0, 0, 0.55) !important;
 }
 
 [data-theme="light"] .stripe-card__value {
-  color: #1a1a1a;
+  color: #111 !important;
 }
 
 /* Legacy floating cards - hidden, replaced by hero-badge */
