@@ -889,7 +889,7 @@ p { color: var(--text-secondary); }
   margin-top: var(--space-6);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  height: 250px;
+  height: 280px;
   box-shadow: var(--shadow-card);
   position: relative;
 }
@@ -897,7 +897,7 @@ p { color: var(--text-secondary); }
 .bento-card__visual img {
   position: absolute;
   width: 100%;
-  top: -15%;
+  top: -40%;
   left: 0;
 }
 
