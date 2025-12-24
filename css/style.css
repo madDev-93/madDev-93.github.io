@@ -653,81 +653,81 @@ p { color: var(--text-secondary); }
 }
 
 /* Floating feature cards around phone */
-/* Pill/Tag Style Cards */
-.hero-pill {
+/* Accent Stripe Cards */
+.stripe-card {
   position: absolute;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px 8px 12px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 100px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  padding: 12px 16px 12px 14px;
+  background: rgba(15, 20, 30, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 12px;
+  border-left: 3px solid var(--teal);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   z-index: 3;
-  animation: pill-float 5s ease-in-out infinite;
-  white-space: nowrap;
+  animation: stripe-float 5s ease-in-out infinite;
+  min-width: 110px;
 }
 
-.hero-pill__icon {
-  font-size: 16px;
-  line-height: 1;
+.stripe-card__label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
 }
 
-.hero-pill__text {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: -0.01em;
+.stripe-card__value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
 }
 
-@keyframes pill-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+@keyframes stripe-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
 }
 
-.hero-pill--1 {
-  top: 5%;
-  left: -40px;
+/* Color variants */
+.stripe-card--teal { border-left-color: var(--teal); }
+.stripe-card--coral { border-left-color: var(--coral); }
+.stripe-card--purple { border-left-color: #8B5CF6; }
+.stripe-card--pink { border-left-color: #EC4899; }
+
+/* Positions */
+.stripe-card--1 {
+  top: 8%;
+  left: -60px;
   animation-delay: 0s;
 }
 
-.hero-pill--2 {
-  top: 30%;
+.stripe-card--2 {
+  bottom: 20%;
   left: -70px;
-  animation-delay: -1s;
-}
-
-.hero-pill--3 {
-  bottom: 25%;
-  left: -50px;
-  animation-delay: -2s;
-}
-
-.hero-pill--4 {
-  top: 15%;
-  right: -50px;
-  animation-delay: -0.5s;
-}
-
-.hero-pill--5 {
-  bottom: 10%;
-  right: -40px;
   animation-delay: -1.5s;
 }
 
+.stripe-card--3 {
+  top: 25%;
+  right: -65px;
+  animation-delay: -0.8s;
+}
+
+.stripe-card--4 {
+  bottom: 8%;
+  right: -55px;
+  animation-delay: -2.2s;
+}
+
 @media (max-width: 1100px) {
-  .hero-pill--1 { left: -20px; }
-  .hero-pill--2 { left: -40px; }
-  .hero-pill--3 { left: -25px; }
-  .hero-pill--4 { right: -25px; }
-  .hero-pill--5 { right: -20px; }
+  .stripe-card--1 { left: -30px; }
+  .stripe-card--2 { left: -40px; }
+  .stripe-card--3 { right: -35px; }
+  .stripe-card--4 { right: -30px; }
 }
 
 @media (max-width: 768px) {
-  .hero-pill {
+  .stripe-card {
     display: none;
   }
 }
