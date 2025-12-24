@@ -734,6 +734,21 @@ p { color: var(--text-secondary); }
   }
 }
 
+/* Light mode stripe cards */
+[data-theme="light"] .stripe-card {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--teal);
+}
+
+[data-theme="light"] .stripe-card__label {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .stripe-card__value {
+  color: #1a1a1a;
+}
+
 /* Legacy floating cards - hidden, replaced by hero-badge */
 .floating-card {
   display: none !important;
