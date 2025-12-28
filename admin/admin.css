@@ -214,6 +214,12 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
+.sidebar-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
 .sidebar-logo span {
   font-size: 20px;
   font-weight: 700;
