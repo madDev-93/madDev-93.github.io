@@ -161,6 +161,11 @@ function updateOverview() {
   document.getElementById('weekly-notifs-sent').textContent = stats.weeklyNotifsSentThisWeek || 0;
   document.getElementById('active-users').textContent = activeUsers;
 
+  // Server-side refresh stats (4 AM deep context)
+  document.getElementById('user-data-synced').textContent = stats.userDataSynced || 0;
+  document.getElementById('server-refreshes-today').textContent = stats.serverRefreshesToday || 0;
+  document.getElementById('server-refreshes-week').textContent = stats.serverRefreshesWeek || 0;
+
   // Activity section stats
   document.getElementById('meal-scans-today').textContent = stats.mealScansToday || 0;
   document.getElementById('meal-scans-week').textContent = `${stats.mealScansWeek || 0} this week`;
