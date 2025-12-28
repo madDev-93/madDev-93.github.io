@@ -35,6 +35,8 @@ let activityFilter = 'all-activity';
 let userSearch = '';
 let usersPage = 1;
 let activityPage = 1;
+let userSortField = 'lastActive';
+let userSortDir = 'desc';
 
 // Chart instances
 let subscriptionChart = null;
@@ -292,11 +294,57 @@ function renderUsersTable() {
     return true;
   });
 
-  // Sort by last active
+  // Sort
   filtered.sort((a, b) => {
-    const dateA = a.lastActive ? new Date(a.lastActive) : new Date(0);
-    const dateB = b.lastActive ? new Date(b.lastActive) : new Date(0);
-    return dateB - dateA;
+    let valA, valB;
+
+    switch (userSortField) {
+      case 'name':
+        valA = (a.displayName || a.email || '').toLowerCase();
+        valB = (b.displayName || b.email || '').toLowerCase();
+        break;
+      case 'status':
+        valA = a.isPro ? 1 : 0;
+        valB = b.isPro ? 1 : 0;
+        break;
+      case 'notifications':
+        valA = a.notificationsEnabled ? 1 : 0;
+        valB = b.notificationsEnabled ? 1 : 0;
+        break;
+      case 'meals':
+        valA = a.mealScans || 0;
+        valB = b.mealScans || 0;
+        break;
+      case 'text':
+        valA = a.textAnalysis || 0;
+        valB = b.textAnalysis || 0;
+        break;
+      case 'coach':
+        valA = a.coachInsights || 0;
+        valB = b.coachInsights || 0;
+        break;
+      case 'signedUp':
+        valA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        break;
+      case 'lastActive':
+      default:
+        valA = a.lastActive ? new Date(a.lastActive).getTime() : 0;
+        valB = b.lastActive ? new Date(b.lastActive).getTime() : 0;
+        break;
+    }
+
+    if (valA < valB) return userSortDir === 'asc' ? -1 : 1;
+    if (valA > valB) return userSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Update sort indicators
+  document.querySelectorAll('#users-table th.sortable').forEach(th => {
+    th.classList.remove('asc', 'desc');
+    if (th.dataset.sort === userSortField) {
+      th.classList.add(userSortDir);
+    }
   });
 
   // Pagination
@@ -543,4 +591,19 @@ document.getElementById('user-search').addEventListener('input', (e) => {
   userSearch = e.target.value;
   usersPage = 1;
   renderUsersTable();
+});
+
+// Column sorting
+document.querySelectorAll('#users-table th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const field = th.dataset.sort;
+    if (userSortField === field) {
+      userSortDir = userSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      userSortField = field;
+      userSortDir = 'desc';
+    }
+    usersPage = 1;
+    renderUsersTable();
+  });
 });

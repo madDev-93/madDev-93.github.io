@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="admin.css?v=4">
+  <link rel="stylesheet" href="admin.css?v=5">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -264,14 +264,14 @@
           <table class="data-table" id="users-table">
             <thead>
               <tr>
-                <th>User</th>
-                <th>Status</th>
-                <th>Notifications</th>
-                <th class="text-center">Meals</th>
-                <th class="text-center">Text</th>
-                <th class="text-center">Coach</th>
-                <th>Signed Up</th>
-                <th>Last Active</th>
+                <th class="sortable" data-sort="name">User <span class="sort-icon"></span></th>
+                <th class="sortable" data-sort="status">Status <span class="sort-icon"></span></th>
+                <th class="sortable" data-sort="notifications">Notifications <span class="sort-icon"></span></th>
+                <th class="sortable text-center" data-sort="meals">Meals <span class="sort-icon"></span></th>
+                <th class="sortable text-center" data-sort="text">Text <span class="sort-icon"></span></th>
+                <th class="sortable text-center" data-sort="coach">Coach <span class="sort-icon"></span></th>
+                <th class="sortable" data-sort="signedUp">Signed Up <span class="sort-icon"></span></th>
+                <th class="sortable" data-sort="lastActive">Last Active <span class="sort-icon"></span></th>
               </tr>
             </thead>
             <tbody id="users-table-body">
@@ -379,6 +379,6 @@
     </main>
   </div>
 
-  <script src="admin.js?v=4"></script>
+  <script src="admin.js?v=5"></script>
 </body>
 </html>

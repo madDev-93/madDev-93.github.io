@@ -537,6 +537,41 @@ body {
   letter-spacing: 0.5px;
 }
 
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition);
+}
+
+.data-table th.sortable:hover {
+  color: var(--text-primary);
+}
+
+.data-table th.sortable.asc,
+.data-table th.sortable.desc {
+  color: var(--teal);
+}
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  opacity: 0.3;
+}
+
+.sortable:hover .sort-icon {
+  opacity: 0.6;
+}
+
+.sortable.asc .sort-icon::after {
+  content: "▲";
+  opacity: 1;
+}
+
+.sortable.desc .sort-icon::after {
+  content: "▼";
+  opacity: 1;
+}
+
 .data-table th.text-center,
 .data-table td.text-center {
   text-align: center;
