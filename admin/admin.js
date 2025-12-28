@@ -30,13 +30,21 @@ const functions = firebase.functions();
 // State
 let allUsers = [];
 let allActivity = [];
+let allNotificationLogs = [];
+let allErrorLogs = [];
 let stats = null;
 let currentSection = 'overview';
 let userFilter = 'all';
 let activityFilter = 'all-activity';
+let notifFilter = 'all';
+let errorFilter = 'all';
 let userSearch = '';
+let notifSearch = '';
+let errorSearch = '';
 let usersPage = 1;
 let activityPage = 1;
+let notifPage = 1;
+let errorPage = 1;
 let userSortField = 'lastActive';
 let userSortDir = 'desc';
 let activitySearch = '';
@@ -82,6 +90,8 @@ async function loadDashboardData() {
 
     allUsers = stats.users || [];
     allActivity = stats.recentActivity || [];
+    allNotificationLogs = stats.notificationLogs || [];
+    allErrorLogs = stats.errorLogs || [];
 
     updateOverview();
     updateRetention();
@@ -89,6 +99,8 @@ async function loadDashboardData() {
     updateChurnRisk();
     renderUsersTable();
     renderActivityTable();
+    renderNotificationTable();
+    renderErrorTable();
     updateCharts();
     updateBilling();
 
@@ -700,6 +712,135 @@ function renderPagination(containerId, currentPage, totalPages, onPageChange) {
   });
 }
 
+// Render notification logs table
+function renderNotificationTable() {
+  const tbody = document.getElementById('notif-table-body');
+  if (!tbody) return;
+
+  // Filter by type
+  let filtered = allNotificationLogs;
+  if (notifFilter === 'daily') {
+    filtered = filtered.filter(n => n.type === 'daily');
+  } else if (notifFilter === 'weekly') {
+    filtered = filtered.filter(n => n.type === 'weekly');
+  } else if (notifFilter === 'failed') {
+    filtered = filtered.filter(n => n.status === 'failed');
+  }
+
+  // Filter by search
+  if (notifSearch) {
+    const search = notifSearch.toLowerCase();
+    filtered = filtered.filter(n => {
+      const userName = (n.userName || '').toLowerCase();
+      const userEmail = (n.userEmail || '').toLowerCase();
+      return userName.includes(search) || userEmail.includes(search);
+    });
+  }
+
+  // Pagination
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  const start = (notifPage - 1) * ITEMS_PER_PAGE;
+  const pageNotifs = filtered.slice(start, start + ITEMS_PER_PAGE);
+
+  // Update info
+  document.getElementById('notif-showing').textContent = pageNotifs.length;
+  document.getElementById('notif-total').textContent = total;
+
+  // Render table
+  if (pageNotifs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No notifications found</td></tr>';
+  } else {
+    tbody.innerHTML = pageNotifs.map(notif => {
+      const userName = notif.userName || notif.userEmail || 'Unknown';
+      return `
+        <tr>
+          <td class="user-name">${userName}</td>
+          <td><span class="type-badge ${notif.type}">${notif.type}</span></td>
+          <td><span class="status-badge ${notif.status}">${notif.status}</span></td>
+          <td class="date-cell">${formatTime(notif.timestamp)}</td>
+          <td class="message-cell" title="${notif.error || notif.message || '-'}">${notif.error || notif.message || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Render pagination
+  renderPagination('notif-pagination', notifPage, totalPages, (page) => {
+    notifPage = page;
+    renderNotificationTable();
+  });
+}
+
+// Render error logs table
+function renderErrorTable() {
+  const tbody = document.getElementById('error-table-body');
+  const noErrorsMessage = document.getElementById('no-errors-message');
+  const errorTable = document.getElementById('error-table');
+  if (!tbody) return;
+
+  // Filter by type
+  let filtered = allErrorLogs;
+  if (errorFilter !== 'all') {
+    filtered = filtered.filter(e => e.type === errorFilter);
+  }
+
+  // Filter by search
+  if (errorSearch) {
+    const search = errorSearch.toLowerCase();
+    filtered = filtered.filter(e => {
+      const userName = (e.userName || '').toLowerCase();
+      const userEmail = (e.userEmail || '').toLowerCase();
+      const error = (e.error || '').toLowerCase();
+      return userName.includes(search) || userEmail.includes(search) || error.includes(search);
+    });
+  }
+
+  // Show/hide no errors message
+  if (allErrorLogs.length === 0) {
+    if (noErrorsMessage) noErrorsMessage.style.display = 'flex';
+    if (errorTable) errorTable.parentElement.style.display = 'none';
+    return;
+  } else {
+    if (noErrorsMessage) noErrorsMessage.style.display = 'none';
+    if (errorTable) errorTable.parentElement.style.display = 'block';
+  }
+
+  // Pagination
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  const start = (errorPage - 1) * ITEMS_PER_PAGE;
+  const pageErrors = filtered.slice(start, start + ITEMS_PER_PAGE);
+
+  // Update info
+  document.getElementById('error-showing').textContent = pageErrors.length;
+  document.getElementById('error-total').textContent = total;
+
+  // Render table
+  if (pageErrors.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading-cell">No errors found</td></tr>';
+  } else {
+    tbody.innerHTML = pageErrors.map(err => {
+      const userName = err.userName || err.userEmail || 'Unknown';
+      const typeLabel = err.type.replace('_', ' ');
+      return `
+        <tr>
+          <td class="user-name">${userName}</td>
+          <td><span class="type-badge ${err.type}">${typeLabel}</span></td>
+          <td class="date-cell">${formatTime(err.timestamp)}</td>
+          <td class="error-cell" title="${err.error}">${err.error}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Render pagination
+  renderPagination('error-pagination', errorPage, totalPages, (page) => {
+    errorPage = page;
+    renderErrorTable();
+  });
+}
+
 // Switch section
 function switchSection(section) {
   currentSection = section;
@@ -720,7 +861,8 @@ function switchSection(section) {
     overview: { title: 'Overview', subtitle: 'Key metrics and insights' },
     users: { title: 'Users', subtitle: 'Manage and view user data' },
     activity: { title: 'AI Activity', subtitle: 'Monitor AI usage and performance' },
-    billing: { title: 'Billing', subtitle: 'Cost estimates and usage breakdown' }
+    billing: { title: 'Billing', subtitle: 'Cost estimates and usage breakdown' },
+    logs: { title: 'Logs', subtitle: 'Notifications and error tracking' }
   };
 
   document.getElementById('page-title').textContent = titles[section].title;
@@ -815,6 +957,48 @@ document.getElementById('activity-search').addEventListener('input', (e) => {
   activityPage = 1;
   renderActivityTable();
 });
+
+// Notification filters
+document.querySelectorAll('[data-notif-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    notifFilter = btn.dataset.notifFilter;
+    notifPage = 1;
+    renderNotificationTable();
+  });
+});
+
+// Notification search
+const notifSearchEl = document.getElementById('notif-search');
+if (notifSearchEl) {
+  notifSearchEl.addEventListener('input', (e) => {
+    notifSearch = e.target.value;
+    notifPage = 1;
+    renderNotificationTable();
+  });
+}
+
+// Error filters
+document.querySelectorAll('[data-error-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    errorFilter = btn.dataset.errorFilter;
+    errorPage = 1;
+    renderErrorTable();
+  });
+});
+
+// Error search
+const errorSearchEl = document.getElementById('error-search');
+if (errorSearchEl) {
+  errorSearchEl.addEventListener('input', (e) => {
+    errorSearch = e.target.value;
+    errorPage = 1;
+    renderErrorTable();
+  });
+}
 
 // Modal close handlers
 document.getElementById('modal-close').addEventListener('click', closeUserModal);
