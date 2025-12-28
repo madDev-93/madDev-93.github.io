@@ -212,6 +212,13 @@ body {
   gap: 12px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.sidebar-logo:hover {
+  opacity: 0.8;
 }
 
 .sidebar-logo-img {
