@@ -307,7 +307,7 @@ function closeUserModal() {
   document.getElementById('user-modal').style.display = 'none';
 }
 
-// Update activity heatmap
+// Update activity heatmap (GitHub-style)
 function updateHeatmap() {
   const container = document.getElementById('activity-heatmap');
   if (!container) return;
@@ -315,12 +315,16 @@ function updateHeatmap() {
   // Get activity data grouped by date
   const activityByDate = {};
   const now = new Date();
+  now.setHours(23, 59, 59, 999);
 
-  // Initialize last N days based on selected range
-  for (let i = selectedTimeRange - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const key = date.toISOString().split('T')[0];
+  // Calculate start date based on selected range
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() - selectedTimeRange + 1);
+  startDate.setHours(0, 0, 0, 0);
+
+  // Initialize all days in range
+  for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().split('T')[0];
     activityByDate[key] = 0;
   }
 
@@ -333,24 +337,68 @@ function updateHeatmap() {
     }
   });
 
-  // Find max for scaling
+  // Calculate stats
   const values = Object.values(activityByDate);
+  const total = values.reduce((a, b) => a + b, 0);
+  const avg = values.length > 0 ? (total / values.length).toFixed(1) : 0;
   const maxVal = Math.max(...values, 1);
+  const peakDate = Object.keys(activityByDate).find(k => activityByDate[k] === maxVal);
 
-  // Build heatmap cells
-  const dates = Object.keys(activityByDate).sort();
-  let html = '';
+  // Update stats
+  document.getElementById('heatmap-total').textContent = total;
+  document.getElementById('heatmap-avg').textContent = avg;
+  document.getElementById('heatmap-peak').textContent = maxVal;
 
-  dates.forEach(date => {
-    const count = activityByDate[date];
-    const level = count === 0 ? 0 : Math.min(4, Math.ceil((count / maxVal) * 4));
+  // Group dates into weeks (columns)
+  const weeks = [];
+  let currentWeek = [];
+  const sortedDates = Object.keys(activityByDate).sort();
+
+  sortedDates.forEach((date, i) => {
     const d = new Date(date);
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dayOfWeek = d.getDay(); // 0 = Sunday
 
-    html += `<div class="heatmap-cell heat-${level}" data-tooltip="${dateStr}: ${count} requests"></div>`;
+    // Start new week on Sunday or first date
+    if (i === 0) {
+      // Pad the first week with empty cells if needed
+      for (let j = 0; j < dayOfWeek; j++) {
+        currentWeek.push(null);
+      }
+    }
+
+    currentWeek.push({ date, count: activityByDate[date] });
+
+    // End of week (Saturday) or last date
+    if (dayOfWeek === 6 || i === sortedDates.length - 1) {
+      // Pad the last week with empty cells if needed
+      while (currentWeek.length < 7) {
+        currentWeek.push(null);
+      }
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
   });
 
+  // Build HTML
+  const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  let html = '<div class="heatmap-grid">';
+
+  weeks.forEach((week, weekIndex) => {
+    html += '<div class="heatmap-week">';
+    week.forEach((day, dayIndex) => {
+      if (day === null) {
+        html += '<div class="heatmap-cell heat-0" style="opacity: 0.3;"></div>';
+      } else {
+        const level = day.count === 0 ? 0 : Math.min(4, Math.ceil((day.count / maxVal) * 4));
+        const d = new Date(day.date);
+        const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        html += `<div class="heatmap-cell heat-${level}" data-tooltip="${dateStr}: ${day.count} requests"></div>`;
+      }
+    });
+    html += '</div>';
+  });
+
+  html += '</div>';
   container.innerHTML = html;
 }
 
