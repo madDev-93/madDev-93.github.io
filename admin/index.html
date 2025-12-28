@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="admin.css?v=2025122721">
+  <link rel="stylesheet" href="admin.css?v=2025122722">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -317,41 +317,20 @@
           </div>
         </div>
 
-        <!-- Activity Heatmap -->
-        <div class="heatmap-card">
-          <div class="heatmap-header">
+        <!-- Daily Activity -->
+        <div class="daily-activity-card">
+          <div class="daily-activity-header">
             <div>
-              <h3>Activity Heatmap</h3>
-              <p>AI requests over time</p>
+              <h3>Daily AI Usage</h3>
+              <p>Requests per day breakdown</p>
             </div>
-            <div class="heatmap-legend">
-              <span>Less</span>
-              <div class="heatmap-scale">
-                <span class="heat-0"></span>
-                <span class="heat-1"></span>
-                <span class="heat-2"></span>
-                <span class="heat-3"></span>
-                <span class="heat-4"></span>
-              </div>
-              <span>More</span>
+            <div class="daily-activity-summary">
+              <span class="summary-item"><strong id="activity-total">0</strong> total</span>
+              <span class="summary-item"><strong id="activity-avg">0</strong> avg/day</span>
             </div>
           </div>
-          <div class="heatmap-body">
-            <div id="activity-heatmap" class="heatmap-container"></div>
-            <div class="heatmap-stats">
-              <div class="heatmap-stat">
-                <div class="heatmap-stat-value" id="heatmap-total">0</div>
-                <div class="heatmap-stat-label">Total Requests</div>
-              </div>
-              <div class="heatmap-stat">
-                <div class="heatmap-stat-value" id="heatmap-avg">0</div>
-                <div class="heatmap-stat-label">Avg/Day</div>
-              </div>
-              <div class="heatmap-stat">
-                <div class="heatmap-stat-value" id="heatmap-peak">0</div>
-                <div class="heatmap-stat-label">Peak Day</div>
-              </div>
-            </div>
+          <div class="daily-activity-body">
+            <div id="daily-activity-list" class="daily-activity-list"></div>
           </div>
         </div>
 
@@ -828,6 +807,6 @@
     </div>
   </div>
 
-  <script src="admin.js?v=2025122721"></script>
+  <script src="admin.js?v=2025122722"></script>
 </body>
 </html>

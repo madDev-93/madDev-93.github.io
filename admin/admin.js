@@ -307,15 +307,15 @@ function closeUserModal() {
   document.getElementById('user-modal').style.display = 'none';
 }
 
-// Update activity heatmap (calendar-style with labels)
+// Update daily activity display
 function updateHeatmap() {
-  const container = document.getElementById('activity-heatmap');
+  const container = document.getElementById('daily-activity-list');
   if (!container) return;
 
   // Get activity data grouped by date
   const activityByDate = {};
   const now = new Date();
-  now.setHours(23, 59, 59, 999);
+  const todayStr = now.toISOString().split('T')[0];
 
   // Calculate start date based on selected range
   const startDate = new Date(now);
@@ -325,102 +325,58 @@ function updateHeatmap() {
   // Initialize all days in range
   for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
     const key = d.toISOString().split('T')[0];
-    activityByDate[key] = 0;
+    activityByDate[key] = { total: 0, meals: 0, text: 0, coach: 0 };
   }
 
-  // Count activity per day
+  // Count activity per day by type
   allActivity.forEach(a => {
     if (!a.timestamp) return;
     const date = new Date(a.timestamp).toISOString().split('T')[0];
     if (activityByDate.hasOwnProperty(date)) {
-      activityByDate[date]++;
+      activityByDate[date].total++;
+      if (a.type === 'meal_scan') activityByDate[date].meals++;
+      else if (a.type === 'text_analysis') activityByDate[date].text++;
+      else if (a.type === 'coach_insight') activityByDate[date].coach++;
     }
   });
 
   // Calculate stats
-  const values = Object.values(activityByDate);
+  const values = Object.values(activityByDate).map(d => d.total);
   const total = values.reduce((a, b) => a + b, 0);
   const avg = values.length > 0 ? (total / values.length).toFixed(1) : 0;
   const maxVal = Math.max(...values, 1);
 
-  // Update stats
-  document.getElementById('heatmap-total').textContent = total;
-  document.getElementById('heatmap-avg').textContent = avg;
-  document.getElementById('heatmap-peak').textContent = maxVal;
+  // Update summary
+  document.getElementById('activity-total').textContent = total;
+  document.getElementById('activity-avg').textContent = avg;
 
-  // Build calendar grid with day labels
-  const sortedDates = Object.keys(activityByDate).sort();
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Build list (most recent first)
+  const sortedDates = Object.keys(activityByDate).sort().reverse();
 
-  let html = '<div class="heatmap-calendar">';
+  let html = '';
+  sortedDates.forEach(date => {
+    const data = activityByDate[date];
+    const d = new Date(date + 'T12:00:00');
+    const isToday = date === todayStr;
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const barWidth = maxVal > 0 ? (data.total / maxVal) * 100 : 0;
 
-  // Day labels row
-  html += '<div class="heatmap-day-labels">';
-  html += '<div class="heatmap-corner"></div>'; // Corner spacer
-  dayNames.forEach(day => {
-    html += `<div class="heatmap-day-label">${day}</div>`;
-  });
-  html += '</div>';
-
-  // Group by weeks
-  const weeks = [];
-  let currentWeek = { label: '', days: [] };
-
-  sortedDates.forEach((date, i) => {
-    const d = new Date(date);
-    const dayOfWeek = d.getDay();
-
-    // First date - pad with empty cells
-    if (i === 0) {
-      currentWeek.label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      for (let j = 0; j < dayOfWeek; j++) {
-        currentWeek.days.push(null);
-      }
-    }
-
-    currentWeek.days.push({ date, count: activityByDate[date], d });
-
-    // End of week or last date
-    if (dayOfWeek === 6 || i === sortedDates.length - 1) {
-      while (currentWeek.days.length < 7) {
-        currentWeek.days.push(null);
-      }
-      weeks.push(currentWeek);
-
-      if (i < sortedDates.length - 1) {
-        const nextDate = new Date(sortedDates[i + 1]);
-        currentWeek = {
-          label: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          days: []
-        };
-      }
-    }
+    html += `
+      <div class="activity-day ${isToday ? 'today' : ''}">
+        <div class="activity-day-date">
+          ${dateStr}
+          <small>${dayName}${isToday ? ' (Today)' : ''}</small>
+        </div>
+        <div class="activity-bar-container">
+          <div class="activity-bar ${data.total === 0 ? 'zero' : ''}" style="width: ${barWidth}%"></div>
+        </div>
+        <div class="activity-count ${data.total === 0 ? 'zero' : ''}">${data.total} req</div>
+      </div>
+    `;
   });
 
-  // Render weeks
-  weeks.forEach((week, weekIndex) => {
-    html += '<div class="heatmap-row">';
-    html += `<div class="heatmap-week-label">${week.label}</div>`;
-
-    week.days.forEach((day, dayIndex) => {
-      if (day === null) {
-        html += '<div class="heatmap-cell heat-empty"></div>';
-      } else {
-        const level = day.count === 0 ? 0 : Math.min(4, Math.ceil((day.count / maxVal) * 4));
-        const dateStr = day.d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-        const dayNum = day.d.getDate();
-        html += `<div class="heatmap-cell heat-${level}" data-tooltip="${dateStr}: ${day.count} requests">
-          <span class="heatmap-date">${dayNum}</span>
-          ${day.count > 0 ? `<span class="heatmap-count">${day.count}</span>` : ''}
-        </div>`;
-      }
-    });
-
-    html += '</div>';
-  });
-
-  html += '</div>';
-  container.innerHTML = html;
+  container.innerHTML = html || '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No activity data</p>';
 }
 
 // Update charts
