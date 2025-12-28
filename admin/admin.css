@@ -214,18 +214,12 @@ body {
   border-bottom: 1px solid var(--border-color);
   text-decoration: none;
   cursor: pointer;
-  transition: opacity var(--transition);
-}
-
-.sidebar-logo:hover {
-  opacity: 0.8;
 }
 
 .sidebar-logo-img {
   height: 40px;
   width: auto;
   object-fit: contain;
-  mix-blend-mode: lighten;
 }
 
 .sidebar-logo span {
