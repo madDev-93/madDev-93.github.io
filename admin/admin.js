@@ -95,10 +95,12 @@ async function loadDashboardData() {
 
     // Update users table
     allUsers = stats.users || [];
+    console.log('Users loaded:', allUsers.length, allUsers);
     renderUsersTable();
 
     // Update activity table
     allActivity = stats.recentActivity || [];
+    console.log('Activity loaded:', allActivity.length, allActivity);
     renderActivityTable();
 
   } catch (error) {
