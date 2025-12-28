@@ -35,6 +35,10 @@ let subscriptionChart = null;
 let aiUsageChart = null;
 let aiComparisonChart = null;
 
+// Users data
+let allUsers = [];
+let currentFilter = 'all';
+
 // Show screen helper
 function showScreen(screen) {
   loadingScreen.style.display = 'none';
@@ -84,6 +88,10 @@ async function loadDashboardData() {
     updateSubscriptionChart(stats);
     updateAIUsageChart(stats);
     updateAIComparisonChart(stats);
+
+    // Update users table
+    allUsers = stats.users || [];
+    renderUsersTable();
 
   } catch (error) {
     console.error('Error loading dashboard data:', error);
@@ -273,3 +281,80 @@ logoutBtnDenied.addEventListener('click', () => auth.signOut());
 
 // Refresh handler
 refreshBtn.addEventListener('click', loadDashboardData);
+
+// Format date for display
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return 'Today';
+  } else if (diffDays === 1) {
+    return 'Yesterday';
+  } else if (diffDays < 7) {
+    return `${diffDays} days ago`;
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+}
+
+// Render users table
+function renderUsersTable() {
+  const tbody = document.getElementById('users-table-body');
+
+  // Filter users
+  let filteredUsers = allUsers;
+  if (currentFilter === 'pro') {
+    filteredUsers = allUsers.filter(u => u.isPro);
+  } else if (currentFilter === 'free') {
+    filteredUsers = allUsers.filter(u => !u.isPro);
+  }
+
+  // Sort by last active (most recent first)
+  filteredUsers.sort((a, b) => {
+    const dateA = a.lastActive ? new Date(a.lastActive) : new Date(0);
+    const dateB = b.lastActive ? new Date(b.lastActive) : new Date(0);
+    return dateB - dateA;
+  });
+
+  if (filteredUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading-cell">No users found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filteredUsers.map(user => `
+    <tr data-pro="${user.isPro}">
+      <td class="user-name">${user.displayName || '-'}</td>
+      <td class="user-email">${user.email || '-'}</td>
+      <td>
+        <span class="badge ${user.isPro ? 'badge-pro' : 'badge-free'}">
+          ${user.isPro ? 'Pro' : 'Free'}
+        </span>
+      </td>
+      <td>
+        <span class="badge ${user.notificationsEnabled ? 'badge-on' : 'badge-off'}">
+          ${user.notificationsEnabled ? 'On' : 'Off'}
+        </span>
+      </td>
+      <td class="date-cell">${formatDate(user.createdAt)}</td>
+      <td class="date-cell">${formatDate(user.lastSignIn)}</td>
+      <td class="date-cell">${formatDate(user.lastActive)}</td>
+    </tr>
+  `).join('');
+}
+
+// Filter tab handlers
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Update active state
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Update filter and re-render
+    currentFilter = tab.dataset.filter;
+    renderUsersTable();
+  });
+});
