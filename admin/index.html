@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="admin.css?v=202512273">
+  <link rel="stylesheet" href="admin.css?v=202512275">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -72,8 +72,10 @@
 
   <!-- Dashboard -->
   <div id="dashboard" class="screen dashboard" style="display: none;">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
         <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
           <rect width="100" height="100" rx="22" fill="#14B8A6"/>
@@ -125,6 +127,13 @@
     <main class="main-content">
       <!-- Header -->
       <header class="content-header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
         <div class="header-title">
           <h1 id="page-title">Overview</h1>
           <p id="page-subtitle">Key metrics and insights</p>
@@ -229,23 +238,82 @@
           </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="stats-row">
-          <div class="stat-item">
-            <span class="stat-label">Notifications Enabled</span>
-            <span class="stat-value" id="notifications-enabled">--</span>
+        <!-- Retention & Stats Row -->
+        <div class="two-col-row">
+          <!-- Retention Metrics -->
+          <div class="card retention-card">
+            <div class="card-header">
+              <h3>Retention Metrics</h3>
+            </div>
+            <div class="retention-grid">
+              <div class="retention-item">
+                <span class="retention-value" id="retention-dau">--</span>
+                <span class="retention-label">DAU</span>
+                <span class="retention-sub">Daily Active</span>
+              </div>
+              <div class="retention-item">
+                <span class="retention-value" id="retention-wau">--</span>
+                <span class="retention-label">WAU</span>
+                <span class="retention-sub">Weekly Active</span>
+              </div>
+              <div class="retention-item">
+                <span class="retention-value" id="retention-mau">--</span>
+                <span class="retention-label">MAU</span>
+                <span class="retention-sub">Monthly Active</span>
+              </div>
+              <div class="retention-item highlight">
+                <span class="retention-value" id="retention-stickiness">--%</span>
+                <span class="retention-label">Stickiness</span>
+                <span class="retention-sub">DAU/WAU ratio</span>
+              </div>
+            </div>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Daily Notifs Sent</span>
-            <span class="stat-value" id="daily-notifs-sent">--</span>
+
+          <!-- Quick Stats -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Notifications</h3>
+            </div>
+            <div class="quick-stats-grid">
+              <div class="quick-stat">
+                <span class="quick-stat-value" id="notifications-enabled">--</span>
+                <span class="quick-stat-label">Enabled</span>
+              </div>
+              <div class="quick-stat">
+                <span class="quick-stat-value" id="daily-notifs-sent">--</span>
+                <span class="quick-stat-label">Daily Sent</span>
+              </div>
+              <div class="quick-stat">
+                <span class="quick-stat-value" id="weekly-notifs-sent">--</span>
+                <span class="quick-stat-label">Weekly Sent</span>
+              </div>
+              <div class="quick-stat">
+                <span class="quick-stat-value" id="active-users">--</span>
+                <span class="quick-stat-label">Active (7d)</span>
+              </div>
+            </div>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Weekly Summaries</span>
-            <span class="stat-value" id="weekly-notifs-sent">--</span>
+        </div>
+
+        <!-- User Growth Chart -->
+        <div class="chart-card full-width">
+          <div class="chart-header">
+            <h3>User Growth (30 days)</h3>
+            <span class="chart-subtitle" id="growth-total">-- new users</span>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Active Users (7d)</span>
-            <span class="stat-value" id="active-users">--</span>
+          <div class="chart-body chart-body-lg">
+            <canvas id="userGrowthChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Churn Risk -->
+        <div class="card churn-card" id="churn-section">
+          <div class="card-header">
+            <h3>Churn Risk</h3>
+            <span class="churn-count" id="churn-count">-- users at risk</span>
+          </div>
+          <div class="churn-list" id="churn-list">
+            <p class="churn-empty">No users at risk</p>
           </div>
         </div>
       </section>
@@ -498,8 +566,79 @@
         </div>
       </section>
     </main>
+
+    <!-- User Details Modal -->
+    <div id="user-modal" class="modal" style="display: none;">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-user-name">User Details</h2>
+          <button class="modal-close" id="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="user-detail-grid">
+            <div class="user-detail-item">
+              <span class="user-detail-label">Email</span>
+              <span class="user-detail-value" id="modal-email">--</span>
+            </div>
+            <div class="user-detail-item">
+              <span class="user-detail-label">Status</span>
+              <span class="user-detail-value" id="modal-status">--</span>
+            </div>
+            <div class="user-detail-item">
+              <span class="user-detail-label">Signed Up</span>
+              <span class="user-detail-value" id="modal-signup">--</span>
+            </div>
+            <div class="user-detail-item">
+              <span class="user-detail-label">Last Active</span>
+              <span class="user-detail-value" id="modal-last-active">--</span>
+            </div>
+            <div class="user-detail-item">
+              <span class="user-detail-label">Notifications</span>
+              <span class="user-detail-value" id="modal-notifs">--</span>
+            </div>
+            <div class="user-detail-item">
+              <span class="user-detail-label">Timezone</span>
+              <span class="user-detail-value" id="modal-timezone">--</span>
+            </div>
+          </div>
+          <div class="user-detail-section">
+            <h3>AI Usage (Last 7 Days)</h3>
+            <div class="user-usage-grid">
+              <div class="user-usage-item">
+                <span class="user-usage-value" id="modal-meals">0</span>
+                <span class="user-usage-label">Meal Scans</span>
+              </div>
+              <div class="user-usage-item">
+                <span class="user-usage-value" id="modal-text">0</span>
+                <span class="user-usage-label">Text Analysis</span>
+              </div>
+              <div class="user-usage-item">
+                <span class="user-usage-value" id="modal-coach">0</span>
+                <span class="user-usage-label">Coach Insights</span>
+              </div>
+              <div class="user-usage-item">
+                <span class="user-usage-value" id="modal-total">0</span>
+                <span class="user-usage-label">Total Requests</span>
+              </div>
+            </div>
+          </div>
+          <div class="user-detail-section">
+            <h3>Recent Activity</h3>
+            <div class="user-activity-list" id="modal-activity">
+              <p class="no-activity">No recent activity</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script src="admin.js?v=202512273"></script>
+  <script src="admin.js?v=202512275"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ let activitySearch = '';
 let subscriptionChart = null;
 let aiUsageChart = null;
 let aiComparisonChart = null;
+let userGrowthChart = null;
 
 // DOM Elements
 const loadingScreen = document.getElementById('loading-screen');
@@ -83,6 +84,9 @@ async function loadDashboardData() {
     allActivity = stats.recentActivity || [];
 
     updateOverview();
+    updateRetention();
+    updateGrowthChart();
+    updateChurnRisk();
     renderUsersTable();
     renderActivityTable();
     updateCharts();
@@ -144,6 +148,143 @@ function updateOverview() {
   document.getElementById('text-food-week').textContent = `${stats.textFoodWeek || 0} this week`;
   document.getElementById('coach-insights-today').textContent = stats.coachInsightsToday || 0;
   document.getElementById('coach-insights-week').textContent = `${stats.coachInsightsWeek || 0} this week`;
+}
+
+// Update retention metrics
+function updateRetention() {
+  if (!stats || !stats.retention) return;
+
+  const r = stats.retention;
+  document.getElementById('retention-dau').textContent = r.dau;
+  document.getElementById('retention-wau').textContent = r.wau;
+  document.getElementById('retention-mau').textContent = r.mau;
+  document.getElementById('retention-stickiness').textContent = `${r.dauWauRatio}%`;
+}
+
+// Update user growth chart
+function updateGrowthChart() {
+  if (!stats || !stats.signupsByDate) return;
+
+  const ctx = document.getElementById('userGrowthChart').getContext('2d');
+  if (userGrowthChart) userGrowthChart.destroy();
+
+  const signups = stats.signupsByDate;
+  const totalNew = signups.reduce((sum, d) => sum + d.count, 0);
+  document.getElementById('growth-total').textContent = `${totalNew} new users`;
+
+  const labels = signups.map(d => {
+    const date = new Date(d.date);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  const data = signups.map(d => d.count);
+
+  userGrowthChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'New Users',
+        data,
+        borderColor: '#14b8a6',
+        backgroundColor: 'rgba(20, 184, 166, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 2,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
+        },
+        y: {
+          grid: { color: 'rgba(148,163,184,0.1)' },
+          ticks: { color: '#64748b', stepSize: 1 },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+// Update churn risk section
+function updateChurnRisk() {
+  if (!stats) return;
+
+  const churnUsers = stats.churnRiskUsers || [];
+  document.getElementById('churn-count').textContent = `${churnUsers.length} users at risk`;
+
+  const container = document.getElementById('churn-list');
+
+  if (churnUsers.length === 0) {
+    container.innerHTML = '<p class="churn-empty">No users at risk of churning</p>';
+    return;
+  }
+
+  container.innerHTML = churnUsers.slice(0, 10).map(user => `
+    <div class="churn-item">
+      <div class="churn-user">
+        <span class="churn-user-name">${user.displayName || 'Unknown'}</span>
+        <span class="churn-user-email">${user.email || '-'}</span>
+      </div>
+      <span class="churn-days ${user.daysInactive < 14 ? 'warning' : ''}">${user.daysInactive}d inactive</span>
+    </div>
+  `).join('');
+}
+
+// Show user modal
+function showUserModal(userId) {
+  const user = allUsers.find(u => u.id === userId);
+  if (!user) return;
+
+  const modal = document.getElementById('user-modal');
+  modal.style.display = 'flex';
+
+  document.getElementById('modal-user-name').textContent = user.displayName || 'Unknown User';
+  document.getElementById('modal-email').textContent = user.email || '-';
+  document.getElementById('modal-status').innerHTML = `<span class="badge ${user.isPro ? 'badge-pro' : 'badge-free'}">${user.isPro ? 'Pro' : 'Free'}</span>`;
+  document.getElementById('modal-signup').textContent = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
+  document.getElementById('modal-last-active').textContent = user.lastActive ? formatDate(user.lastActive) : 'Never';
+  document.getElementById('modal-notifs').innerHTML = `<span class="badge ${user.notificationsEnabled ? 'badge-on' : 'badge-off'}">${user.notificationsEnabled ? 'Enabled' : 'Disabled'}</span>`;
+  document.getElementById('modal-timezone').textContent = user.timezone || '-';
+
+  document.getElementById('modal-meals').textContent = user.mealScans || 0;
+  document.getElementById('modal-text').textContent = user.textAnalysis || 0;
+  document.getElementById('modal-coach').textContent = user.coachInsights || 0;
+  document.getElementById('modal-total').textContent = (user.mealScans || 0) + (user.textAnalysis || 0) + (user.coachInsights || 0);
+
+  // Show user's recent activity
+  const userActivity = allActivity.filter(a => a.userId === userId).slice(0, 5);
+  const activityContainer = document.getElementById('modal-activity');
+
+  if (userActivity.length === 0) {
+    activityContainer.innerHTML = '<p class="no-activity">No recent activity</p>';
+  } else {
+    activityContainer.innerHTML = userActivity.map(a => {
+      const typeInfo = getActivityTypeInfo(a.type);
+      return `
+        <div class="user-activity-item">
+          <div class="user-activity-info">
+            <span class="badge ${typeInfo.badgeClass}">${typeInfo.label}</span>
+            <span class="user-activity-time">${formatTime(a.timestamp)}</span>
+          </div>
+          <span class="badge ${a.success ? 'badge-success' : 'badge-failed'}">${a.success ? 'OK' : 'Fail'}</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// Close user modal
+function closeUserModal() {
+  document.getElementById('user-modal').style.display = 'none';
 }
 
 // Update charts
@@ -403,7 +544,7 @@ function renderUsersTable() {
     tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">No users found</td></tr>';
   } else {
     tbody.innerHTML = pageUsers.map(user => `
-      <tr>
+      <tr class="clickable" data-user-id="${user.id}">
         <td>
           <div class="user-cell">
             <span class="user-name">${user.displayName || '-'}</span>
@@ -419,6 +560,11 @@ function renderUsersTable() {
         <td class="date-cell">${formatDate(user.lastActive)}</td>
       </tr>
     `).join('');
+
+    // Add click handlers for rows
+    tbody.querySelectorAll('tr.clickable').forEach(row => {
+      row.addEventListener('click', () => showUserModal(row.dataset.userId));
+    });
   }
 
   // Render pagination
@@ -668,4 +814,38 @@ document.getElementById('activity-search').addEventListener('input', (e) => {
   activitySearch = e.target.value;
   activityPage = 1;
   renderActivityTable();
+});
+
+// Modal close handlers
+document.getElementById('modal-close').addEventListener('click', closeUserModal);
+document.querySelector('.modal-backdrop').addEventListener('click', closeUserModal);
+
+// Close modal with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeUserModal();
+});
+
+// Mobile menu toggle
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+function openMobileMenu() {
+  sidebar.classList.add('open');
+  sidebarOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileMenu() {
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+mobileMenuBtn.addEventListener('click', openMobileMenu);
+sidebarOverlay.addEventListener('click', closeMobileMenu);
+
+// Close mobile menu when nav item is clicked
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', closeMobileMenu);
 });
