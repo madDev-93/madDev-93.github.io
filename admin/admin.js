@@ -39,6 +39,10 @@ let aiComparisonChart = null;
 let allUsers = [];
 let currentFilter = 'all';
 
+// Activity data
+let allActivity = [];
+let currentActivityFilter = 'all-activity';
+
 // Show screen helper
 function showScreen(screen) {
   loadingScreen.style.display = 'none';
@@ -92,6 +96,10 @@ async function loadDashboardData() {
     // Update users table
     allUsers = stats.users || [];
     renderUsersTable();
+
+    // Update activity table
+    allActivity = stats.recentActivity || [];
+    renderActivityTable();
 
   } catch (error) {
     console.error('Error loading dashboard data:', error);
@@ -321,7 +329,7 @@ function renderUsersTable() {
   });
 
   if (filteredUsers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="loading-cell">No users found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="loading-cell">No users found</td></tr>';
     return;
   }
 
@@ -339,18 +347,25 @@ function renderUsersTable() {
           ${user.notificationsEnabled ? 'On' : 'Off'}
         </span>
       </td>
+      <td class="usage-cell ${user.mealScans > 0 ? 'has-usage' : ''}">${user.mealScans || 0}</td>
+      <td class="usage-cell ${user.textAnalysis > 0 ? 'has-usage' : ''}">${user.textAnalysis || 0}</td>
+      <td class="usage-cell ${user.coachInsights > 0 ? 'has-usage' : ''}">${user.coachInsights || 0}</td>
       <td class="date-cell">${formatDate(user.createdAt)}</td>
-      <td class="date-cell">${formatDate(user.lastSignIn)}</td>
       <td class="date-cell">${formatDate(user.lastActive)}</td>
     </tr>
   `).join('');
 }
 
-// Filter tab handlers
-document.querySelectorAll('.filter-tab').forEach(tab => {
+// Filter tab handlers for users
+document.querySelectorAll('.filter-tabs').forEach((tabGroup, index) => {
+  if (index === 0) return; // Skip the first filter tabs (in charts section if any)
+});
+
+// User filter tabs (in Users section)
+document.querySelectorAll('[data-filter="all"], [data-filter="pro"], [data-filter="free"]').forEach(tab => {
   tab.addEventListener('click', () => {
-    // Update active state
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    // Update active state within the same section
+    tab.parentElement.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
 
     // Update filter and re-render
@@ -358,3 +373,111 @@ document.querySelectorAll('.filter-tab').forEach(tab => {
     renderUsersTable();
   });
 });
+
+// Activity filter tabs
+document.querySelectorAll('[data-filter="all-activity"], [data-filter="meal_scan"], [data-filter="text_analysis"], [data-filter="coach_insight"]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Update active state within the same section
+    tab.parentElement.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Update filter and re-render
+    currentActivityFilter = tab.dataset.filter;
+    renderActivityTable();
+  });
+});
+
+// Format time for activity
+function formatActivityTime(dateStr) {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) {
+    return 'Just now';
+  } else if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+}
+
+// Get activity type label and badge class
+function getActivityTypeInfo(type) {
+  switch (type) {
+    case 'meal_scan':
+      return { label: 'Meal Scan', badgeClass: 'badge-meal' };
+    case 'text_analysis':
+      return { label: 'Text Analysis', badgeClass: 'badge-text' };
+    case 'coach_insight':
+      return { label: 'Coach', badgeClass: 'badge-coach' };
+    default:
+      return { label: type, badgeClass: '' };
+  }
+}
+
+// Get activity details string
+function getActivityDetails(activity) {
+  if (activity.type === 'meal_scan') {
+    const foods = activity.foodsDetected || 0;
+    const conf = activity.confidence || '-';
+    return `${foods} food${foods !== 1 ? 's' : ''} detected • ${conf} confidence`;
+  } else if (activity.type === 'text_analysis') {
+    if (activity.description) {
+      return activity.description;
+    }
+    const foods = activity.foodsDetected || 0;
+    return `${foods} food${foods !== 1 ? 's' : ''} detected`;
+  } else if (activity.type === 'coach_insight') {
+    const type = activity.insightType || 'insight';
+    const style = activity.coachingStyle || '';
+    return `${type}${style ? ' • ' + style : ''}`;
+  }
+  return '-';
+}
+
+// Render activity table
+function renderActivityTable() {
+  const tbody = document.getElementById('activity-table-body');
+
+  // Filter activity
+  let filteredActivity = allActivity;
+  if (currentActivityFilter !== 'all-activity') {
+    filteredActivity = allActivity.filter(a => a.type === currentActivityFilter);
+  }
+
+  if (filteredActivity.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No activity found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filteredActivity.map(activity => {
+    const typeInfo = getActivityTypeInfo(activity.type);
+    const details = getActivityDetails(activity);
+    const userName = activity.userName || activity.userEmail || 'Unknown';
+
+    return `
+      <tr>
+        <td class="activity-time">${formatActivityTime(activity.timestamp)}</td>
+        <td class="user-name">${userName}</td>
+        <td>
+          <span class="badge ${typeInfo.badgeClass}">${typeInfo.label}</span>
+        </td>
+        <td class="activity-details" title="${details}">${details}</td>
+        <td>
+          <span class="badge ${activity.success ? 'badge-success' : 'badge-failed'}">
+            ${activity.success ? 'Success' : 'Failed'}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}

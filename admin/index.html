@@ -196,15 +196,48 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Status</th>
-                <th>Notifications</th>
+                <th>Notifs</th>
+                <th>Meals</th>
+                <th>Text</th>
+                <th>Coach</th>
                 <th>Sign Up</th>
-                <th>Last Sign In</th>
                 <th>Last Active</th>
               </tr>
             </thead>
             <tbody id="users-table-body">
               <tr>
-                <td colspan="7" class="loading-cell">Loading users...</td>
+                <td colspan="9" class="loading-cell">Loading users...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Recent Activity -->
+      <section class="dashboard-section">
+        <div class="section-header">
+          <h2>Recent AI Activity</h2>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all-activity">All</button>
+            <button class="filter-tab" data-filter="meal_scan">Meals</button>
+            <button class="filter-tab" data-filter="text_analysis">Text</button>
+            <button class="filter-tab" data-filter="coach_insight">Coach</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="activity-table-body">
+              <tr>
+                <td colspan="5" class="loading-cell">Loading activity...</td>
               </tr>
             </tbody>
           </table>
