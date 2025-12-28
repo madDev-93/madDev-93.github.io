@@ -13,11 +13,13 @@ const firebaseConfig = {
 const ADMIN_UID = "DEPKKHJMilcoJmSnKxb3UxFc5Is2";
 const ITEMS_PER_PAGE = 20;
 
-// AI Cost estimates (per request)
+// AI Cost estimates (per request) - Google Gemini 2.0 Flash
+// ~1000 input tokens, ~500 output tokens per request
+// Input: $0.10/1M tokens, Output: $0.40/1M tokens
 const AI_COSTS = {
-  meal_scan: 0.015,    // Vision API ~$0.015
-  text_analysis: 0.002, // Text API ~$0.002
-  coach_insight: 0.003  // Text API ~$0.003
+  meal_scan: 0.002,     // Vision + text ~$0.002
+  text_analysis: 0.0003, // Text only ~$0.0003
+  coach_insight: 0.0005  // Text (longer output) ~$0.0005
 };
 
 // Initialize Firebase
