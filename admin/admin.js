@@ -86,6 +86,7 @@ async function loadDashboardData() {
     renderUsersTable();
     renderActivityTable();
     updateCharts();
+    updateBilling();
 
     document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
 
@@ -252,6 +253,43 @@ function updateCharts() {
       }
     }
   });
+}
+
+// Update billing section
+function updateBilling() {
+  if (!stats) return;
+
+  const mealScans = stats.mealScansWeek || 0;
+  const textAnalysis = stats.textFoodWeek || 0;
+  const coachInsights = stats.coachInsightsWeek || 0;
+
+  const mealCost = mealScans * AI_COSTS.meal_scan;
+  const textCost = textAnalysis * AI_COSTS.text_analysis;
+  const coachCost = coachInsights * AI_COSTS.coach_insight;
+  const totalCost = mealCost + textCost + coachCost;
+
+  // Calculate active users
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const activeUsers = allUsers.filter(u => u.lastActive && new Date(u.lastActive) > weekAgo).length;
+  const costPerUser = activeUsers > 0 ? totalCost / activeUsers : 0;
+
+  // Project monthly (weekly * 4.33)
+  const monthlyProjected = totalCost * 4.33;
+
+  // Update summary cards
+  document.getElementById('billing-total').textContent = `$${totalCost.toFixed(4)}`;
+  document.getElementById('billing-per-user').textContent = `$${costPerUser.toFixed(4)}`;
+  document.getElementById('billing-monthly').textContent = `$${monthlyProjected.toFixed(2)}`;
+
+  // Update breakdown
+  document.getElementById('billing-meal-requests').textContent = `${mealScans} requests`;
+  document.getElementById('billing-meal-cost').textContent = `$${mealCost.toFixed(4)}`;
+
+  document.getElementById('billing-text-requests').textContent = `${textAnalysis} requests`;
+  document.getElementById('billing-text-cost').textContent = `$${textCost.toFixed(4)}`;
+
+  document.getElementById('billing-coach-requests').textContent = `${coachInsights} requests`;
+  document.getElementById('billing-coach-cost').textContent = `$${coachCost.toFixed(4)}`;
 }
 
 // Format date
@@ -535,7 +573,8 @@ function switchSection(section) {
   const titles = {
     overview: { title: 'Overview', subtitle: 'Key metrics and insights' },
     users: { title: 'Users', subtitle: 'Manage and view user data' },
-    activity: { title: 'AI Activity', subtitle: 'Monitor AI usage and performance' }
+    activity: { title: 'AI Activity', subtitle: 'Monitor AI usage and performance' },
+    billing: { title: 'Billing', subtitle: 'Cost estimates and usage breakdown' }
   };
 
   document.getElementById('page-title').textContent = titles[section].title;

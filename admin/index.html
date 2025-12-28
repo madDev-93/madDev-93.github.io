@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="admin.css?v=202512272">
+  <link rel="stylesheet" href="admin.css?v=202512273">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -106,6 +106,13 @@
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
           AI Activity
+        </a>
+        <a href="#" class="nav-item" data-section="billing">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          Billing
         </a>
       </nav>
       <div class="sidebar-footer">
@@ -383,9 +390,116 @@
           </div>
         </div>
       </section>
+
+      <!-- Billing Section -->
+      <section id="section-billing" class="content-section" style="display: none;">
+        <!-- Cost Summary -->
+        <div class="billing-summary">
+          <div class="billing-card total">
+            <div class="billing-card-header">
+              <h3>Estimated Total (7 days)</h3>
+              <span class="billing-badge">Gemini 2.0 Flash</span>
+            </div>
+            <div class="billing-card-value" id="billing-total">$0.00</div>
+            <div class="billing-card-sub">Based on API request logs</div>
+          </div>
+          <div class="billing-card">
+            <div class="billing-card-header">
+              <h3>Cost per User</h3>
+            </div>
+            <div class="billing-card-value" id="billing-per-user">$0.00</div>
+            <div class="billing-card-sub">Per active user (7d)</div>
+          </div>
+          <div class="billing-card">
+            <div class="billing-card-header">
+              <h3>Projected Monthly</h3>
+            </div>
+            <div class="billing-card-value" id="billing-monthly">$0.00</div>
+            <div class="billing-card-sub">At current usage rate</div>
+          </div>
+        </div>
+
+        <!-- Cost Breakdown -->
+        <div class="billing-breakdown">
+          <div class="breakdown-header">
+            <h3>Cost Breakdown by Feature</h3>
+          </div>
+          <div class="breakdown-content">
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <div class="breakdown-icon meal">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                  </svg>
+                </div>
+                <div class="breakdown-details">
+                  <span class="breakdown-name">Meal Scans</span>
+                  <span class="breakdown-requests" id="billing-meal-requests">0 requests</span>
+                </div>
+              </div>
+              <div class="breakdown-cost">
+                <span class="breakdown-amount" id="billing-meal-cost">$0.00</span>
+                <span class="breakdown-rate">@ $0.002/req</span>
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <div class="breakdown-icon text">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div class="breakdown-details">
+                  <span class="breakdown-name">Text Analysis</span>
+                  <span class="breakdown-requests" id="billing-text-requests">0 requests</span>
+                </div>
+              </div>
+              <div class="breakdown-cost">
+                <span class="breakdown-amount" id="billing-text-cost">$0.00</span>
+                <span class="breakdown-rate">@ $0.0003/req</span>
+              </div>
+            </div>
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <div class="breakdown-icon coach">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  </svg>
+                </div>
+                <div class="breakdown-details">
+                  <span class="breakdown-name">Coach Insights</span>
+                  <span class="breakdown-requests" id="billing-coach-requests">0 requests</span>
+                </div>
+              </div>
+              <div class="breakdown-cost">
+                <span class="breakdown-amount" id="billing-coach-cost">$0.00</span>
+                <span class="breakdown-rate">@ $0.0005/req</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing Note -->
+        <div class="billing-note">
+          <div class="billing-note-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <div class="billing-note-content">
+            <p><strong>These are estimates</strong> based on your API request logs and Gemini 2.0 Flash pricing.</p>
+            <p>For actual billing, visit your <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener">Google Cloud Billing Console</a></p>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
-  <script src="admin.js?v=202512272"></script>
+  <script src="admin.js?v=202512273"></script>
 </body>
 </html>
