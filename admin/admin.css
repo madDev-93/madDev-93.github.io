@@ -206,7 +206,10 @@ body {
   z-index: 100;
 }
 
-.sidebar-logo {
+.sidebar-logo,
+.sidebar-logo:hover,
+.sidebar-logo:active,
+.sidebar-logo:focus {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -214,6 +217,8 @@ body {
   border-bottom: 1px solid var(--border-color);
   text-decoration: none;
   cursor: pointer;
+  opacity: 1;
+  background: transparent;
 }
 
 .sidebar-logo-img {
