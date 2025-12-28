@@ -307,7 +307,7 @@ function closeUserModal() {
   document.getElementById('user-modal').style.display = 'none';
 }
 
-// Update activity heatmap (GitHub-style)
+// Update activity heatmap (calendar-style with labels)
 function updateHeatmap() {
   const container = document.getElementById('activity-heatmap');
   if (!container) return;
@@ -342,59 +342,80 @@ function updateHeatmap() {
   const total = values.reduce((a, b) => a + b, 0);
   const avg = values.length > 0 ? (total / values.length).toFixed(1) : 0;
   const maxVal = Math.max(...values, 1);
-  const peakDate = Object.keys(activityByDate).find(k => activityByDate[k] === maxVal);
 
   // Update stats
   document.getElementById('heatmap-total').textContent = total;
   document.getElementById('heatmap-avg').textContent = avg;
   document.getElementById('heatmap-peak').textContent = maxVal;
 
-  // Group dates into weeks (columns)
-  const weeks = [];
-  let currentWeek = [];
+  // Build calendar grid with day labels
   const sortedDates = Object.keys(activityByDate).sort();
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  let html = '<div class="heatmap-calendar">';
+
+  // Day labels row
+  html += '<div class="heatmap-day-labels">';
+  html += '<div class="heatmap-corner"></div>'; // Corner spacer
+  dayNames.forEach(day => {
+    html += `<div class="heatmap-day-label">${day}</div>`;
+  });
+  html += '</div>';
+
+  // Group by weeks
+  const weeks = [];
+  let currentWeek = { label: '', days: [] };
 
   sortedDates.forEach((date, i) => {
     const d = new Date(date);
-    const dayOfWeek = d.getDay(); // 0 = Sunday
+    const dayOfWeek = d.getDay();
 
-    // Start new week on Sunday or first date
+    // First date - pad with empty cells
     if (i === 0) {
-      // Pad the first week with empty cells if needed
+      currentWeek.label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       for (let j = 0; j < dayOfWeek; j++) {
-        currentWeek.push(null);
+        currentWeek.days.push(null);
       }
     }
 
-    currentWeek.push({ date, count: activityByDate[date] });
+    currentWeek.days.push({ date, count: activityByDate[date], d });
 
-    // End of week (Saturday) or last date
+    // End of week or last date
     if (dayOfWeek === 6 || i === sortedDates.length - 1) {
-      // Pad the last week with empty cells if needed
-      while (currentWeek.length < 7) {
-        currentWeek.push(null);
+      while (currentWeek.days.length < 7) {
+        currentWeek.days.push(null);
       }
       weeks.push(currentWeek);
-      currentWeek = [];
+
+      if (i < sortedDates.length - 1) {
+        const nextDate = new Date(sortedDates[i + 1]);
+        currentWeek = {
+          label: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          days: []
+        };
+      }
     }
   });
 
-  // Build HTML
-  const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  let html = '<div class="heatmap-grid">';
-
+  // Render weeks
   weeks.forEach((week, weekIndex) => {
-    html += '<div class="heatmap-week">';
-    week.forEach((day, dayIndex) => {
+    html += '<div class="heatmap-row">';
+    html += `<div class="heatmap-week-label">${week.label}</div>`;
+
+    week.days.forEach((day, dayIndex) => {
       if (day === null) {
-        html += '<div class="heatmap-cell heat-0" style="opacity: 0.3;"></div>';
+        html += '<div class="heatmap-cell heat-empty"></div>';
       } else {
         const level = day.count === 0 ? 0 : Math.min(4, Math.ceil((day.count / maxVal) * 4));
-        const d = new Date(day.date);
-        const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        html += `<div class="heatmap-cell heat-${level}" data-tooltip="${dateStr}: ${day.count} requests"></div>`;
+        const dateStr = day.d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        const dayNum = day.d.getDate();
+        html += `<div class="heatmap-cell heat-${level}" data-tooltip="${dateStr}: ${day.count} requests">
+          <span class="heatmap-date">${dayNum}</span>
+          ${day.count > 0 ? `<span class="heatmap-count">${day.count}</span>` : ''}
+        </div>`;
       }
     });
+
     html += '</div>';
   });
 
