@@ -8,9 +8,9 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="admin.css?v=2">
+  <link rel="stylesheet" href="admin.css?v=3">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -72,160 +72,287 @@
 
   <!-- Dashboard -->
   <div id="dashboard" class="screen dashboard" style="display: none;">
-    <header class="dashboard-header">
-      <div class="header-left">
-        <h1>Qwota Admin</h1>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+          <rect width="100" height="100" rx="22" fill="#14B8A6"/>
+          <path d="M30 65C30 65 35 45 50 45C65 45 70 65 70 65" stroke="white" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="50" cy="35" r="8" fill="white"/>
+        </svg>
+        <span>Qwota</span>
       </div>
-      <div class="header-right">
-        <span id="admin-email" class="admin-email"></span>
-        <button id="refresh-btn" class="btn btn-icon" title="Refresh">
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-section="overview">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6"/>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
           </svg>
-        </button>
-        <button id="logout-btn" class="btn btn-secondary">Sign Out</button>
+          Overview
+        </a>
+        <a href="#" class="nav-item" data-section="users">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Users
+        </a>
+        <a href="#" class="nav-item" data-section="activity">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          AI Activity
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <span id="admin-email" class="admin-email"></span>
+        <button id="logout-btn" class="btn btn-ghost">Sign Out</button>
       </div>
-    </header>
+    </aside>
 
-    <main class="dashboard-main">
-      <!-- User Stats -->
-      <section class="dashboard-section">
-        <h2>User Overview</h2>
-        <div class="stats-grid stats-grid-4">
-          <div class="stat-card">
-            <div class="stat-value" id="total-users">--</div>
-            <div class="stat-label">Total Users</div>
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="content-header">
+        <div class="header-title">
+          <h1 id="page-title">Overview</h1>
+          <p id="page-subtitle">Key metrics and insights</p>
+        </div>
+        <div class="header-actions">
+          <span class="last-updated">Updated: <span id="last-updated">--</span></span>
+          <button id="refresh-btn" class="btn btn-icon" title="Refresh">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Overview Section -->
+      <section id="section-overview" class="content-section">
+        <!-- Key Metrics -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon users">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="metric-content">
+              <span class="metric-value" id="total-users">--</span>
+              <span class="metric-label">Total Users</span>
+            </div>
           </div>
-          <div class="stat-card stat-card-highlight">
-            <div class="stat-value" id="pro-users">--</div>
-            <div class="stat-label">Pro Subscribers</div>
+
+          <div class="metric-card highlight">
+            <div class="metric-icon pro">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div class="metric-content">
+              <span class="metric-value" id="pro-users">--</span>
+              <span class="metric-label">Pro Subscribers</span>
+              <span class="metric-sub" id="conversion-rate">--% conversion</span>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="free-users">--</div>
-            <div class="stat-label">Free Users</div>
+
+          <div class="metric-card">
+            <div class="metric-icon ai">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+                <path d="M12 2a10 10 0 0 1 10 10"/>
+              </svg>
+            </div>
+            <div class="metric-content">
+              <span class="metric-value" id="ai-requests-week">--</span>
+              <span class="metric-label">AI Requests (7d)</span>
+              <span class="metric-sub" id="ai-requests-today">-- today</span>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="notifications-enabled">--</div>
-            <div class="stat-label">Notifications On</div>
+
+          <div class="metric-card">
+            <div class="metric-icon cost">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <div class="metric-content">
+              <span class="metric-value" id="est-cost">--</span>
+              <span class="metric-label">Est. AI Cost (7d)</span>
+              <span class="metric-sub" id="cost-per-user">--/user</span>
+            </div>
           </div>
         </div>
-      </section>
 
-      <!-- Charts Row -->
-      <section class="dashboard-section">
-        <div class="charts-grid">
-          <!-- Subscription Donut -->
+        <!-- Charts Row -->
+        <div class="charts-row">
           <div class="chart-card">
-            <h3>Subscription Breakdown</h3>
-            <div class="chart-container chart-container-donut">
+            <div class="chart-header">
+              <h3>User Distribution</h3>
+            </div>
+            <div class="chart-body">
               <canvas id="subscriptionChart"></canvas>
             </div>
           </div>
-          <!-- AI Usage Bar -->
+
           <div class="chart-card">
-            <h3>AI Usage Today</h3>
-            <div class="chart-container">
+            <div class="chart-header">
+              <h3>AI Usage by Type</h3>
+            </div>
+            <div class="chart-body">
               <canvas id="aiUsageChart"></canvas>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- AI Stats -->
-      <section class="dashboard-section">
-        <h2>AI Feature Usage</h2>
-        <div class="stats-grid stats-grid-3">
-          <div class="stat-card">
-            <div class="stat-value" id="meal-scans-today">--</div>
-            <div class="stat-label">Meal Scans Today</div>
-            <div class="stat-sub" id="meal-scans-week">-- this week</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="text-food-today">--</div>
-            <div class="stat-label">Text Analysis Today</div>
-            <div class="stat-sub" id="text-food-week">-- this week</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="coach-insights-today">--</div>
-            <div class="stat-label">Coach Insights Today</div>
-            <div class="stat-sub" id="coach-insights-week">-- this week</div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3>Usage Trend (Today vs Avg)</h3>
+            </div>
+            <div class="chart-body">
+              <canvas id="aiComparisonChart"></canvas>
+            </div>
           </div>
         </div>
-      </section>
 
-      <!-- AI Usage Trend Chart -->
-      <section class="dashboard-section">
-        <div class="chart-card chart-card-wide">
-          <h3>AI Usage Comparison (Today vs Week)</h3>
-          <div class="chart-container chart-container-bar">
-            <canvas id="aiComparisonChart"></canvas>
+        <!-- Quick Stats -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-label">Notifications Enabled</span>
+            <span class="stat-value" id="notifications-enabled">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Daily Notifs Sent</span>
+            <span class="stat-value" id="daily-notifs-sent">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Weekly Summaries</span>
+            <span class="stat-value" id="weekly-notifs-sent">--</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Active Users (7d)</span>
+            <span class="stat-value" id="active-users">--</span>
           </div>
         </div>
       </section>
 
-      <!-- Notification Stats -->
-      <section class="dashboard-section">
-        <h2>Notifications</h2>
-        <div class="stats-grid stats-grid-2">
-          <div class="stat-card">
-            <div class="stat-value" id="daily-notifs-sent">--</div>
-            <div class="stat-label">Daily Notifications Sent Today</div>
+      <!-- Users Section -->
+      <section id="section-users" class="content-section" style="display: none;">
+        <div class="section-toolbar">
+          <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">All Users</button>
+            <button class="filter-btn" data-filter="pro">Pro</button>
+            <button class="filter-btn" data-filter="free">Free</button>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="weekly-notifs-sent">--</div>
-            <div class="stat-label">Weekly Summaries This Week</div>
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" id="user-search" placeholder="Search users...">
           </div>
         </div>
-      </section>
 
-      <!-- User Table -->
-      <section class="dashboard-section">
-        <div class="section-header">
-          <h2>Users</h2>
-          <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="all">All</button>
-            <button class="filter-tab" data-filter="pro">Pro</button>
-            <button class="filter-tab" data-filter="free">Free</button>
-          </div>
-        </div>
-        <div class="table-container">
-          <table class="users-table">
+        <div class="table-card">
+          <table class="data-table" id="users-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Email</th>
+                <th>User</th>
                 <th>Status</th>
-                <th>Notifs</th>
-                <th>Meals</th>
-                <th>Text</th>
-                <th>Coach</th>
-                <th>Sign Up</th>
+                <th>Notifications</th>
+                <th class="text-center">Meals</th>
+                <th class="text-center">Text</th>
+                <th class="text-center">Coach</th>
+                <th>Signed Up</th>
                 <th>Last Active</th>
               </tr>
             </thead>
             <tbody id="users-table-body">
               <tr>
-                <td colspan="9" class="loading-cell">Loading users...</td>
+                <td colspan="8" class="loading-cell">Loading users...</td>
               </tr>
             </tbody>
           </table>
+          <div class="table-footer">
+            <div class="table-info">
+              Showing <span id="users-showing">0</span> of <span id="users-total">0</span> users
+            </div>
+            <div class="pagination" id="users-pagination"></div>
+          </div>
         </div>
       </section>
 
-      <!-- Recent Activity -->
-      <section class="dashboard-section">
-        <div class="section-header">
-          <h2>Recent AI Activity</h2>
-          <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="all-activity">All</button>
-            <button class="filter-tab" data-filter="meal_scan">Meals</button>
-            <button class="filter-tab" data-filter="text_analysis">Text</button>
-            <button class="filter-tab" data-filter="coach_insight">Coach</button>
+      <!-- Activity Section -->
+      <section id="section-activity" class="content-section" style="display: none;">
+        <div class="section-toolbar">
+          <div class="filter-group">
+            <button class="filter-btn active" data-filter="all-activity">All Activity</button>
+            <button class="filter-btn" data-filter="meal_scan">Meal Scans</button>
+            <button class="filter-btn" data-filter="text_analysis">Text Analysis</button>
+            <button class="filter-btn" data-filter="coach_insight">Coach Insights</button>
           </div>
         </div>
-        <div class="table-container">
-          <table class="activity-table">
+
+        <!-- Activity Stats -->
+        <div class="activity-stats">
+          <div class="activity-stat">
+            <div class="activity-stat-icon meal">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                <line x1="6" y1="1" x2="6" y2="4"/>
+                <line x1="10" y1="1" x2="10" y2="4"/>
+                <line x1="14" y1="1" x2="14" y2="4"/>
+              </svg>
+            </div>
+            <div class="activity-stat-content">
+              <span class="activity-stat-value" id="meal-scans-today">--</span>
+              <span class="activity-stat-label">Meal Scans Today</span>
+              <span class="activity-stat-sub" id="meal-scans-week">-- this week</span>
+            </div>
+          </div>
+
+          <div class="activity-stat">
+            <div class="activity-stat-icon text">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="activity-stat-content">
+              <span class="activity-stat-value" id="text-food-today">--</span>
+              <span class="activity-stat-label">Text Analysis Today</span>
+              <span class="activity-stat-sub" id="text-food-week">-- this week</span>
+            </div>
+          </div>
+
+          <div class="activity-stat">
+            <div class="activity-stat-icon coach">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="activity-stat-content">
+              <span class="activity-stat-value" id="coach-insights-today">--</span>
+              <span class="activity-stat-label">Coach Insights Today</span>
+              <span class="activity-stat-sub" id="coach-insights-week">-- this week</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <table class="data-table" id="activity-table">
             <thead>
               <tr>
                 <th>Time</th>
@@ -241,16 +368,17 @@
               </tr>
             </tbody>
           </table>
+          <div class="table-footer">
+            <div class="table-info">
+              Showing <span id="activity-showing">0</span> of <span id="activity-total">0</span> activities
+            </div>
+            <div class="pagination" id="activity-pagination"></div>
+          </div>
         </div>
       </section>
-
-      <!-- Footer -->
-      <footer class="dashboard-footer">
-        <p>Last updated: <span id="last-updated">--</span></p>
-      </footer>
     </main>
   </div>
 
-  <script src="admin.js?v=2"></script>
+  <script src="admin.js?v=3"></script>
 </body>
 </html>
