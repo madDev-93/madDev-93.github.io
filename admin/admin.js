@@ -37,6 +37,7 @@ let usersPage = 1;
 let activityPage = 1;
 let userSortField = 'lastActive';
 let userSortDir = 'desc';
+let activitySearch = '';
 
 // Chart instances
 let subscriptionChart = null;
@@ -391,10 +392,23 @@ function renderUsersTable() {
 function renderActivityTable() {
   const tbody = document.getElementById('activity-table-body');
 
-  // Filter
+  // Filter by type
   let filtered = allActivity;
   if (activityFilter !== 'all-activity') {
-    filtered = allActivity.filter(a => a.type === activityFilter);
+    filtered = filtered.filter(a => a.type === activityFilter);
+  }
+
+  // Filter by search
+  if (activitySearch) {
+    const search = activitySearch.toLowerCase();
+    filtered = filtered.filter(a => {
+      const userName = (a.userName || '').toLowerCase();
+      const userEmail = (a.userEmail || '').toLowerCase();
+      const description = (a.description || '').toLowerCase();
+      const insightType = (a.insightType || '').toLowerCase();
+      return userName.includes(search) || userEmail.includes(search) ||
+             description.includes(search) || insightType.includes(search);
+    });
   }
 
   // Pagination
@@ -606,4 +620,11 @@ document.querySelectorAll('#users-table th.sortable').forEach(th => {
     usersPage = 1;
     renderUsersTable();
   });
+});
+
+// Activity search
+document.getElementById('activity-search').addEventListener('input', (e) => {
+  activitySearch = e.target.value;
+  activityPage = 1;
+  renderActivityTable();
 });
