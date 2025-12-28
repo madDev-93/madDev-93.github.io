@@ -52,6 +52,7 @@ let reviewPage = 1;
 let userSortField = 'lastActive';
 let userSortDir = 'desc';
 let activitySearch = '';
+let selectedTimeRange = 7; // Default 7 days
 
 // Chart instances
 let subscriptionChart = null;
@@ -107,6 +108,7 @@ async function loadDashboardData() {
     renderNotificationTable();
     renderErrorTable();
     renderReviewTable();
+    updateHeatmap();
     updateCharts();
     updateBilling();
 
@@ -303,6 +305,53 @@ function showUserModal(userId) {
 // Close user modal
 function closeUserModal() {
   document.getElementById('user-modal').style.display = 'none';
+}
+
+// Update activity heatmap
+function updateHeatmap() {
+  const container = document.getElementById('activity-heatmap');
+  if (!container) return;
+
+  // Get activity data grouped by date
+  const activityByDate = {};
+  const now = new Date();
+
+  // Initialize last N days based on selected range
+  for (let i = selectedTimeRange - 1; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const key = date.toISOString().split('T')[0];
+    activityByDate[key] = 0;
+  }
+
+  // Count activity per day
+  allActivity.forEach(a => {
+    if (!a.timestamp) return;
+    const date = new Date(a.timestamp).toISOString().split('T')[0];
+    if (activityByDate.hasOwnProperty(date)) {
+      activityByDate[date]++;
+    }
+  });
+
+  // Find max for scaling
+  const values = Object.values(activityByDate);
+  const maxVal = Math.max(...values, 1);
+
+  // Build heatmap cells
+  const dates = Object.keys(activityByDate).sort();
+  let html = '';
+
+  dates.forEach(date => {
+    const count = activityByDate[date];
+    const level = count === 0 ? 0 : Math.min(4, Math.ceil((count / maxVal) * 4));
+    const d = new Date(date);
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    html += `<div class="heatmap-cell heat-${level}" data-tooltip="${dateStr}: ${count} requests"></div>`;
+  });
+
+  container.innerHTML = html;
 }
 
 // Update charts
@@ -1076,6 +1125,17 @@ if (errorSearchEl) {
     renderErrorTable();
   });
 }
+
+// Time range selector
+document.querySelectorAll('.time-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedTimeRange = parseInt(btn.dataset.range);
+    updateHeatmap();
+    // Could also reload data with new range here if backend supports it
+  });
+});
 
 // Daily Review filters
 document.querySelectorAll('[data-review-filter]').forEach(btn => {
