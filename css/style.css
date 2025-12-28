@@ -2288,6 +2288,7 @@ p { color: var(--text-secondary); }
    -------------------------------------------------------------------------- */
 .release-banner {
   position: relative;
+  margin-top: var(--header-height);
   background: linear-gradient(90deg,
     rgba(20, 184, 166, 0.08) 0%,
     rgba(34, 211, 238, 0.05) 50%,
@@ -2296,6 +2297,7 @@ p { color: var(--text-secondary); }
   border-bottom: 1px solid rgba(20, 184, 166, 0.15);
   padding: var(--space-3) 0;
   overflow: hidden;
+  z-index: 90;
 }
 
 .release-banner::before {
