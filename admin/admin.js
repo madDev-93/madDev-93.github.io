@@ -32,19 +32,23 @@ let allUsers = [];
 let allActivity = [];
 let allNotificationLogs = [];
 let allErrorLogs = [];
+let allDailyReviewLogs = [];
 let stats = null;
 let currentSection = 'overview';
 let userFilter = 'all';
 let activityFilter = 'all-activity';
 let notifFilter = 'all';
 let errorFilter = 'all';
+let reviewFilter = 'all';
 let userSearch = '';
 let notifSearch = '';
 let errorSearch = '';
+let reviewSearch = '';
 let usersPage = 1;
 let activityPage = 1;
 let notifPage = 1;
 let errorPage = 1;
+let reviewPage = 1;
 let userSortField = 'lastActive';
 let userSortDir = 'desc';
 let activitySearch = '';
@@ -92,6 +96,7 @@ async function loadDashboardData() {
     allActivity = stats.recentActivity || [];
     allNotificationLogs = stats.notificationLogs || [];
     allErrorLogs = stats.errorLogs || [];
+    allDailyReviewLogs = stats.dailyReviewLogs || [];
 
     updateOverview();
     updateRetention();
@@ -101,6 +106,7 @@ async function loadDashboardData() {
     renderActivityTable();
     renderNotificationTable();
     renderErrorTable();
+    renderReviewTable();
     updateCharts();
     updateBilling();
 
@@ -841,6 +847,77 @@ function renderErrorTable() {
   });
 }
 
+// Render Daily Review logs table
+function renderReviewTable() {
+  const tbody = document.getElementById('review-table-body');
+  if (!tbody) return;
+
+  // Filter by status
+  let filtered = allDailyReviewLogs;
+  if (reviewFilter === 'success') {
+    filtered = filtered.filter(r => r.success === true);
+  } else if (reviewFilter === 'failed') {
+    filtered = filtered.filter(r => r.success === false);
+  }
+
+  // Filter by search
+  if (reviewSearch) {
+    const search = reviewSearch.toLowerCase();
+    filtered = filtered.filter(r => {
+      const userName = (r.userName || '').toLowerCase();
+      const userEmail = (r.userEmail || '').toLowerCase();
+      return userName.includes(search) || userEmail.includes(search);
+    });
+  }
+
+  // Pagination
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+  const start = (reviewPage - 1) * ITEMS_PER_PAGE;
+  const pageReviews = filtered.slice(start, start + ITEMS_PER_PAGE);
+
+  // Update info
+  document.getElementById('review-showing').textContent = pageReviews.length;
+  document.getElementById('review-total').textContent = total;
+
+  // Helper to get grade class
+  function getGradeClass(grade) {
+    if (!grade) return '';
+    const letter = grade.charAt(0).toUpperCase();
+    if (letter === 'A') return 'grade-a';
+    if (letter === 'B') return 'grade-b';
+    if (letter === 'C') return 'grade-c';
+    if (letter === 'D') return 'grade-d';
+    if (letter === 'F') return 'grade-f';
+    return '';
+  }
+
+  // Render table
+  if (pageReviews.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No daily reviews found</td></tr>';
+  } else {
+    tbody.innerHTML = pageReviews.map(review => {
+      const userName = review.userName || review.userEmail || 'Unknown';
+      const gradeClass = getGradeClass(review.grade);
+      return `
+        <tr>
+          <td class="user-name">${userName}</td>
+          <td><span class="status-badge ${review.success ? 'sent' : 'failed'}">${review.success ? 'Success' : 'Failed'}</span></td>
+          <td>${review.grade ? `<span class="grade-badge ${gradeClass}">${review.grade}</span>` : '-'}</td>
+          <td class="date-cell">${formatTime(review.timestamp)}</td>
+          <td class="error-cell" title="${review.error || '-'}">${review.error || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Render pagination
+  renderPagination('review-pagination', reviewPage, totalPages, (page) => {
+    reviewPage = page;
+    renderReviewTable();
+  });
+}
+
 // Switch section
 function switchSection(section) {
   currentSection = section;
@@ -997,6 +1074,27 @@ if (errorSearchEl) {
     errorSearch = e.target.value;
     errorPage = 1;
     renderErrorTable();
+  });
+}
+
+// Daily Review filters
+document.querySelectorAll('[data-review-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    reviewFilter = btn.dataset.reviewFilter;
+    reviewPage = 1;
+    renderReviewTable();
+  });
+});
+
+// Daily Review search
+const reviewSearchEl = document.getElementById('review-search');
+if (reviewSearchEl) {
+  reviewSearchEl.addEventListener('input', (e) => {
+    reviewSearch = e.target.value;
+    reviewPage = 1;
+    renderReviewTable();
   });
 }
 

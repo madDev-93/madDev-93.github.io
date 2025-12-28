@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="admin.css?v=202512276">
+  <link rel="stylesheet" href="admin.css?v=202512277">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
@@ -672,6 +672,48 @@
           <h4>No Errors</h4>
           <p>All AI requests in the past 7 days were successful!</p>
         </div>
+
+        <!-- Daily Review Logs -->
+        <div class="logs-header" style="margin-top: 32px;">
+          <h3>Daily Review Generations</h3>
+          <p>8pm review card generations in the past 7 days</p>
+        </div>
+
+        <div class="section-toolbar">
+          <div class="filter-group">
+            <button class="filter-btn active" data-review-filter="all">All</button>
+            <button class="filter-btn" data-review-filter="success">Success</button>
+            <button class="filter-btn" data-review-filter="failed">Failed</button>
+          </div>
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="review-search" placeholder="Search by user...">
+          </div>
+        </div>
+
+        <div class="table-card">
+          <table class="data-table" id="review-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Status</th>
+                <th>Grade</th>
+                <th>Time</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody id="review-table-body">
+              <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+            </tbody>
+          </table>
+          <div class="table-footer">
+            <span class="table-info">Showing <span id="review-showing">0</span> of <span id="review-total">0</span></span>
+            <div class="pagination" id="review-pagination"></div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -747,6 +789,6 @@
     </div>
   </div>
 
-  <script src="admin.js?v=202512276"></script>
+  <script src="admin.js?v=202512277"></script>
 </body>
 </html>

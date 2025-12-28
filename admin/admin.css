@@ -1443,6 +1443,39 @@ body {
   color: var(--purple);
 }
 
+/* Grade badges for Daily Review */
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.grade-badge.grade-a {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+}
+
+.grade-badge.grade-b {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--teal);
+}
+
+.grade-badge.grade-c {
+  background: rgba(234, 179, 8, 0.15);
+  color: var(--yellow);
+}
+
+.grade-badge.grade-d,
+.grade-badge.grade-f {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+}
+
 /* Error cell */
 .error-cell {
   max-width: 300px;
