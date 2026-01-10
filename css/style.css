@@ -1760,6 +1760,12 @@ p { color: var(--text-secondary); }
   color: var(--text-muted);
 }
 
+@media (max-width: 768px) {
+  .trust-bar__logos {
+    gap: var(--space-6);
+  }
+}
+
 /* --------------------------------------------------------------------------
    How It Works
    -------------------------------------------------------------------------- */
@@ -2160,8 +2166,12 @@ p { color: var(--text-secondary); }
 @media (max-width: 600px) {
   .pricing__grid {
     grid-template-columns: 1fr;
-    max-width: 400px;
+    max-width: 100%;
     margin: 0 auto;
+  }
+
+  .pricing-card__features {
+    min-height: auto;
   }
 }
 
@@ -2646,6 +2656,7 @@ p { color: var(--text-secondary); }
 @media (max-width: 640px) {
   .release-banner__inner {
     gap: var(--space-3);
+    flex-direction: column;
   }
 
   .release-banner__divider {
@@ -2653,6 +2664,318 @@ p { color: var(--text-secondary); }
   }
 
   .release-banner__text {
+    font-size: var(--text-sm);
+    text-align: center;
+  }
+}
+
+/* ==========================================================================
+   Mobile Touch Targets & Accessibility (768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Mobile menu button - meet 44px touch target */
+  .mobile-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Navigation links in mobile menu */
+  .nav.active .nav__link {
+    min-height: 44px;
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+  }
+
+  /* Section spacing reduction */
+  .section {
+    padding: var(--space-16) 0;
+  }
+
+  .section-header {
+    margin-bottom: var(--space-10);
+  }
+}
+
+/* ==========================================================================
+   Extra-Small Devices (480px) - iPhone SE, older phones
+   ========================================================================== */
+@media (max-width: 480px) {
+  /* Header height reduction */
+  :root {
+    --header-height: 64px;
+  }
+
+  /* Header logo scaling */
+  .header__logo img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header__logo span {
+    font-size: var(--text-base);
+  }
+
+  /* Container padding */
+  .container {
+    padding: 0 var(--space-4);
+  }
+
+  /* Section spacing */
+  .section {
+    padding: var(--space-12) 0;
+  }
+
+  .section-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .section-header h2 {
+    font-size: var(--text-3xl);
+  }
+
+  .section-header p {
+    font-size: var(--text-base);
+  }
+
+  /* Hero section */
+  .hero {
+    min-height: auto;
+    padding-bottom: var(--space-8);
+  }
+
+  .hero__title {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  .hero__subtitle {
+    font-size: var(--text-base);
+  }
+
+  .hero__badge {
+    margin-bottom: var(--space-6);
+  }
+
+  /* Trust Bar */
+  .trust-bar {
+    padding: var(--space-8) 0;
+  }
+
+  .trust-bar__logos {
+    gap: var(--space-4);
+  }
+
+  .trust-bar__logo span {
+    font-size: var(--text-base);
+  }
+
+  /* Bento Grid */
+  .bento-grid {
+    gap: var(--space-4);
+  }
+
+  .bento-card {
+    padding: var(--space-6);
+  }
+
+  .bento-card__icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: var(--space-4);
+  }
+
+  .bento-card__icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .bento-card__title {
+    font-size: var(--text-lg);
+  }
+
+  /* Activity cards */
+  .activity-card {
+    padding: var(--space-4);
+  }
+
+  .activity-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .activity-card__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Watch device scaling */
+  .watch-device {
+    width: 160px;
+    padding: 0 16px;
+  }
+
+  .watch-case {
+    border-radius: 34px;
+    padding: 6px;
+  }
+
+  .watch-screen {
+    border-radius: 28px;
+  }
+
+  .watch-crown {
+    right: -12px;
+    width: 8px;
+    height: 24px;
+  }
+
+  .watch-button {
+    right: -10px;
+    width: 6px;
+    height: 14px;
+  }
+
+  .watch-card h4 {
+    font-size: var(--text-base);
+  }
+
+  .watch-card p {
     font-size: var(--text-xs);
+  }
+
+  /* Stats */
+  .stat-item__number {
+    font-size: var(--text-4xl);
+  }
+
+  .stat-item__label {
+    font-size: 11px;
+  }
+
+  /* Pricing */
+  .pricing-card {
+    padding: var(--space-6);
+  }
+
+  .pricing-card__price {
+    font-size: var(--text-4xl);
+  }
+
+  /* Accuracy card */
+  .accuracy__card {
+    min-width: auto;
+    padding: var(--space-6);
+  }
+
+  .accuracy__card-value {
+    font-size: var(--text-5xl);
+  }
+
+  /* CTA */
+  .cta h2 {
+    font-size: var(--text-3xl);
+  }
+
+  .cta p {
+    font-size: var(--text-base);
+  }
+
+  /* Footer */
+  .footer {
+    padding: var(--space-12) 0 var(--space-6);
+  }
+
+  .footer__grid {
+    gap: var(--space-8);
+  }
+}
+
+/* ==========================================================================
+   Tiny Devices (360px) - Very small phones
+   ========================================================================== */
+@media (max-width: 360px) {
+  :root {
+    --header-height: 56px;
+  }
+
+  .header__logo img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header__logo span {
+    font-size: var(--text-sm);
+  }
+
+  .hero__title {
+    font-size: clamp(1.75rem, 7vw, 2.5rem);
+  }
+
+  .hero__subtitle {
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  .btn--large {
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--text-sm);
+  }
+
+  .app-store-badge img {
+    height: 48px;
+  }
+
+  /* Trust bar stacked */
+  .trust-bar__logos {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .trust-bar__logo {
+    flex-direction: row;
+    gap: var(--space-2);
+  }
+
+  /* Activity cards single column */
+  .activities__grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stats smaller */
+  .stat-item__number {
+    font-size: var(--text-3xl);
+  }
+
+  .stat-item__label {
+    font-size: 10px;
+  }
+
+  /* Section headers */
+  .section-header h2 {
+    font-size: var(--text-2xl);
+  }
+
+  /* Quota cards */
+  .quota-card__value {
+    font-size: var(--text-2xl);
+  }
+
+  /* Spotlight feature text */
+  .spotlight__feature {
+    padding: var(--space-3);
+  }
+
+  .spotlight__feature-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .spotlight__feature-icon svg {
+    width: 14px;
+    height: 14px;
   }
 }
