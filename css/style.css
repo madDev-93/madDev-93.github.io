@@ -2273,6 +2273,90 @@ p { color: var(--text-secondary); }
 }
 
 /* --------------------------------------------------------------------------
+   Apple Watch Section
+   -------------------------------------------------------------------------- */
+.apple-watch {
+  background: var(--bg-deep);
+  position: relative;
+  overflow: hidden;
+}
+
+.apple-watch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(20, 184, 166, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(34, 211, 238, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.watch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 900px) {
+  .watch-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+.watch-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-base);
+}
+
+.watch-card:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow);
+}
+
+.watch-frame {
+  width: 180px;
+  height: auto;
+  margin: 0 auto var(--space-6);
+  background: #000;
+  border-radius: 36px;
+  padding: 8px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 40px rgba(20, 184, 166, 0.2);
+}
+
+.watch-frame img {
+  width: 100%;
+  height: auto;
+  border-radius: 28px;
+  display: block;
+}
+
+.watch-card h4 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.watch-card p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
    Animated Counter
    -------------------------------------------------------------------------- */
 .stat-item__number {
