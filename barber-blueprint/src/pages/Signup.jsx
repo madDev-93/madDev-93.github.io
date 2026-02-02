@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
@@ -16,6 +16,14 @@ export default function Signup() {
 
   const { signup } = useAuth()
   const navigate = useNavigate()
+
+  // Track mounted state to prevent state updates after unmount
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   const RATE_LIMIT_KEY = 'signup_attempts'
 
@@ -40,7 +48,6 @@ export default function Signup() {
     setError('')
     setFieldErrors({})
 
-    // Check rate limit before proceeding
     const rateCheck = checkRateLimit(RATE_LIMIT_KEY, 5, 60000)
     if (rateCheck.limited) {
       setError(`Too many signup attempts. Please try again in ${formatRemainingTime(rateCheck.remainingMs)}.`)
@@ -54,12 +61,18 @@ export default function Signup() {
     try {
       await signup(email.trim().toLowerCase(), password)
       clearRateLimit(RATE_LIMIT_KEY)
-      navigate('/dashboard')
+      if (mountedRef.current) {
+        navigate('/dashboard')
+      }
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEY)
-      setError(getAuthErrorMessage(err.code, 'signup'))
+      if (mountedRef.current) {
+        setError(getAuthErrorMessage(err.code, 'signup'))
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -80,7 +93,7 @@ export default function Signup() {
       >
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <Scissors className="w-6 h-6 text-gold" />
+          <Scissors className="w-6 h-6 text-gold" aria-hidden="true" />
           <span className="font-semibold tracking-wide uppercase">Barber Blueprint</span>
         </Link>
 
@@ -90,63 +103,70 @@ export default function Signup() {
           <p className="text-gray-400 text-center mb-8">Join the Blueprint community</p>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 flex items-center gap-2" role="alert">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
               <span className="text-sm">{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Email</label>
+              <label htmlFor="signup-email" className="block text-sm text-gray-400 mb-2">Email</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                 <input
+                  id="signup-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
-                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                  autoComplete="email"
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gold/20 transition-colors disabled:opacity-50 ${
                     fieldErrors.email ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
                   }`}
                   placeholder="you@example.com"
+                  aria-describedby={fieldErrors.email ? 'signup-email-error' : undefined}
                 />
               </div>
               {fieldErrors.email && (
-                <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>
+                <p id="signup-email-error" className="text-red-400 text-xs mt-1" role="alert">{fieldErrors.email}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Password</label>
+              <label htmlFor="signup-password" className="block text-sm text-gray-400 mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                 <input
+                  id="signup-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                  autoComplete="new-password"
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gold/20 transition-colors disabled:opacity-50 ${
                     fieldErrors.password ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
                   }`}
                   placeholder="••••••••"
+                  aria-describedby={fieldErrors.password ? 'signup-password-error' : 'password-requirements'}
                 />
               </div>
               {fieldErrors.password && (
-                <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>
+                <p id="signup-password-error" className="text-red-400 text-xs mt-1" role="alert">{fieldErrors.password}</p>
               )}
 
               {/* Password strength indicators */}
               {password && (
-                <div className="mt-2 grid grid-cols-2 gap-1">
+                <div id="password-requirements" className="mt-2 grid grid-cols-2 gap-1" aria-live="polite">
                   {passwordChecks.map((check) => (
                     <div
                       key={check.label}
                       className={`flex items-center gap-1 text-xs ${
                         check.met ? 'text-green-400' : 'text-gray-500'
                       }`}
+                      aria-label={`${check.label}: ${check.met ? 'met' : 'not met'}`}
                     >
-                      <Check className={`w-3 h-3 ${check.met ? 'opacity-100' : 'opacity-30'}`} />
+                      <Check className={`w-3 h-3 ${check.met ? 'opacity-100' : 'opacity-30'}`} aria-hidden="true" />
                       {check.label}
                     </div>
                   ))}
@@ -155,36 +175,39 @@ export default function Signup() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Confirm Password</label>
+              <label htmlFor="signup-confirm-password" className="block text-sm text-gray-400 mb-2">Confirm Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                 <input
+                  id="signup-confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={loading}
-                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                  autoComplete="new-password"
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gold/20 transition-colors disabled:opacity-50 ${
                     fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
                   }`}
                   placeholder="••••••••"
+                  aria-describedby={fieldErrors.confirmPassword ? 'confirm-password-error' : undefined}
                 />
               </div>
               {fieldErrors.confirmPassword && (
-                <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>
+                <p id="confirm-password-error" className="text-red-400 text-xs mt-1" role="alert">{fieldErrors.confirmPassword}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-dark/30 border-t-dark rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-dark/30 border-t-dark rounded-full animate-spin" aria-label="Creating account..." />
               ) : (
                 <>
                   Create Account
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5" aria-hidden="true" />
                 </>
               )}
             </button>
@@ -192,14 +215,14 @@ export default function Signup() {
 
           <p className="text-center text-gray-400 mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-gold hover:text-gold-dark transition-colors">
+            <Link to="/login" className="text-gold hover:text-gold-dark transition-colors focus:outline-none focus:underline">
               Sign in
             </Link>
           </p>
         </div>
 
         <p className="text-center text-gray-600 text-sm mt-6">
-          <Link to="/" className="hover:text-gray-400 transition-colors">
+          <Link to="/" className="hover:text-gray-400 transition-colors focus:outline-none focus:underline">
             ← Back to home
           </Link>
         </p>

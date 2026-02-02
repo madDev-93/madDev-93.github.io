@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
@@ -17,6 +17,14 @@ export default function Login() {
   const { login, resetPassword } = useAuth()
   const navigate = useNavigate()
 
+  // Track mounted state to prevent state updates after unmount
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
   const RATE_LIMIT_KEY = 'login_attempts'
 
   const validateForm = () => {
@@ -33,7 +41,6 @@ export default function Login() {
     setError('')
     setFieldErrors({})
 
-    // Check rate limit before proceeding
     const rateCheck = checkRateLimit(RATE_LIMIT_KEY, 5, 60000)
     if (rateCheck.limited) {
       setError(`Too many login attempts. Please try again in ${formatRemainingTime(rateCheck.remainingMs)}.`)
@@ -47,12 +54,18 @@ export default function Login() {
     try {
       await login(email.trim().toLowerCase(), password)
       clearRateLimit(RATE_LIMIT_KEY)
-      navigate('/dashboard')
+      if (mountedRef.current) {
+        navigate('/dashboard')
+      }
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEY)
-      setError(getAuthErrorMessage(err.code, 'login'))
+      if (mountedRef.current) {
+        setError(getAuthErrorMessage(err.code, 'login'))
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -63,8 +76,7 @@ export default function Login() {
       return
     }
 
-    // Check rate limit for reset attempts
-    const rateCheck = checkRateLimit('reset_attempts', 3, 300000) // 3 attempts per 5 minutes
+    const rateCheck = checkRateLimit('reset_attempts', 3, 300000)
     if (rateCheck.limited) {
       setError(`Too many reset attempts. Please try again in ${formatRemainingTime(rateCheck.remainingMs)}.`)
       return
@@ -76,15 +88,16 @@ export default function Login() {
     try {
       recordAttempt('reset_attempts')
       await resetPassword(email.trim().toLowerCase())
-      // Always show success to prevent email enumeration
-      setResetSent(true)
-    } catch (err) {
-      // Show success message even on error to prevent email enumeration
-      // Only show actual error for non-user-related errors
-      if (err.code === 'auth/network-request-failed' || err.code === 'auth/too-many-requests') {
-        setError(getAuthErrorMessage(err.code, 'reset'))
-      } else {
+      if (mountedRef.current) {
         setResetSent(true)
+      }
+    } catch (err) {
+      if (mountedRef.current) {
+        if (err.code === 'auth/network-request-failed' || err.code === 'auth/too-many-requests') {
+          setError(getAuthErrorMessage(err.code, 'reset'))
+        } else {
+          setResetSent(true)
+        }
       }
     }
   }
@@ -98,7 +111,7 @@ export default function Login() {
       >
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <Scissors className="w-6 h-6 text-gold" />
+          <Scissors className="w-6 h-6 text-gold" aria-hidden="true" />
           <span className="font-semibold tracking-wide uppercase">Barber Blueprint</span>
         </Link>
 
@@ -108,56 +121,62 @@ export default function Login() {
           <p className="text-gray-400 text-center mb-8">Sign in to access your content</p>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6 flex items-center gap-2" role="alert">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
               <span className="text-sm">{error}</span>
             </div>
           )}
 
           {resetSent && (
-            <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg mb-6 text-sm">
+            <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg mb-6 text-sm" role="status">
               Password reset email sent. Check your inbox.
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Email</label>
+              <label htmlFor="login-email" className="block text-sm text-gray-400 mb-2">Email</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
-                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                  autoComplete="email"
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gold/20 transition-colors disabled:opacity-50 ${
                     fieldErrors.email ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
                   }`}
                   placeholder="you@example.com"
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                 />
               </div>
               {fieldErrors.email && (
-                <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>
+                <p id="email-error" className="text-red-400 text-xs mt-1" role="alert">{fieldErrors.email}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Password</label>
+              <label htmlFor="login-password" className="block text-sm text-gray-400 mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                 <input
+                  id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                  autoComplete="current-password"
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gold/20 transition-colors disabled:opacity-50 ${
                     fieldErrors.password ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
                   }`}
                   placeholder="••••••••"
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                 />
               </div>
               {fieldErrors.password && (
-                <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>
+                <p id="password-error" className="text-red-400 text-xs mt-1" role="alert">{fieldErrors.password}</p>
               )}
             </div>
 
@@ -165,7 +184,7 @@ export default function Login() {
               type="button"
               onClick={handleResetPassword}
               disabled={loading}
-              className="text-sm text-gold hover:text-gold-dark transition-colors disabled:opacity-50"
+              className="text-sm text-gold hover:text-gold-dark transition-colors disabled:opacity-50 focus:outline-none focus:underline"
             >
               Forgot password?
             </button>
@@ -173,14 +192,14 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-dark/30 border-t-dark rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-dark/30 border-t-dark rounded-full animate-spin" aria-label="Signing in..." />
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5" aria-hidden="true" />
                 </>
               )}
             </button>
@@ -188,14 +207,14 @@ export default function Login() {
 
           <p className="text-center text-gray-400 mt-6">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-gold hover:text-gold-dark transition-colors">
+            <Link to="/signup" className="text-gold hover:text-gold-dark transition-colors focus:outline-none focus:underline">
               Sign up
             </Link>
           </p>
         </div>
 
         <p className="text-center text-gray-600 text-sm mt-6">
-          <Link to="/" className="hover:text-gray-400 transition-colors">
+          <Link to="/" className="hover:text-gray-400 transition-colors focus:outline-none focus:underline">
             ← Back to home
           </Link>
         </p>

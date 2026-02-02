@@ -39,8 +39,7 @@ function PasswordInput({ value, onChange, placeholder, name, disabled, showPassw
       <button
         type="button"
         onClick={onToggle}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-        tabIndex={-1}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 focus:outline-none focus:text-gold"
         aria-label={showPassword ? 'Hide password' : 'Show password'}
         aria-pressed={showPassword}
       >

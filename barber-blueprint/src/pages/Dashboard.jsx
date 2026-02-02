@@ -1,77 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
-import {
-  Scissors,
-  Brain,
-  Video,
-  Smartphone,
-  TrendingUp,
-  Calendar,
-  Banknote,
-  Lock,
-  Play,
-  LogOut,
-  User,
-  Gift
-} from 'lucide-react'
-
-const modules = [
-  {
-    id: 1,
-    icon: Brain,
-    title: 'The Barber-to-Brand Mindset',
-    description: 'Mental frameworks that separate hobbyists from professionals',
-    duration: '18 min',
-    lessons: 4,
-  },
-  {
-    id: 2,
-    icon: Video,
-    title: 'Filming Haircuts',
-    description: 'Exact angles for fades, tapers, and beards',
-    duration: '32 min',
-    lessons: 6,
-  },
-  {
-    id: 3,
-    icon: Smartphone,
-    title: 'Simple Equipment Setup',
-    description: 'Minimal phone setup that looks professional',
-    duration: '14 min',
-    lessons: 3,
-  },
-  {
-    id: 4,
-    icon: TrendingUp,
-    title: 'Content That Grows',
-    description: 'Before/afters, lifestyle content, and content pillars',
-    duration: '28 min',
-    lessons: 5,
-  },
-  {
-    id: 5,
-    icon: Calendar,
-    title: 'Posting System',
-    description: 'Complete Instagram and TikTok strategy',
-    duration: '24 min',
-    lessons: 5,
-  },
-  {
-    id: 6,
-    icon: Banknote,
-    title: 'Monetization',
-    description: 'Brand deals, education products, and partnerships',
-    duration: '22 min',
-    lessons: 4,
-  },
-]
-
-const bonuses = [
-  { title: 'Weekly Filming Checklist', type: 'PDF' },
-  { title: 'Daily Posting Framework', type: 'PDF' },
-  { title: 'Mindset Rules', type: 'PDF' },
-]
+import { Scissors, Lock, Play, LogOut, User, Gift } from 'lucide-react'
+import { modules, bonuses } from '../constants/modules'
 
 export default function Dashboard() {
   const { user, hasPurchased, logout } = useAuth()
@@ -95,14 +26,14 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <Link
                 to="/account"
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded"
                 aria-label="Account settings"
               >
                 <User className="w-5 h-5" aria-hidden="true" />
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 rounded"
                 aria-label="Sign out"
               >
                 <LogOut className="w-5 h-5" aria-hidden="true" />
@@ -140,7 +71,7 @@ export default function Dashboard() {
             </div>
             <Link
               to="/#get-access"
-              className="bg-gold hover:bg-gold-dark text-dark font-semibold px-6 py-3 rounded-lg transition-colors"
+              className="bg-gold hover:bg-gold-dark text-dark font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark"
             >
               Get Access — $47
             </Link>
@@ -160,7 +91,7 @@ export default function Dashboard() {
               <Link
                 key={module.id}
                 to={hasPurchased ? `/modules/${module.id}` : '#'}
-                className={`group bg-dark-tertiary border border-white/5 rounded-xl p-5 transition-all ${
+                className={`group bg-dark-tertiary border border-white/5 rounded-xl p-5 transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 ${
                   hasPurchased
                     ? 'hover:border-gold/30 cursor-pointer'
                     : 'opacity-60 cursor-not-allowed'
@@ -168,6 +99,7 @@ export default function Dashboard() {
                 role="listitem"
                 aria-label={`${module.title}${!hasPurchased ? ' (locked)' : ''}`}
                 aria-disabled={!hasPurchased}
+                onClick={(e) => !hasPurchased && e.preventDefault()}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-gold/10 transition-colors">
@@ -180,7 +112,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 <h3 className="font-semibold mb-1">{module.title}</h3>
-                <p className="text-sm text-gray-500 mb-3">{module.description}</p>
+                <p className="text-sm text-gray-500 mb-3">{module.shortDescription}</p>
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <span>{module.lessons} lessons</span>
                   <span aria-hidden="true">•</span>
@@ -198,7 +130,7 @@ export default function Dashboard() {
           transition={{ delay: 0.2 }}
         >
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-gold" />
+            <Gift className="w-5 h-5 text-gold" aria-hidden="true" />
             Bonuses
           </h2>
           <div className="grid sm:grid-cols-3 gap-4" role="list" aria-label="Bonus materials">
