@@ -110,7 +110,7 @@ export default function FAQ() {
         >
           {faqs.map((faq, index) => (
             <FAQItem
-              key={index}
+              key={`faq-${index}`}
               faq={faq}
               index={index}
               isOpen={openIndex === index}

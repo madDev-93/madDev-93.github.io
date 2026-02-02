@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Scissors, Camera, Users, Quote } from 'lucide-react'
 
@@ -24,9 +23,9 @@ export default function About() {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="aspect-[4/5] bg-dark-tertiary rounded-2xl border border-white/5 overflow-hidden">
+            <div className="aspect-[4/5] bg-dark-tertiary rounded-2xl border border-white/5 overflow-hidden" role="img" aria-label="Photo placeholder for the course creator">
               <div className="w-full h-full bg-dark-secondary flex items-center justify-center">
-                <div className="text-center">
+                <div className="text-center" aria-hidden="true">
                   <Scissors className="w-12 h-12 text-white/10 mx-auto mb-4" />
                   <span className="text-white/20 text-sm">Creator Photo</span>
                 </div>
@@ -80,7 +79,7 @@ export default function About() {
               <p className="text-lg text-white mb-2">
                 "Document the work. The results will follow."
               </p>
-              <span className="text-sm text-gray-500">— Real execution, not theory</span>
+              <span className="text-sm text-gray-400">— Real execution, not theory</span>
             </div>
           </motion.div>
         </div>

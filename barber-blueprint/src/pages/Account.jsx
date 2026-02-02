@@ -516,9 +516,12 @@ export default function Account() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   className="mt-4"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="delete-dialog-title"
                 >
                   <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
-                    <h3 className="text-red-400 font-semibold mb-2">Warning: This cannot be undone</h3>
+                    <h3 id="delete-dialog-title" className="text-red-400 font-semibold mb-2">Warning: This cannot be undone</h3>
                     <p className="text-gray-400 text-sm">
                       Deleting your account will permanently remove all your data, including any course progress.
                       {hasPurchased && ' Your purchase will not be refunded.'}

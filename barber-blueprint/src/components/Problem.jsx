@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { X, Check, Clock, DollarSign, TrendingUp, Camera } from 'lucide-react'
 
@@ -82,7 +81,7 @@ export default function Problem() {
                   </div>
                   <div>
                     <h4 className="font-medium mb-1">{problem.title}</h4>
-                    <p className="text-sm text-gray-500">{problem.description}</p>
+                    <p className="text-sm text-gray-400">{problem.description}</p>
                   </div>
                 </div>
               ))}
@@ -110,7 +109,7 @@ export default function Problem() {
                   </div>
                   <div>
                     <h4 className="font-medium mb-1">{solution.title}</h4>
-                    <p className="text-sm text-gray-500">{solution.description}</p>
+                    <p className="text-sm text-gray-400">{solution.description}</p>
                   </div>
                 </div>
               ))}

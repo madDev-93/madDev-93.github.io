@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useRef, useState } from 'react'
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -60,14 +59,14 @@ function TestimonialCard({ testimonial }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-sm font-medium" aria-hidden="true">
-            {testimonial.name.split(' ')[0][0]}{testimonial.name.split(' ')[1]?.[0] || ''}
+            {testimonial.name.split(' ')[0]?.[0]}{testimonial.name.split(' ')[1]?.[0] || ''}
           </div>
           <div>
             <p className="font-medium text-white">{testimonial.name}</p>
-            <p className="text-sm text-gray-500">{testimonial.location}</p>
+            <p className="text-sm text-gray-400">{testimonial.location}</p>
           </div>
         </div>
-        <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
+        <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded">
           {testimonial.highlight}
         </span>
       </div>
@@ -166,7 +165,7 @@ export default function Testimonials() {
         </div>
 
         {/* Subtle note */}
-        <p className="text-center text-xs text-gray-600 mt-8">
+        <p className="text-center text-xs text-gray-400 mt-8">
           Results vary. These reflect individual experiences.
         </p>
       </div>

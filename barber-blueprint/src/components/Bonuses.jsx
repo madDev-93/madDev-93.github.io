@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Gift, ClipboardList, Calendar, Flame, Zap, Shield, RefreshCw } from 'lucide-react'
 
@@ -69,7 +68,7 @@ export default function Bonuses() {
                 <bonus.icon className="w-5 h-5 text-gold" />
               </div>
               <h3 className="text-lg font-semibold mb-2">{bonus.title}</h3>
-              <p className="text-sm text-gray-500">{bonus.description}</p>
+              <p className="text-sm text-gray-400">{bonus.description}</p>
             </motion.div>
           ))}
         </div>

@@ -12,9 +12,8 @@ export default function Dashboard() {
     try {
       await logout()
       navigate('/')
-    } catch (err) {
+    } catch {
       // Silently fail - user can retry
-      console.error('Logout failed:', err)
     }
   }
 

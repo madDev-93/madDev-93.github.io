@@ -14,7 +14,7 @@ export default function Footer() {
           </div>
 
           {/* Links */}
-          <div className="flex items-center gap-6 text-sm text-gray-500">
+          <div className="flex items-center gap-6 text-sm text-gray-400">
             <a href="#" className="hover:text-white transition-colors">
               Privacy Policy
             </a>
@@ -27,7 +27,7 @@ export default function Footer() {
           </div>
 
           {/* Copyright */}
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-400">
             © {currentYear} Barber Blueprint
           </p>
         </div>
