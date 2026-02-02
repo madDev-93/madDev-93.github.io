@@ -83,7 +83,7 @@ export default function About() {
               <span className="text-sm text-gray-400">— Real execution, not theory</span>
             </div>
 
-            {/* Instagram Feed */}
+            {/* Instagram Follow */}
             <InstagramFeed
               postUrls={[]}
               profileUrl="https://www.instagram.com/ivan.m.rod"
