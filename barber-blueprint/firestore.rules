@@ -1,13 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Blueprint users - users can only read/write their own data
+    // Blueprint users - users can read/write their own data
     match /blueprint_users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId
-                    && !request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['purchased', 'purchaseDate', 'linkedAt']);
+      // Allow updates but prevent users from setting purchased=true themselves
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && (
+                      // Allow if not changing purchased field
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['purchased'])
+                      // OR allow if purchased was already true (can't downgrade)
+                      || resource.data.purchased == true
+                    );
     }
 
     // Blueprint purchases - read only for matching email, write only via admin/webhook

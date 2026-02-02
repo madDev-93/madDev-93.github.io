@@ -43,24 +43,18 @@ export function AuthProvider({ children }) {
         if (data.purchased) {
           return data
         }
-        // User exists but hasn't purchased
-        return { purchased: false }
       }
 
       // Check purchase by email (for webhook-created records)
       const emailDoc = await getDoc(doc(db, 'blueprint_purchases', normalizedEmail))
 
-      if (emailDoc.exists()) {
-        // Link purchase to user account
-        const purchaseData = {
-          email: normalizedEmail,
+      if (emailDoc.exists() && emailDoc.data().verified) {
+        // Purchase verified via webhook - return purchased state
+        // Note: We don't write to blueprint_users from client to prevent tampering
+        return {
           purchased: true,
-          purchaseDate: emailDoc.data().verifiedAt || new Date().toISOString(),
-          linkedAt: new Date().toISOString()
+          purchaseDate: emailDoc.data().verifiedAt || new Date().toISOString()
         }
-
-        await setDoc(doc(db, 'blueprint_users', uid), purchaseData, { merge: true })
-        return { purchased: true, ...purchaseData }
       }
 
       return { purchased: false }
