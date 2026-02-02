@@ -23,19 +23,40 @@ export const validatePasswordMatch = (password, confirmPassword) => {
   return null
 }
 
-export const getAuthErrorMessage = (errorCode) => {
-  const errorMap = {
-    'auth/user-not-found': 'No account found with this email',
-    'auth/wrong-password': 'Incorrect password',
+export const getAuthErrorMessage = (errorCode, context = 'login') => {
+  // Generic messages that don't leak user existence information
+  const loginErrors = {
+    'auth/user-not-found': 'Invalid email or password',
+    'auth/wrong-password': 'Invalid email or password',
     'auth/invalid-credential': 'Invalid email or password',
-    'auth/email-already-in-use': 'An account with this email already exists',
-    'auth/weak-password': 'Password is too weak',
-    'auth/invalid-email': 'Invalid email address',
-    'auth/too-many-requests': 'Too many attempts. Please try again later',
-    'auth/network-request-failed': 'Network error. Check your connection',
-    'auth/user-disabled': 'This account has been disabled',
-    'auth/operation-not-allowed': 'Operation not allowed',
+    'auth/invalid-email': 'Invalid email or password',
+    'auth/user-disabled': 'This account has been disabled. Contact support.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
   }
 
+  const signupErrors = {
+    'auth/email-already-in-use': 'Unable to create account. Try a different email or sign in.',
+    'auth/weak-password': 'Password is too weak. Please choose a stronger password.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/operation-not-allowed': 'Account creation is currently disabled.',
+  }
+
+  const resetErrors = {
+    'auth/user-not-found': 'If an account exists, a reset email has been sent.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  }
+
+  const errorMaps = {
+    login: loginErrors,
+    signup: signupErrors,
+    reset: resetErrors
+  }
+
+  const errorMap = errorMaps[context] || loginErrors
   return errorMap[errorCode] || 'Something went wrong. Please try again.'
 }

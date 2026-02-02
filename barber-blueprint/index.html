@@ -7,6 +7,13 @@
     <meta name="description" content="A step-by-step blueprint for barbers who want to grow income, build a personal brand, and stop relying only on chair time." />
     <meta name="theme-color" content="#0A0A0A" />
 
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://*.firebaseapp.com https://*.googleapis.com https://app.lemonsqueezy.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src https://*.firebaseapp.com https://app.lemonsqueezy.com;" />
+
     <!-- Open Graph -->
     <meta property="og:title" content="The Barber Blueprint" />
     <meta property="og:description" content="Turn Haircuts Into Income, Influence, and Freedom" />
@@ -18,10 +25,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
 
     <title>The Barber Blueprint | Turn Haircuts Into Income, Influence, and Freedom</title>
-    <script type="module" crossorigin src="/barber-blueprint/assets/index-PGpwqSgr.js"></script>
-    <link rel="stylesheet" crossorigin href="/barber-blueprint/assets/index-DghbDEcr.css">
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

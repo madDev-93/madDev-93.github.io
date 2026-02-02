@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
 import { validateEmail, validatePassword, validatePasswordMatch, getAuthErrorMessage } from '../utils/validation'
+import { checkRateLimit, recordAttempt, clearRateLimit, formatRemainingTime } from '../utils/rateLimit'
 import { Scissors, Mail, Lock, ArrowRight, AlertCircle, Check } from 'lucide-react'
 
 export default function Signup() {
@@ -15,6 +16,8 @@ export default function Signup() {
 
   const { signup } = useAuth()
   const navigate = useNavigate()
+
+  const RATE_LIMIT_KEY = 'signup_attempts'
 
   const validateForm = () => {
     const errors = {}
@@ -37,15 +40,24 @@ export default function Signup() {
     setError('')
     setFieldErrors({})
 
+    // Check rate limit before proceeding
+    const rateCheck = checkRateLimit(RATE_LIMIT_KEY, 5, 60000)
+    if (rateCheck.limited) {
+      setError(`Too many signup attempts. Please try again in ${formatRemainingTime(rateCheck.remainingMs)}.`)
+      return
+    }
+
     if (!validateForm()) return
 
     setLoading(true)
 
     try {
       await signup(email.trim().toLowerCase(), password)
+      clearRateLimit(RATE_LIMIT_KEY)
       navigate('/dashboard')
     } catch (err) {
-      setError(getAuthErrorMessage(err.code))
+      recordAttempt(RATE_LIMIT_KEY)
+      setError(getAuthErrorMessage(err.code, 'signup'))
     } finally {
       setLoading(false)
     }

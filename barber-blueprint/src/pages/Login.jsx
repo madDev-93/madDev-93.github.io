@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
 import { validateEmail, getAuthErrorMessage } from '../utils/validation'
+import { checkRateLimit, recordAttempt, clearRateLimit, formatRemainingTime } from '../utils/rateLimit'
 import { Scissors, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 
 export default function Login() {
@@ -15,6 +16,8 @@ export default function Login() {
 
   const { login, resetPassword } = useAuth()
   const navigate = useNavigate()
+
+  const RATE_LIMIT_KEY = 'login_attempts'
 
   const validateForm = () => {
     const errors = {}
@@ -30,15 +33,24 @@ export default function Login() {
     setError('')
     setFieldErrors({})
 
+    // Check rate limit before proceeding
+    const rateCheck = checkRateLimit(RATE_LIMIT_KEY, 5, 60000)
+    if (rateCheck.limited) {
+      setError(`Too many login attempts. Please try again in ${formatRemainingTime(rateCheck.remainingMs)}.`)
+      return
+    }
+
     if (!validateForm()) return
 
     setLoading(true)
 
     try {
       await login(email.trim().toLowerCase(), password)
+      clearRateLimit(RATE_LIMIT_KEY)
       navigate('/dashboard')
     } catch (err) {
-      setError(getAuthErrorMessage(err.code))
+      recordAttempt(RATE_LIMIT_KEY)
+      setError(getAuthErrorMessage(err.code, 'login'))
     } finally {
       setLoading(false)
     }
@@ -50,14 +62,30 @@ export default function Login() {
       setFieldErrors({ email: emailError })
       return
     }
+
+    // Check rate limit for reset attempts
+    const rateCheck = checkRateLimit('reset_attempts', 3, 300000) // 3 attempts per 5 minutes
+    if (rateCheck.limited) {
+      setError(`Too many reset attempts. Please try again in ${formatRemainingTime(rateCheck.remainingMs)}.`)
+      return
+    }
+
     setError('')
     setFieldErrors({})
 
     try {
+      recordAttempt('reset_attempts')
       await resetPassword(email.trim().toLowerCase())
+      // Always show success to prevent email enumeration
       setResetSent(true)
     } catch (err) {
-      setError(getAuthErrorMessage(err.code))
+      // Show success message even on error to prevent email enumeration
+      // Only show actual error for non-user-related errors
+      if (err.code === 'auth/network-request-failed' || err.code === 'auth/too-many-requests') {
+        setError(getAuthErrorMessage(err.code, 'reset'))
+      } else {
+        setResetSent(true)
+      }
     }
   }
 

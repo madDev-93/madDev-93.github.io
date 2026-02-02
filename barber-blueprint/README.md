@@ -111,29 +111,19 @@ const firebaseConfig = {
 
 ✅ **COMPLETED** - Firestore created in test mode.
 
-**TODO (before launch):** Update Firestore rules for security:
+**Deploy Firestore security rules:**
 
-1. Go to Firebase Console → Firestore → Rules
-2. Replace with:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Blueprint users - users can read/write their own data
-    match /blueprint_users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Blueprint purchases - users can read their own, only webhook can write
-    match /blueprint_purchases/{email} {
-      allow read: if request.auth != null &&
-                    request.auth.token.email.lower() == email;
-      allow write: if false;
-    }
-  }
-}
+```bash
+cd barber-blueprint
+firebase deploy --only firestore:rules
 ```
+
+Or manually copy the rules from `firestore.rules` to Firebase Console → Firestore → Rules.
+
+The rules ensure:
+- Users can only read/write their own data
+- Purchase records can only be written by Cloud Functions (webhook)
+- Users cannot modify their own purchase status
 
 ### 3. Enable Authentication
 
@@ -186,13 +176,38 @@ Then change button links to:
 
 ---
 
+## Security Features
+
+### Implemented
+- **Environment Variables**: Firebase credentials stored in `.env.local` (not committed)
+- **Input Validation**: Email and password validation with strength indicators
+- **Rate Limiting**: Client-side rate limiting on login/signup (5 attempts/minute)
+- **Error Message Security**: Generic error messages that don't leak user existence
+- **Webhook Validation**: HMAC signature verification on Lemonsqueezy webhooks
+- **Firestore Rules**: Secure rules that restrict data access (deploy before launch)
+- **Content Security Policy**: CSP headers to prevent XSS attacks
+- **Security Headers**: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+
+### API Key Restrictions (Google Cloud Console)
+Restrict the Firebase API key to these domains:
+- `qwota.app`
+- `*.qwota.app`
+- `localhost`
+- `127.0.0.1`
+
+---
+
 ## TODO List
 
 ### High Priority
 - [x] Add Firebase web config credentials to `src/firebase/config.js`
 - [x] Enable Email/Password auth in Firebase Console
 - [x] Create Firestore database
-- [ ] Add Firestore security rules (before launch)
+- [x] Add Firestore security rules
+- [x] Add rate limiting to auth endpoints
+- [x] Add security headers (CSP, X-Frame-Options, etc.)
+- [x] Fix error message information leakage
+- [ ] Deploy Firestore rules: `firebase deploy --only firestore:rules`
 - [ ] Create Lemonsqueezy account and product
 - [ ] Deploy Cloud Functions for webhook
 - [ ] Update CTA buttons with Lemonsqueezy checkout link
