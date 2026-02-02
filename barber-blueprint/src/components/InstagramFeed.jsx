@@ -14,7 +14,7 @@ import { Instagram } from 'lucide-react'
 export default function InstagramFeed({
   postUrls = [],
   profileUrl = 'https://instagram.com',
-  username = 'barberblueprint'
+  username = 'ivan.m.rod'
 }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
