@@ -132,7 +132,20 @@ firebase deploy --only firestore:rules --project barber-blueprint
 
 ### 3. Enable Authentication
 
-✅ **COMPLETED** - Email/Password authentication enabled.
+✅ **COMPLETED** - Email/Password authentication enabled and working.
+
+### 3.1 API Key Restrictions
+
+✅ **COMPLETED** - API key restricted in Google Cloud Console.
+
+Required HTTP referrer restrictions (APIs & Services → Credentials → API Key):
+```
+http://localhost/*
+https://qwota.app/*
+https://maddev-93.github.io/*
+```
+
+**Note:** When you get a custom domain, add it here and remove the temporary ones.
 
 ### 4. Lemonsqueezy Setup
 
@@ -194,11 +207,12 @@ For overlay checkout, add to `index.html`:
 - **API Key Restrictions**: Firebase API key restricted to specific domains in Google Cloud Console
 
 ### API Key Restrictions (Google Cloud Console)
-Restrict the Firebase API key to these domains:
-- `qwota.app`
-- `*.qwota.app`
-- `localhost`
-- `127.0.0.1`
+Firebase API key is restricted to these HTTP referrers:
+- `http://localhost/*`
+- `https://qwota.app/*`
+- `https://maddev-93.github.io/*`
+
+**Important:** The format must include the protocol (`http://` or `https://`) and end with `/*`.
 
 ---
 
@@ -234,6 +248,8 @@ Restrict the Firebase API key to these domains:
 - [x] Security headers (CSP, X-Frame-Options, etc.)
 - [x] Accessibility improvements (ARIA labels)
 - [x] Performance optimizations (scroll debouncing)
+- [x] API key restrictions configured
+- [x] Login/Signup working
 - [ ] Create Lemonsqueezy account and product
 - [ ] Deploy Cloud Functions for webhook
 - [ ] Update CTA buttons with Lemonsqueezy checkout link
@@ -283,10 +299,12 @@ npm run build
 # Copy built files to root for GitHub Pages
 rm -rf assets
 cp -r dist/assets .
-cp dist/index.html ./404.html
+cp dist/index.html .
+cp dist/index.html 404.html
 
 # Commit and push
-git add .
+cd ..
+git add barber-blueprint/
 git commit -m "Deploy updates"
 git push origin main
 ```
