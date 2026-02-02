@@ -4,7 +4,11 @@ service cloud.firestore {
     // Blueprint users - users can read/write their own data
     match /blueprint_users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow create but prevent users from setting purchased=true themselves
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && (!request.resource.data.keys().hasAny(['purchased'])
+                        || request.resource.data.purchased == false);
       // Allow updates but prevent users from setting purchased=true themselves
       allow update: if request.auth != null
                     && request.auth.uid == userId
