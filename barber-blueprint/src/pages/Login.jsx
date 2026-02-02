@@ -50,11 +50,7 @@ export default function Login() {
       navigate('/dashboard')
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEY)
-      // Debug: log to console and show full error
-      console.error('Login error:', err)
-      const msg = err.message || 'Unknown error'
-      const code = err.code || 'no-code'
-      setError(`${msg} (${code})`)
+      setError(getAuthErrorMessage(err.code, 'login'))
     } finally {
       setLoading(false)
     }
