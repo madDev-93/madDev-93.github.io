@@ -2,11 +2,11 @@
 
 A high-converting landing page and members area for a digital course targeted at barbers who want to build their personal brand and create income beyond chair time.
 
-**Live Site:** https://maddev-93.github.io/barber-blueprint/
+**Live Site:** https://qwota.app/barber-blueprint/
 
 ## Tech Stack
 
-- **Frontend:** React 18 + Vite
+- **Frontend:** React 19 + Vite 7
 - **Styling:** Tailwind CSS 4
 - **Animations:** Framer Motion
 - **Icons:** Lucide React
@@ -38,7 +38,8 @@ barber-blueprint/
 │   │   ├── TiltCard.jsx
 │   │   ├── LiveActivity.jsx
 │   │   ├── MobileCTA.jsx
-│   │   └── ProtectedRoute.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   └── ErrorBoundary.jsx
 │   ├── pages/            # Route pages
 │   │   ├── Home.jsx      # Landing page
 │   │   ├── Login.jsx
@@ -47,16 +48,20 @@ barber-blueprint/
 │   │   ├── Module.jsx    # Course content
 │   │   └── Account.jsx
 │   ├── firebase/         # Firebase config
-│   │   ├── config.js     # ⚠️ NEEDS YOUR CREDENTIALS
+│   │   ├── config.js     # Uses environment variables
 │   │   └── AuthContext.jsx
+│   ├── utils/            # Utility functions
+│   │   ├── validation.js # Form validation
+│   │   └── rateLimit.js  # Rate limiting
 │   ├── App.jsx           # Router setup
 │   ├── main.jsx          # Entry point
 │   └── index.css         # Tailwind + custom styles
 ├── functions/            # Firebase Cloud Functions
 │   └── src/
 │       └── index.ts      # Lemonsqueezy webhook handler
-├── public/
-│   └── favicon.svg
+├── firestore.rules       # Firestore security rules
+├── firebase.json         # Firebase deployment config
+├── .env.example          # Environment variables template
 └── package.json
 ```
 
@@ -67,7 +72,7 @@ barber-blueprint/
 - Problem/Solution comparison grid
 - 6 module cards with 3D tilt effect
 - Testimonials carousel
-- FAQ accordion
+- FAQ accordion (accessible)
 - Pricing card with secure payment badges
 - Email capture for leads
 - Sticky mobile CTA bar
@@ -92,44 +97,46 @@ barber-blueprint/
 
 ### 1. Firebase Configuration
 
-✅ **COMPLETED** - Firebase project `barber-blueprint` is set up with web app configured.
+✅ **COMPLETED** - Firebase project `barber-blueprint` is set up.
 
-Config file: `src/firebase/config.js`
+Credentials are stored in `.env.local` (not committed):
 
-```javascript
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "qwota-ai-coach.firebaseapp.com",
-  projectId: "qwota-ai-coach",
-  storageBucket: "qwota-ai-coach.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-}
+```bash
+# Copy the example and fill in your values
+cp .env.example .env.local
+```
+
+Required environment variables:
+```
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
 ### 2. Firestore Database
 
-✅ **COMPLETED** - Firestore created in test mode.
-
-**Deploy Firestore security rules:**
-
-```bash
-cd barber-blueprint
-firebase deploy --only firestore:rules
-```
-
-Or manually copy the rules from `firestore.rules` to Firebase Console → Firestore → Rules.
+✅ **COMPLETED** - Firestore created and security rules deployed.
 
 The rules ensure:
 - Users can only read/write their own data
 - Purchase records can only be written by Cloud Functions (webhook)
 - Users cannot modify their own purchase status
 
+To redeploy rules:
+```bash
+firebase deploy --only firestore:rules --project barber-blueprint
+```
+
 ### 3. Enable Authentication
 
 ✅ **COMPLETED** - Email/Password authentication enabled.
 
 ### 4. Lemonsqueezy Setup
+
+⏳ **NOT STARTED**
 
 1. Create account at [lemonsqueezy.com](https://lemonsqueezy.com)
 2. Create a new **Store**
@@ -147,6 +154,8 @@ The rules ensure:
 
 ### 5. Deploy Cloud Functions
 
+⏳ **NOT STARTED**
+
 ```bash
 cd functions
 npm install
@@ -155,38 +164,34 @@ npm install
 firebase functions:config:set lemonsqueezy.webhook_secret="YOUR_SECRET"
 
 # Deploy
-firebase deploy --only functions
+firebase deploy --only functions --project barber-blueprint
 ```
 
 ### 6. Update Button Links
 
-Once you have your Lemonsqueezy checkout URL, update the CTA buttons.
+⏳ **NOT STARTED**
+
+Once you have your Lemonsqueezy checkout URL, update the CTA buttons in `src/components/CTA.jsx`.
 
 For overlay checkout, add to `index.html`:
 ```html
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
 ```
 
-Then change button links to:
-```html
-<a href="https://YOUR_STORE.lemonsqueezy.com/checkout/buy/YOUR_PRODUCT_ID?embed=1" class="lemonsqueezy-button">
-  Get Access
-</a>
-```
-
 ---
 
 ## Security Features
 
-### Implemented
-- **Environment Variables**: Firebase credentials stored in `.env.local` (not committed)
+### Implemented ✅
+- **Environment Variables**: Firebase credentials stored in `.env.local` (gitignored)
 - **Input Validation**: Email and password validation with strength indicators
-- **Rate Limiting**: Client-side rate limiting on login/signup (5 attempts/minute)
-- **Error Message Security**: Generic error messages that don't leak user existence
-- **Webhook Validation**: HMAC signature verification on Lemonsqueezy webhooks
-- **Firestore Rules**: Secure rules that restrict data access (deploy before launch)
-- **Content Security Policy**: CSP headers to prevent XSS attacks
-- **Security Headers**: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- **Rate Limiting**: Session-persistent rate limiting (5 login attempts/min, 3 reset attempts/5min)
+- **Error Message Security**: Generic error messages prevent user enumeration
+- **Webhook Validation**: HMAC-SHA256 signature verification with timing-safe comparison
+- **Firestore Rules**: Secure rules deployed - users can only access their own data
+- **Content Security Policy**: CSP headers prevent XSS attacks
+- **Security Headers**: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- **API Key Restrictions**: Firebase API key restricted to specific domains in Google Cloud Console
 
 ### API Key Restrictions (Google Cloud Console)
 Restrict the Firebase API key to these domains:
@@ -197,36 +202,57 @@ Restrict the Firebase API key to these domains:
 
 ---
 
+## Accessibility Features
+
+### Implemented ✅
+- **ARIA Labels**: All interactive elements have proper aria-label attributes
+- **Keyboard Navigation**: Mobile menu, FAQ accordion, and lesson navigation are keyboard accessible
+- **Screen Reader Support**: Proper role attributes (banner, navigation, list, listitem)
+- **Focus Management**: aria-expanded and aria-controls for expandable elements
+- **Semantic HTML**: Proper heading hierarchy and landmark regions
+
+---
+
+## Performance Optimizations
+
+### Implemented ✅
+- **Scroll Debouncing**: requestAnimationFrame throttling on scroll handlers
+- **React.memo**: Memoized lesson list items to prevent unnecessary re-renders
+- **Passive Event Listeners**: Scroll events use `{ passive: true }`
+- **Code Splitting**: Vite automatic chunking (future: add lazy loading for routes)
+
+---
+
 ## TODO List
 
-### High Priority
-- [x] Add Firebase web config credentials to `src/firebase/config.js`
-- [x] Enable Email/Password auth in Firebase Console
-- [x] Create Firestore database
-- [x] Add Firestore security rules
-- [x] Add rate limiting to auth endpoints
-- [x] Add security headers (CSP, X-Frame-Options, etc.)
-- [x] Fix error message information leakage
-- [ ] Deploy Firestore rules: `firebase deploy --only firestore:rules`
+### Before Launch (Required)
+- [x] Firebase project setup
+- [x] Email/Password auth enabled
+- [x] Firestore database created
+- [x] Firestore security rules deployed
+- [x] Rate limiting on auth endpoints
+- [x] Security headers (CSP, X-Frame-Options, etc.)
+- [x] Accessibility improvements (ARIA labels)
+- [x] Performance optimizations (scroll debouncing)
 - [ ] Create Lemonsqueezy account and product
 - [ ] Deploy Cloud Functions for webhook
 - [ ] Update CTA buttons with Lemonsqueezy checkout link
+- [ ] Add actual video content to module pages
 
-### Medium Priority
+### After Launch (Recommended)
 - [ ] Purchase and configure custom domain
-- [ ] Move site from GitHub Pages subdirectory to own domain
-- [ ] Add actual course video content to module pages
+- [ ] Connect EmailCapture to email service (Mailchimp/ConvertKit)
 - [ ] Create PDF bonuses and add download links
-- [ ] Set up email service for EmailCapture (e.g., Mailchimp, ConvertKit)
 - [ ] Add Google Analytics or Plausible for tracking
+- [ ] Add error tracking (Sentry)
+- [ ] Add real testimonials from customers
 
-### Nice to Have
-- [ ] Add progress tracking (mark lessons as complete)
-- [ ] Add real-time viewer count with Firebase
-- [ ] Add course completion certificates
-- [ ] Add affiliate program integration
-- [ ] Add testimonials from real users
-- [ ] Add before/after slider component
+### Nice to Have (Future)
+- [ ] Lesson progress persistence to Firestore
+- [ ] Real-time viewer count with Firebase
+- [ ] Course completion certificates
+- [ ] Affiliate program integration
+- [ ] Account settings (change email/password)
 
 ---
 
@@ -246,15 +272,23 @@ npm run build
 npm run preview
 ```
 
-## Deployment to GitHub Pages
+## Deployment
+
+The site is deployed via GitHub Pages as a subdirectory of the main madDev-93.github.io repo.
 
 ```bash
 # Build the project
 npm run build
 
-# The dist folder contains the built files
-# For GitHub Pages subdirectory deployment:
-# Copy dist contents to the barber-blueprint folder
+# Copy built files to root for GitHub Pages
+rm -rf assets
+cp -r dist/assets .
+cp dist/index.html ./404.html
+
+# Commit and push
+git add .
+git commit -m "Deploy updates"
+git push origin main
 ```
 
 ## Moving to Custom Domain
