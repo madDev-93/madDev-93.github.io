@@ -85,7 +85,11 @@ export default function About() {
 
             {/* Instagram Follow */}
             <InstagramFeed
-              postUrls={[]}
+              postUrls={[
+                'https://www.instagram.com/reel/DT3e4wmks1-/',
+                'https://www.instagram.com/reel/C6Lx-4WAWgk/',
+                'https://www.instagram.com/p/DHEHh7Pge2c/'
+              ]}
               profileUrl="https://www.instagram.com/ivan.m.rod"
               username="ivan.m.rod"
             />
