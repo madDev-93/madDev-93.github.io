@@ -516,8 +516,7 @@ export default function Account() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   className="mt-4"
-                  role="dialog"
-                  aria-modal="true"
+                  role="region"
                   aria-labelledby="delete-dialog-title"
                 >
                   <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">

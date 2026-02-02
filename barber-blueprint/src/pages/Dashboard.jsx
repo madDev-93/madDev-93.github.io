@@ -91,39 +91,50 @@ export default function Dashboard() {
         >
           <h2 className="text-xl font-bold mb-6">Modules</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" role="list" aria-label="Course modules">
-            {modules.map((module) => (
-              <Link
-                key={module.id}
-                to={hasPurchased ? `/modules/${module.id}` : '#'}
-                className={`group bg-dark-tertiary border border-white/5 rounded-xl p-5 transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 ${
-                  hasPurchased
-                    ? 'hover:border-gold/30 cursor-pointer'
-                    : 'opacity-60 cursor-not-allowed'
-                }`}
-                role="listitem"
-                aria-label={`${module.title}${!hasPurchased ? ' (locked)' : ''}`}
-                aria-disabled={!hasPurchased}
-                onClick={(e) => !hasPurchased && e.preventDefault()}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-gold/10 transition-colors">
-                    <module.icon className={`w-5 h-5 ${hasPurchased ? 'text-gray-400 group-hover:text-gold' : 'text-gray-400'} transition-colors`} aria-hidden="true" />
+            {modules.map((module) => {
+              const ModuleContent = (
+                <>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-gold/10 transition-colors">
+                      <module.icon className={`w-5 h-5 ${hasPurchased ? 'text-gray-400 group-hover:text-gold' : 'text-gray-400'} transition-colors`} aria-hidden="true" />
+                    </div>
+                    {hasPurchased ? (
+                      <Play className="w-5 h-5 text-gold opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-gray-400" aria-hidden="true" />
+                    )}
                   </div>
-                  {hasPurchased ? (
-                    <Play className="w-5 h-5 text-gold opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
-                  ) : (
-                    <Lock className="w-4 h-4 text-gray-400" aria-label="Locked" />
-                  )}
+                  <h3 className="font-semibold mb-1">{module.title}</h3>
+                  <p className="text-sm text-gray-400 mb-3">{module.shortDescription}</p>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <span>{module.lessons} lessons</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{module.duration}</span>
+                  </div>
+                </>
+              )
+
+              return hasPurchased ? (
+                <Link
+                  key={module.id}
+                  to={`/modules/${module.id}`}
+                  className="group bg-dark-tertiary border border-white/5 rounded-xl p-5 transition-all focus:outline-none focus:ring-2 focus:ring-gold/50 hover:border-gold/30"
+                  role="listitem"
+                  aria-label={module.title}
+                >
+                  {ModuleContent}
+                </Link>
+              ) : (
+                <div
+                  key={module.id}
+                  className="group bg-dark-tertiary border border-white/5 rounded-xl p-5 opacity-60"
+                  role="listitem"
+                  aria-label={`${module.title}, locked`}
+                >
+                  {ModuleContent}
                 </div>
-                <h3 className="font-semibold mb-1">{module.title}</h3>
-                <p className="text-sm text-gray-400 mb-3">{module.shortDescription}</p>
-                <div className="flex items-center gap-3 text-xs text-gray-400">
-                  <span>{module.lessons} lessons</span>
-                  <span aria-hidden="true">•</span>
-                  <span>{module.duration}</span>
-                </div>
-              </Link>
-            ))}
+              )
+            })}
           </div>
         </motion.div>
 

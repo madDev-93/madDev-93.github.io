@@ -88,7 +88,7 @@ const LessonItem = memo(function LessonItem({ lesson, isActive, onSelect }) {
         isActive ? 'bg-gold/10' : 'hover:bg-white/5'
       }`}
       aria-current={isActive ? 'true' : undefined}
-      aria-label={`Lesson ${lesson.id}: ${lesson.title}, ${lesson.duration}`}
+      aria-label={`Lesson ${lesson.id}: ${lesson.title}, ${lesson.duration}${lesson.completed ? ', completed' : ''}`}
     >
       <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
         isActive ? 'bg-gold text-dark' : 'bg-white/10 text-gray-400'

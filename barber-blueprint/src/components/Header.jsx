@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Scissors, Menu, X, User } from 'lucide-react'
@@ -9,6 +9,13 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user } = useAuth()
   const rafRef = useRef(null)
+  const menuButtonRef = useRef(null)
+  const firstMenuItemRef = useRef(null)
+
+  const closeMenu = useCallback(() => {
+    setMobileMenuOpen(false)
+    menuButtonRef.current?.focus()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +36,23 @@ export default function Header() {
       }
     }
   }, [])
+
+  // Handle Escape key to close mobile menu
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeMenu()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    // Focus first menu item when menu opens
+    firstMenuItemRef.current?.focus()
+
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [mobileMenuOpen, closeMenu])
 
   return (
     <motion.header
@@ -83,8 +107,9 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
+            ref={menuButtonRef}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2"
+            className="md:hidden p-2 focus:outline-none focus:ring-2 focus:ring-gold/50 rounded"
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-menu"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
@@ -108,27 +133,28 @@ export default function Header() {
             aria-label="Mobile navigation"
           >
             <nav className="flex flex-col gap-4">
-              <a href="#modules" className="text-gray-400 hover:text-white transition-colors">
+              <a ref={firstMenuItemRef} href="#modules" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
                 Modules
               </a>
-              <a href="#bonuses" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#bonuses" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
                 Bonuses
               </a>
-              <a href="#about" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#about" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
                 About
               </a>
               {user ? (
-                <Link to="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/dashboard" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
                   Dashboard
                 </Link>
               ) : (
-                <Link to="/login" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/login" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
                   Sign In
                 </Link>
               )}
               <a
                 href="#get-access"
-                className="bg-gold text-dark font-medium text-center px-5 py-3 rounded"
+                className="bg-gold text-dark font-medium text-center px-5 py-3 rounded focus:outline-none focus:ring-2 focus:ring-gold/50"
+                onClick={closeMenu}
               >
                 Get Access
               </a>

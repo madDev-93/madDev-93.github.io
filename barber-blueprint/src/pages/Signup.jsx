@@ -157,20 +157,20 @@ export default function Signup() {
 
               {/* Password strength indicators */}
               {password && (
-                <div id="password-requirements" className="mt-2 grid grid-cols-2 gap-1" aria-live="polite">
+                <ul id="password-requirements" className="mt-2 grid grid-cols-2 gap-1" aria-live="polite" aria-label="Password requirements">
                   {passwordChecks.map((check) => (
-                    <div
+                    <li
                       key={check.label}
                       className={`flex items-center gap-1 text-xs ${
                         check.met ? 'text-green-400' : 'text-gray-500'
                       }`}
-                      aria-label={`${check.label}: ${check.met ? 'met' : 'not met'}`}
                     >
                       <Check className={`w-3 h-3 ${check.met ? 'opacity-100' : 'opacity-30'}`} aria-hidden="true" />
+                      <span className="sr-only">{check.met ? 'Met: ' : 'Not met: '}</span>
                       {check.label}
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
 
