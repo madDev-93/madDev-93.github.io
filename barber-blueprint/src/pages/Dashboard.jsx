@@ -9,8 +9,13 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/')
+    try {
+      await logout()
+      navigate('/')
+    } catch (err) {
+      // Silently fail - user can retry
+      console.error('Logout failed:', err)
+    }
   }
 
   return (

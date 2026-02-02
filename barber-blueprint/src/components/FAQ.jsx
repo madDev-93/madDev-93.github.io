@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { useRef, useState } from 'react'
 import { Plus, Minus } from 'lucide-react'
 
@@ -35,13 +34,15 @@ const faqs = [
 ]
 
 function FAQItem({ faq, isOpen, onToggle, index }) {
+  const questionId = `faq-question-${index}`
   const answerId = `faq-answer-${index}`
 
   return (
     <div className="border-b border-white/5" role="listitem">
       <button
+        id={questionId}
         onClick={onToggle}
-        className="w-full py-6 flex items-center justify-between text-left"
+        className="w-full py-6 flex items-center justify-between text-left focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-inset rounded"
         aria-expanded={isOpen}
         aria-controls={answerId}
       >
@@ -64,6 +65,7 @@ function FAQItem({ faq, isOpen, onToggle, index }) {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
             role="region"
+            aria-labelledby={questionId}
           >
             <p className="pb-6 text-gray-400 leading-relaxed">{faq.answer}</p>
           </motion.div>

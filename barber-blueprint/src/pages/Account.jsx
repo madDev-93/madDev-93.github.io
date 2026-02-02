@@ -23,11 +23,12 @@ import {
 } from 'lucide-react'
 
 // PasswordInput component defined outside to prevent recreation on every render
-function PasswordInput({ value, onChange, placeholder, name, disabled, showPassword, onToggle }) {
+function PasswordInput({ value, onChange, placeholder, name, disabled, showPassword, onToggle, id }) {
   return (
     <div className="relative">
-      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
       <input
+        id={id}
         type={showPassword ? 'text' : 'password'}
         value={value}
         onChange={onChange}
@@ -43,7 +44,7 @@ function PasswordInput({ value, onChange, placeholder, name, disabled, showPassw
         aria-label={showPassword ? 'Hide password' : 'Show password'}
         aria-pressed={showPassword}
       >
-        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+        {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
       </button>
     </div>
   )
@@ -84,8 +85,12 @@ export default function Account() {
   })
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/')
+    try {
+      await logout()
+      navigate('/')
+    } catch (err) {
+      setError('Failed to sign out. Please try again.')
+    }
   }
 
   const resetForms = () => {
@@ -376,8 +381,9 @@ export default function Account() {
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Current Password</label>
+                    <label htmlFor="current-password" className="block text-sm text-gray-400 mb-2">Current Password</label>
                     <PasswordInput
+                      id="current-password"
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                       placeholder="Enter current password"
@@ -388,8 +394,9 @@ export default function Account() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">New Password</label>
+                    <label htmlFor="new-password" className="block text-sm text-gray-400 mb-2">New Password</label>
                     <PasswordInput
+                      id="new-password"
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                       placeholder="Enter new password"
@@ -403,8 +410,9 @@ export default function Account() {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Confirm New Password</label>
+                    <label htmlFor="confirm-password" className="block text-sm text-gray-400 mb-2">Confirm New Password</label>
                     <PasswordInput
+                      id="confirm-password"
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       placeholder="Confirm new password"
@@ -451,8 +459,9 @@ export default function Account() {
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Current Password</label>
+                    <label htmlFor="email-current-password" className="block text-sm text-gray-400 mb-2">Current Password</label>
                     <PasswordInput
+                      id="email-current-password"
                       value={emailForm.currentPassword}
                       onChange={(e) => setEmailForm({ ...emailForm, currentPassword: e.target.value })}
                       placeholder="Enter your password"
@@ -463,10 +472,11 @@ export default function Account() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">New Email</label>
+                    <label htmlFor="new-email" className="block text-sm text-gray-400 mb-2">New Email</label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
                       <input
+                        id="new-email"
                         type="email"
                         value={emailForm.newEmail}
                         onChange={(e) => setEmailForm({ ...emailForm, newEmail: e.target.value })}
@@ -522,8 +532,9 @@ export default function Account() {
                       </div>
                     )}
                     <div>
-                      <label className="block text-sm text-gray-400 mb-2">Password</label>
+                      <label htmlFor="delete-password" className="block text-sm text-gray-400 mb-2">Password</label>
                       <PasswordInput
+                        id="delete-password"
                         value={deleteForm.currentPassword}
                         onChange={(e) => setDeleteForm({ ...deleteForm, currentPassword: e.target.value })}
                         placeholder="Enter your password"
@@ -534,8 +545,9 @@ export default function Account() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-400 mb-2">Type DELETE to confirm</label>
+                      <label htmlFor="delete-confirm" className="block text-sm text-gray-400 mb-2">Type DELETE to confirm</label>
                       <input
+                        id="delete-confirm"
                         type="text"
                         value={deleteForm.confirmText}
                         onChange={(e) => setDeleteForm({ ...deleteForm, confirmText: e.target.value })}

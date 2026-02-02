@@ -7,6 +7,7 @@ export default function TiltCard({ children, className = '' }) {
   const [rotateY, setRotateY] = useState(0)
 
   const handleMouse = (e) => {
+    if (!ref.current) return
     const { clientX, clientY } = e
     const { left, top, width, height } = ref.current.getBoundingClientRect()
     const x = (clientX - left) / width
@@ -20,11 +21,19 @@ export default function TiltCard({ children, className = '' }) {
     setRotateY(0)
   }
 
+  // Reset on focus/blur for keyboard users
+  const handleFocus = () => {
+    setRotateX(0)
+    setRotateY(0)
+  }
+
   return (
     <motion.div
       ref={ref}
       onMouseMove={handleMouse}
       onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={handleMouseLeave}
       animate={{ rotateX, rotateY }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
