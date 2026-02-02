@@ -57,7 +57,7 @@ export default function CTA({ price = '$47', originalPrice = '$97' }) {
             {/* Price */}
             <div className="flex items-center justify-center gap-3 mb-2">
               <span className="text-4xl sm:text-5xl font-bold text-white">{price}</span>
-              <span className="text-xl text-gray-500 line-through">{originalPrice}</span>
+              <span className="text-xl text-gray-400 line-through">{originalPrice}</span>
             </div>
             <p className="text-sm text-gold">Save 50% — Limited Time</p>
           </div>
@@ -106,7 +106,7 @@ export default function CTA({ price = '$47', originalPrice = '$97' }) {
 
           {/* Secure Payment */}
           <div className="mt-6 pt-6 border-t border-white/5">
-            <div className="flex items-center justify-center gap-2 text-gray-500 mb-4">
+            <div className="flex items-center justify-center gap-2 text-gray-400 mb-4">
               <Lock className="w-4 h-4" />
               <span className="text-xs">Secure 256-bit SSL Encrypted Payment</span>
             </div>

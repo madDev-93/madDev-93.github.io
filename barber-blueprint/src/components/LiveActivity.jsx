@@ -141,7 +141,7 @@ export default function LiveActivity() {
             </span>
             <button
               onClick={dismissViewers}
-              className="ml-1 text-gray-500 hover:text-gray-300 transition-colors"
+              className="ml-1 text-gray-400 hover:text-gray-300 transition-colors"
               aria-label="Dismiss viewer count"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -163,7 +163,7 @@ export default function LiveActivity() {
           >
             <button
               onClick={() => setShowPurchase(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-300 transition-colors"
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-300 transition-colors"
               aria-label="Dismiss notification"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -175,7 +175,7 @@ export default function LiveActivity() {
               <div>
                 <p className="text-sm text-white font-medium">{recentPurchase.name}</p>
                 <p className="text-xs text-gray-400">purchased The Barber Blueprint</p>
-                <p className="text-xs text-gray-500 mt-1">{recentPurchase.time}</p>
+                <p className="text-xs text-gray-400 mt-1">{recentPurchase.time}</p>
               </div>
             </div>
           </motion.div>

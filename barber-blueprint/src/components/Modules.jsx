@@ -52,7 +52,7 @@ export default function Modules() {
                 <h3 className="text-lg font-semibold mb-2">
                   {module.title}
                 </h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
+                <p className="text-sm text-gray-400 leading-relaxed">
                   {module.fullDescription}
                 </p>
               </TiltCard>

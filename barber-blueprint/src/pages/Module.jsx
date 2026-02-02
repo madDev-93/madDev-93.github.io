@@ -117,7 +117,9 @@ export default function Module() {
   const [showLessons, setShowLessons] = useState(true)
 
   const moduleId = parseInt(id, 10)
-  const module = !isNaN(moduleId) ? moduleData[moduleId] : null
+  // Whitelist validation - only allow valid module IDs
+  const validModuleIds = [1, 2, 3, 4, 5, 6]
+  const module = validModuleIds.includes(moduleId) ? moduleData[moduleId] : null
 
   if (!module) {
     return (

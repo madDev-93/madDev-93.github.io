@@ -327,14 +327,14 @@ export default function Account() {
                   Active
                 </span>
               ) : (
-                <span className="flex items-center gap-2 text-gray-500">
+                <span className="flex items-center gap-2 text-gray-400">
                   <XCircle className="w-5 h-5" />
                   Not Purchased
                 </span>
               )}
             </div>
             {hasPurchased && userProfile?.purchaseDate && (
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-400 mt-2">
                 Purchased on {new Date(userProfile.purchaseDate).toLocaleDateString()}
               </p>
             )}
@@ -405,7 +405,7 @@ export default function Account() {
                       showPassword={showPassword.newPassword}
                       onToggle={() => togglePasswordVisibility('newPassword')}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Min 8 characters with uppercase, lowercase, and number
                     </p>
                   </div>
@@ -425,7 +425,7 @@ export default function Account() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+                    className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark"
                   >
                     {loading ? 'Updating...' : 'Update Password'}
                   </button>
@@ -486,14 +486,14 @@ export default function Account() {
                         autoComplete="email"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       A verification link will be sent to your new email
                     </p>
                   </div>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+                    className="w-full bg-gold hover:bg-gold-dark text-dark font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark"
                   >
                     {loading ? 'Sending verification...' : 'Send Verification Email'}
                   </button>
@@ -570,14 +570,14 @@ export default function Account() {
                           setError('')
                         }}
                         disabled={loading}
-                        className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+                        className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-dark"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={loading}
-                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-dark"
                       >
                         {loading ? 'Deleting...' : 'Delete Account'}
                       </button>

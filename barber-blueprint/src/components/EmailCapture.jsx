@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import { Send, Check, ArrowRight } from 'lucide-react'
 
@@ -91,7 +90,7 @@ export default function EmailCapture() {
             </form>
           )}
 
-          <p className="text-xs text-gray-500 mt-4">
+          <p className="text-xs text-gray-400 mt-4">
             Join 500+ barbers getting weekly tips
           </p>
         </motion.div>

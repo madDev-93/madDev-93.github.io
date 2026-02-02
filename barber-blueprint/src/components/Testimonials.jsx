@@ -40,7 +40,7 @@ function StarRating({ rating, max = 5 }) {
       {[...Array(max)].map((_, i) => (
         <Star
           key={i}
-          className={`w-4 h-4 ${i < rating ? 'fill-gold text-gold' : 'fill-gray-700 text-gray-700'}`}
+          className={`w-4 h-4 ${i < rating ? 'fill-gold text-gold' : 'fill-gray-500 text-gray-500'}`}
           aria-hidden="true"
         />
       ))}

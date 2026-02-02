@@ -221,8 +221,8 @@ export default function Signup() {
           </p>
         </div>
 
-        <p className="text-center text-gray-600 text-sm mt-6">
-          <Link to="/" className="hover:text-gray-400 transition-colors focus:outline-none focus:underline">
+        <p className="text-center text-gray-400 text-sm mt-6">
+          <Link to="/" className="hover:text-white transition-colors focus:outline-none focus:underline">
             ← Back to home
           </Link>
         </p>
