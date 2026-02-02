@@ -86,8 +86,8 @@ export default function About() {
             {/* Instagram Feed */}
             <InstagramFeed
               postUrls={[]}
-              profileUrl="https://instagram.com/barberblueprint"
-              username="barberblueprint"
+              profileUrl="https://www.instagram.com/ivan.m.rod"
+              username="ivan.m.rod"
             />
           </motion.div>
         </div>
