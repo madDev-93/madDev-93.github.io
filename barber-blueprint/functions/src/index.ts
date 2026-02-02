@@ -31,7 +31,7 @@ function verifySignature(payload: string, signature: string): boolean {
  * - subscription_created: A new subscription is created
  *
  * Set your webhook URL in Lemonsqueezy dashboard to:
- * https://us-central1-qwota-ai-coach.cloudfunctions.net/lemonsqueezyWebhook
+ * https://us-central1-barber-blueprint.cloudfunctions.net/lemonsqueezyWebhook
  */
 export const lemonsqueezyWebhook = functions.https.onRequest(async (req, res) => {
   // Only allow POST

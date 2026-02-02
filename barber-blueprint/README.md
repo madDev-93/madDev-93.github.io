@@ -2,6 +2,8 @@
 
 A high-converting landing page and members area for a digital course targeted at barbers who want to build their personal brand and create income beyond chair time.
 
+**Live Site:** https://maddev-93.github.io/barber-blueprint/
+
 ## Tech Stack
 
 - **Frontend:** React 18 + Vite
@@ -90,16 +92,9 @@ barber-blueprint/
 
 ### 1. Firebase Configuration
 
-You need to add a **Web App** to your Firebase project and get the config.
+✅ **COMPLETED** - Firebase project `barber-blueprint` is set up with web app configured.
 
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: `qwota-ai-coach`
-3. Go to **Project Settings** → **General**
-4. Scroll to **Your apps** → Click **Add app** → Select **Web** (</>)
-5. Register the app (name: "Barber Blueprint")
-6. Copy the config object
-
-Then update `src/firebase/config.js`:
+Config file: `src/firebase/config.js`
 
 ```javascript
 const firebaseConfig = {
@@ -112,27 +107,29 @@ const firebaseConfig = {
 }
 ```
 
-### 2. Firestore Rules
+### 2. Firestore Database
 
-Add these rules to your Firestore (in Firebase Console → Firestore → Rules):
+✅ **COMPLETED** - Firestore created in test mode.
+
+**TODO (before launch):** Update Firestore rules for security:
+
+1. Go to Firebase Console → Firestore → Rules
+2. Replace with:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Existing Qwota rules...
-
-    // Blueprint users - users can read their own data
+    // Blueprint users - users can read/write their own data
     match /blueprint_users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Blueprint purchases - only server can write (webhook)
+    // Blueprint purchases - users can read their own, only webhook can write
     match /blueprint_purchases/{email} {
       allow read: if request.auth != null &&
                     request.auth.token.email.lower() == email;
-      allow write: if false; // Only Cloud Functions can write
+      allow write: if false;
     }
   }
 }
@@ -140,10 +137,7 @@ service cloud.firestore {
 
 ### 3. Enable Authentication
 
-1. Go to Firebase Console → Authentication
-2. Click **Get started** (if not already enabled)
-3. Go to **Sign-in method** tab
-4. Enable **Email/Password**
+✅ **COMPLETED** - Email/Password authentication enabled.
 
 ### 4. Lemonsqueezy Setup
 
@@ -156,7 +150,7 @@ service cloud.firestore {
 4. Go to **Settings** → **Webhooks**
 5. Add webhook URL:
    ```
-   https://us-central1-qwota-ai-coach.cloudfunctions.net/lemonsqueezyWebhook
+   https://us-central1-barber-blueprint.cloudfunctions.net/lemonsqueezyWebhook
    ```
 6. Select events: `order_created`
 7. Copy the **Signing secret**
@@ -195,9 +189,10 @@ Then change button links to:
 ## TODO List
 
 ### High Priority
-- [ ] Add Firebase web config credentials to `src/firebase/config.js`
-- [ ] Enable Email/Password auth in Firebase Console
-- [ ] Add Firestore security rules for blueprint collections
+- [x] Add Firebase web config credentials to `src/firebase/config.js`
+- [x] Enable Email/Password auth in Firebase Console
+- [x] Create Firestore database
+- [ ] Add Firestore security rules (before launch)
 - [ ] Create Lemonsqueezy account and product
 - [ ] Deploy Cloud Functions for webhook
 - [ ] Update CTA buttons with Lemonsqueezy checkout link
