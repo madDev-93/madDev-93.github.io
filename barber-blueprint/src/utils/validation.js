@@ -51,10 +51,40 @@ export const getAuthErrorMessage = (errorCode, context = 'login') => {
     'auth/network-request-failed': 'Network error. Check your connection.',
   }
 
+  const passwordErrors = {
+    'auth/wrong-password': 'Current password is incorrect',
+    'auth/invalid-credential': 'Current password is incorrect',
+    'auth/weak-password': 'New password is too weak',
+    'auth/requires-recent-login': 'Please sign out and sign in again before changing your password',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  }
+
+  const emailErrors = {
+    'auth/wrong-password': 'Password is incorrect',
+    'auth/invalid-credential': 'Password is incorrect',
+    'auth/email-already-in-use': 'This email is already in use',
+    'auth/invalid-email': 'Please enter a valid email address',
+    'auth/requires-recent-login': 'Please sign out and sign in again before changing your email',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  }
+
+  const deleteErrors = {
+    'auth/wrong-password': 'Password is incorrect',
+    'auth/invalid-credential': 'Password is incorrect',
+    'auth/requires-recent-login': 'Please sign out and sign in again before deleting your account',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  }
+
   const errorMaps = {
     login: loginErrors,
     signup: signupErrors,
-    reset: resetErrors
+    reset: resetErrors,
+    password: passwordErrors,
+    email: emailErrors,
+    delete: deleteErrors
   }
 
   const errorMap = errorMaps[context] || loginErrors

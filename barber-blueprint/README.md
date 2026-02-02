@@ -88,8 +88,9 @@ barber-blueprint/
 - Protected dashboard
 - 6 module pages with video placeholders
 - Lesson sidebar with progress tracking
-- Account management page
+- Account management page (change password, update email, delete account)
 - Purchase verification via Firestore
+- Rate-limited account operations for security
 
 ---
 
@@ -268,7 +269,7 @@ Firebase API key is restricted to these HTTP referrers:
 - [ ] Real-time viewer count with Firebase
 - [ ] Course completion certificates
 - [ ] Affiliate program integration
-- [ ] Account settings (change email/password)
+- [x] Account settings (change email/password) ✅
 
 ---
 

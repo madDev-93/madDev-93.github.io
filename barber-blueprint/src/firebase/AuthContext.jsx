@@ -4,9 +4,14 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  updatePassword as firebaseUpdatePassword,
+  verifyBeforeUpdateEmail,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from './config'
 
 const AuthContext = createContext()
@@ -116,6 +121,58 @@ export function AuthProvider({ children }) {
     return sendPasswordResetEmail(auth, normalizedEmail)
   }
 
+  // Reauthenticate user (required for sensitive operations)
+  const reauthenticate = async (currentPassword) => {
+    if (!auth.currentUser) throw new Error('No user logged in')
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    )
+    return reauthenticateWithCredential(auth.currentUser, credential)
+  }
+
+  // Update password (requires recent authentication)
+  const updatePassword = async (currentPassword, newPassword) => {
+    await reauthenticate(currentPassword)
+    return firebaseUpdatePassword(auth.currentUser, newPassword)
+  }
+
+  // Update email (requires recent authentication)
+  // Uses verifyBeforeUpdateEmail - sends verification to new email before updating
+  const updateEmail = async (currentPassword, newEmail) => {
+    const normalizedEmail = normalizeEmail(newEmail)
+    await reauthenticate(currentPassword)
+
+    // Send verification email to new address
+    await verifyBeforeUpdateEmail(auth.currentUser, normalizedEmail)
+
+    // Update email in Firestore user document
+    try {
+      await updateDoc(doc(db, 'blueprint_users', auth.currentUser.uid), {
+        pendingEmail: normalizedEmail,
+        emailChangeRequestedAt: new Date().toISOString()
+      })
+    } catch {
+      // Non-critical - continue even if Firestore update fails
+    }
+  }
+
+  // Delete account (requires recent authentication)
+  // Cleans up Firestore data before deleting auth account
+  const deleteAccount = async (currentPassword) => {
+    await reauthenticate(currentPassword)
+
+    // Delete user's Firestore document first
+    const uid = auth.currentUser.uid
+    try {
+      await deleteDoc(doc(db, 'blueprint_users', uid))
+    } catch {
+      // Continue with account deletion even if Firestore cleanup fails
+    }
+
+    return deleteUser(auth.currentUser)
+  }
+
   // Show error state if Firebase initialization failed
   if (authError) {
     return (
@@ -144,6 +201,9 @@ export function AuthProvider({ children }) {
     login,
     logout,
     resetPassword,
+    updatePassword,
+    updateEmail,
+    deleteAccount,
     hasPurchased: userProfile?.purchased || false
   }
 
