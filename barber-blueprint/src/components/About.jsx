@@ -89,8 +89,8 @@ export default function About() {
               rel="noopener noreferrer"
               className="group flex items-center gap-4 bg-dark-tertiary border border-white/5 hover:border-gold/30 rounded-xl p-4 transition-all"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 rounded-full flex items-center justify-center">
-                <Instagram className="w-6 h-6 text-white" aria-hidden="true" />
+              <div className="w-12 h-12 bg-gold/10 border border-gold/20 rounded-full flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                <Instagram className="w-6 h-6 text-gold" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-white group-hover:text-gold transition-colors">@ivan.m.rod</p>
