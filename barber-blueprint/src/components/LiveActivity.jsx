@@ -141,7 +141,7 @@ export default function LiveActivity() {
             </span>
             <button
               onClick={dismissViewers}
-              className="ml-1 text-gray-400 hover:text-gray-300 transition-colors"
+              className="ml-1 text-gray-400 hover:text-gray-300 transition-colors focus:outline-none focus:text-gold"
               aria-label="Dismiss viewer count"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
@@ -163,7 +163,7 @@ export default function LiveActivity() {
           >
             <button
               onClick={() => setShowPurchase(false)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-300 transition-colors"
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-300 transition-colors focus:outline-none focus:text-gold"
               aria-label="Dismiss notification"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />

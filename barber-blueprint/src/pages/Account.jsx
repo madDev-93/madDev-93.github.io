@@ -359,7 +359,7 @@ export default function Account() {
             <div className="border-b border-white/5 pb-4 mb-4">
               <button
                 onClick={() => handleSectionToggle('password')}
-                className="w-full flex items-center justify-between py-2 text-left"
+                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus:ring-2 focus:ring-gold/50 rounded"
                 aria-expanded={activeSection === 'password'}
               >
                 <span className="text-gray-300">Change Password</span>
@@ -437,7 +437,7 @@ export default function Account() {
             <div className="border-b border-white/5 pb-4 mb-4">
               <button
                 onClick={() => handleSectionToggle('email')}
-                className="w-full flex items-center justify-between py-2 text-left"
+                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus:ring-2 focus:ring-gold/50 rounded"
                 aria-expanded={activeSection === 'email'}
               >
                 <span className="text-gray-300">Change Email</span>
@@ -505,7 +505,7 @@ export default function Account() {
             <div>
               <button
                 onClick={handleDeleteToggle}
-                className="w-full flex items-center justify-between py-2 text-left"
+                className="w-full flex items-center justify-between py-2 text-left focus:outline-none focus:ring-2 focus:ring-red-500/50 rounded"
                 aria-expanded={showDeleteConfirm}
               >
                 <span className="text-red-400">Delete Account</span>

@@ -14,17 +14,17 @@ export default function Footer() {
           </div>
 
           {/* Links */}
-          <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="#" className="hover:text-white transition-colors">
+          <nav className="flex items-center gap-6 text-sm text-gray-400" aria-label="Footer navigation">
+            <a href="#" className="hover:text-white transition-colors focus:outline-none focus:text-gold">
               Privacy Policy
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="#" className="hover:text-white transition-colors focus:outline-none focus:text-gold">
               Terms of Service
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href="#" className="hover:text-white transition-colors focus:outline-none focus:text-gold">
               Contact
             </a>
-          </div>
+          </nav>
 
           {/* Copyright */}
           <p className="text-sm text-gray-400">
