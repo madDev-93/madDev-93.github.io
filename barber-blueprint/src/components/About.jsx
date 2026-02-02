@@ -1,6 +1,7 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Scissors, Camera, Users, Quote } from 'lucide-react'
+import InstagramFeed from './InstagramFeed'
 
 export default function About() {
   const ref = useRef(null)
@@ -81,6 +82,13 @@ export default function About() {
               </p>
               <span className="text-sm text-gray-400">— Real execution, not theory</span>
             </div>
+
+            {/* Instagram Feed */}
+            <InstagramFeed
+              postUrls={[]}
+              profileUrl="https://instagram.com/barberblueprint"
+              username="barberblueprint"
+            />
           </motion.div>
         </div>
       </div>

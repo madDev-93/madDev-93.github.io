@@ -1,12 +1,21 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
+import { useAllProgress } from '../hooks/useProgress'
 import { Scissors, Lock, Play, LogOut, User, Gift } from 'lucide-react'
 import { modules, bonuses } from '../constants/modules'
 
 export default function Dashboard() {
   const { user, hasPurchased, logout } = useAuth()
   const navigate = useNavigate()
+  const { allProgress } = useAllProgress()
+
+  // Calculate progress percentage for a module
+  const getModuleProgress = (moduleId, totalLessons) => {
+    const progress = allProgress[moduleId]
+    if (!progress || !progress.completedLessons) return 0
+    return Math.round((progress.completedLessons.length / totalLessons) * 100)
+  }
 
   const handleLogout = async () => {
     try {
@@ -92,6 +101,7 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold mb-6">Modules</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" role="list" aria-label="Course modules">
             {modules.map((module) => {
+              const progress = hasPurchased ? getModuleProgress(module.id, module.lessons) : 0
               const ModuleContent = (
                 <>
                   <div className="flex items-start justify-between mb-4">
@@ -106,11 +116,24 @@ export default function Dashboard() {
                   </div>
                   <h3 className="font-semibold mb-1">{module.title}</h3>
                   <p className="text-sm text-gray-400 mb-3">{module.shortDescription}</p>
-                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
                     <span>{module.lessons} lessons</span>
                     <span aria-hidden="true">•</span>
                     <span>{module.duration}</span>
                   </div>
+                  {hasPurchased && (
+                    <div className="mt-auto">
+                      <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                        <span>{progress}% complete</span>
+                      </div>
+                      <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gold rounded-full transition-all duration-300"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </>
               )
 

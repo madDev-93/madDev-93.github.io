@@ -30,6 +30,17 @@
     }
   }
 
+  /* Scroll offset for fixed header */
+  section[id] {
+    scroll-margin-top: 4rem; /* 64px mobile */
+  }
+
+  @media (min-width: 768px) {
+    section[id] {
+      scroll-margin-top: 5rem; /* 80px desktop */
+    }
+  }
+
   body {
     @apply bg-dark text-white antialiased;
     font-family: var(--font-display);

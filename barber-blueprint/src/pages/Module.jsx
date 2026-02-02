@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
+import { useProgress } from '../hooks/useProgress'
 import {
   Scissors,
   ArrowLeft,
@@ -9,7 +10,8 @@ import {
   Clock,
   CheckCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Check
 } from 'lucide-react'
 import { useState, memo, useCallback } from 'react'
 
@@ -80,7 +82,7 @@ const moduleData = {
 }
 
 // Memoized lesson item component to prevent unnecessary re-renders
-const LessonItem = memo(function LessonItem({ lesson, isActive, onSelect }) {
+const LessonItem = memo(function LessonItem({ lesson, isActive, isCompleted, onSelect }) {
   return (
     <button
       onClick={() => onSelect(lesson.id)}
@@ -88,13 +90,13 @@ const LessonItem = memo(function LessonItem({ lesson, isActive, onSelect }) {
         isActive ? 'bg-gold/10' : 'hover:bg-white/5'
       }`}
       aria-current={isActive ? 'true' : undefined}
-      aria-label={`Lesson ${lesson.id}: ${lesson.title}, ${lesson.duration}${lesson.completed ? ', completed' : ''}`}
+      aria-label={`Lesson ${lesson.id}: ${lesson.title}, ${lesson.duration}${isCompleted ? ', completed' : ''}`}
     >
       <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-        isActive ? 'bg-gold text-dark' : 'bg-white/10 text-gray-400'
+        isCompleted ? 'bg-green-500 text-white' : isActive ? 'bg-gold text-dark' : 'bg-white/10 text-gray-400'
       }`}>
-        {lesson.completed ? (
-          <CheckCircle className="w-4 h-4" aria-label="Completed" />
+        {isCompleted ? (
+          <CheckCircle className="w-4 h-4" aria-hidden="true" />
         ) : (
           <span className="text-xs" aria-hidden="true">{lesson.id}</span>
         )}
@@ -120,6 +122,10 @@ export default function Module() {
   // Whitelist validation - only allow valid module IDs
   const validModuleIds = [1, 2, 3, 4, 5, 6]
   const module = validModuleIds.includes(moduleId) ? moduleData[moduleId] : null
+
+  // Progress tracking
+  const { isLessonComplete, markLessonComplete, getProgressPercentage } = useProgress(moduleId)
+  const progressPercentage = module ? getProgressPercentage(module.lessons.length) : 0
 
   if (!module) {
     return (
@@ -196,6 +202,24 @@ export default function Module() {
                 <span>Lesson {activeLesson} of {module.lessons.length}</span>
               </div>
 
+              {/* Mark Complete Button */}
+              <div className="mb-6">
+                {isLessonComplete(activeLesson) ? (
+                  <div className="flex items-center gap-2 text-green-400">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">Lesson Completed</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => markLessonComplete(activeLesson)}
+                    className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark"
+                  >
+                    <Check className="w-5 h-5" aria-hidden="true" />
+                    Mark as Complete
+                  </button>
+                )}
+              </div>
+
               {/* Lesson Navigation */}
               <nav className="flex items-center justify-between pt-6 border-t border-white/5" aria-label="Lesson navigation">
                 <button
@@ -232,6 +256,21 @@ export default function Module() {
               <div className="p-4 border-b border-white/5">
                 <h2 className="font-semibold">{module.title}</h2>
                 <p className="text-sm text-gray-400 mt-1">{module.description}</p>
+                {/* Progress Bar */}
+                <div className="mt-3">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span>Progress</span>
+                    <span>{progressPercentage}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercentage}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      className="h-full bg-gold rounded-full"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Lessons Toggle (Mobile) */}
@@ -264,6 +303,7 @@ export default function Module() {
                     key={lesson.id}
                     lesson={lesson}
                     isActive={activeLesson === lesson.id}
+                    isCompleted={isLessonComplete(lesson.id)}
                     onSelect={handleLessonSelect}
                   />
                 ))}
