@@ -1,7 +1,6 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
-import { Scissors, Camera, Users, Quote } from 'lucide-react'
-import InstagramFeed from './InstagramFeed'
+import { Scissors, Camera, Users, Quote, Instagram } from 'lucide-react'
 
 export default function About() {
   const ref = useRef(null)
@@ -75,7 +74,7 @@ export default function About() {
             </div>
 
             {/* Quote */}
-            <div className="bg-dark-tertiary border-l-2 border-gold rounded-r-xl p-6">
+            <div className="bg-dark-tertiary border-l-2 border-gold rounded-r-xl p-6 mb-8">
               <Quote className="w-6 h-6 text-gold/50 mb-3" />
               <p className="text-lg text-white mb-2">
                 "Document the work. The results will follow."
@@ -84,15 +83,23 @@ export default function About() {
             </div>
 
             {/* Instagram Follow */}
-            <InstagramFeed
-              postUrls={[
-                'https://www.instagram.com/reel/DT3e4wmks1-/',
-                'https://www.instagram.com/reel/C6Lx-4WAWgk/',
-                'https://www.instagram.com/p/DHEHh7Pge2c/'
-              ]}
-              profileUrl="https://www.instagram.com/ivan.m.rod"
-              username="ivan.m.rod"
-            />
+            <a
+              href="https://www.instagram.com/ivan.m.rod"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-4 bg-dark-tertiary border border-white/5 hover:border-gold/30 rounded-xl p-4 transition-all"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 rounded-full flex items-center justify-center">
+                <Instagram className="w-6 h-6 text-white" aria-hidden="true" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-white group-hover:text-gold transition-colors">@ivan.m.rod</p>
+                <p className="text-sm text-gray-400">Follow the journey on Instagram</p>
+              </div>
+              <span className="text-gold text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                Follow →
+              </span>
+            </a>
           </motion.div>
         </div>
       </div>
