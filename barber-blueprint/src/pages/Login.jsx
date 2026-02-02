@@ -2,49 +2,62 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
+import { validateEmail, getAuthErrorMessage } from '../utils/validation'
 import { Scissors, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
 
   const { login, resetPassword } = useAuth()
   const navigate = useNavigate()
 
+  const validateForm = () => {
+    const errors = {}
+    const emailError = validateEmail(email)
+    if (emailError) errors.email = emailError
+    if (!password) errors.password = 'Password is required'
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setFieldErrors({})
+
+    if (!validateForm()) return
+
     setLoading(true)
 
     try {
-      await login(email, password)
+      await login(email.trim().toLowerCase(), password)
       navigate('/dashboard')
     } catch (err) {
-      setError(
-        err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password'
-          ? 'Invalid email or password'
-          : 'Failed to sign in. Please try again.'
-      )
+      setError(getAuthErrorMessage(err.code))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleResetPassword = async () => {
-    if (!email) {
-      setError('Enter your email address first')
+    const emailError = validateEmail(email)
+    if (emailError) {
+      setFieldErrors({ email: emailError })
       return
     }
     setError('')
+    setFieldErrors({})
 
     try {
-      await resetPassword(email)
+      await resetPassword(email.trim().toLowerCase())
       setResetSent(true)
     } catch (err) {
-      setError('Failed to send reset email. Check your email address.')
+      setError(getAuthErrorMessage(err.code))
     }
   }
 
@@ -88,11 +101,16 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-gold/50 transition-colors"
+                  disabled={loading}
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                    fieldErrors.email ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
+                  }`}
                   placeholder="you@example.com"
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -103,17 +121,23 @@ export default function Login() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-gold/50 transition-colors"
+                  disabled={loading}
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                    fieldErrors.password ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
+                  }`}
                   placeholder="••••••••"
                 />
               </div>
+              {fieldErrors.password && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>
+              )}
             </div>
 
             <button
               type="button"
               onClick={handleResetPassword}
-              className="text-sm text-gold hover:text-gold-dark transition-colors"
+              disabled={loading}
+              className="text-sm text-gold hover:text-gold-dark transition-colors disabled:opacity-50"
             >
               Forgot password?
             </button>

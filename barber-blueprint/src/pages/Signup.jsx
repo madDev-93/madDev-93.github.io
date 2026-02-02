@@ -2,50 +2,65 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
-import { Scissors, Mail, Lock, ArrowRight, AlertCircle, User } from 'lucide-react'
+import { validateEmail, validatePassword, validatePasswordMatch, getAuthErrorMessage } from '../utils/validation'
+import { Scissors, Mail, Lock, ArrowRight, AlertCircle, Check } from 'lucide-react'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
   const { signup } = useAuth()
   const navigate = useNavigate()
 
+  const validateForm = () => {
+    const errors = {}
+
+    const emailError = validateEmail(email)
+    if (emailError) errors.email = emailError
+
+    const passwordError = validatePassword(password)
+    if (passwordError) errors.password = passwordError
+
+    const matchError = validatePasswordMatch(password, confirmPassword)
+    if (matchError) errors.confirmPassword = matchError
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setFieldErrors({})
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
+    if (!validateForm()) return
 
     setLoading(true)
 
     try {
-      await signup(email, password)
+      await signup(email.trim().toLowerCase(), password)
       navigate('/dashboard')
     } catch (err) {
-      setError(
-        err.code === 'auth/email-already-in-use'
-          ? 'An account with this email already exists'
-          : 'Failed to create account. Please try again.'
-      )
+      setError(getAuthErrorMessage(err.code))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
+  // Password strength indicators
+  const passwordChecks = [
+    { label: '8+ characters', met: password.length >= 8 },
+    { label: 'Uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Number', met: /[0-9]/.test(password) },
+  ]
+
   return (
-    <div className="min-h-screen bg-dark flex items-center justify-center px-4">
+    <div className="min-h-screen bg-dark flex items-center justify-center px-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -78,11 +93,16 @@ export default function Signup() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-gold/50 transition-colors"
+                  disabled={loading}
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                    fieldErrors.email ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
+                  }`}
                   placeholder="you@example.com"
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -93,11 +113,33 @@ export default function Signup() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-gold/50 transition-colors"
+                  disabled={loading}
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                    fieldErrors.password ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
+                  }`}
                   placeholder="••••••••"
                 />
               </div>
+              {fieldErrors.password && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>
+              )}
+
+              {/* Password strength indicators */}
+              {password && (
+                <div className="mt-2 grid grid-cols-2 gap-1">
+                  {passwordChecks.map((check) => (
+                    <div
+                      key={check.label}
+                      className={`flex items-center gap-1 text-xs ${
+                        check.met ? 'text-green-400' : 'text-gray-500'
+                      }`}
+                    >
+                      <Check className={`w-3 h-3 ${check.met ? 'opacity-100' : 'opacity-30'}`} />
+                      {check.label}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -108,11 +150,16 @@ export default function Signup() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-gold/50 transition-colors"
+                  disabled={loading}
+                  className={`w-full bg-white/5 border rounded-lg pl-12 pr-4 py-3 text-white placeholder:text-gray-500 focus:outline-none transition-colors disabled:opacity-50 ${
+                    fieldErrors.confirmPassword ? 'border-red-500' : 'border-white/10 focus:border-gold/50'
+                  }`}
                   placeholder="••••••••"
                 />
               </div>
+              {fieldErrors.confirmPassword && (
+                <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>
+              )}
             </div>
 
             <button
