@@ -4,8 +4,10 @@
 
 export const validateEmail = (email) => {
   if (!email) return 'Email is required'
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  // More robust email regex - requires at least 2 char TLD, no consecutive dots
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
   if (!emailRegex.test(email)) return 'Invalid email address'
+  if (/\.\./.test(email)) return 'Invalid email address'
   return null
 }
 

@@ -103,7 +103,7 @@ const LessonItem = memo(function LessonItem({ lesson, isActive, onSelect }) {
         <p className={`text-sm truncate ${isActive ? 'text-white' : 'text-gray-300'}`}>
           {lesson.title}
         </p>
-        <p className="text-xs text-gray-500 mt-0.5">{lesson.duration}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{lesson.duration}</p>
       </div>
     </button>
   )
@@ -116,8 +116,8 @@ export default function Module() {
   const [activeLesson, setActiveLesson] = useState(1)
   const [showLessons, setShowLessons] = useState(true)
 
-  const moduleId = parseInt(id)
-  const module = moduleData[moduleId]
+  const moduleId = parseInt(id, 10)
+  const module = !isNaN(moduleId) ? moduleData[moduleId] : null
 
   if (!module) {
     return (
@@ -180,7 +180,7 @@ export default function Module() {
                     <Play className="w-8 h-8 text-gold ml-1" />
                   </div>
                   <p className="text-gray-400 text-sm">Video placeholder</p>
-                  <p className="text-gray-600 text-xs mt-1">Upload your content here</p>
+                  <p className="text-gray-400 text-xs mt-1">Upload your content here</p>
                 </div>
               </div>
 
@@ -229,7 +229,7 @@ export default function Module() {
               {/* Module Title */}
               <div className="p-4 border-b border-white/5">
                 <h2 className="font-semibold">{module.title}</h2>
-                <p className="text-sm text-gray-500 mt-1">{module.description}</p>
+                <p className="text-sm text-gray-400 mt-1">{module.description}</p>
               </div>
 
               {/* Lessons Toggle (Mobile) */}
