@@ -34,6 +34,13 @@ export default function Home() {
 
   return (
     <div className="relative">
+      {/* Skip to main content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-gold focus:text-dark focus:px-4 focus:py-2 focus:rounded-lg focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <PageLoader isLoading={isLoading} />
       <ScrollProgress />
       <div className="grain-overlay" />
@@ -57,7 +64,7 @@ export default function Home() {
       <MobileCTA price={PRICE} />
 
       <Header />
-      <main className="pb-20 md:pb-0">
+      <main id="main-content" className="pb-20 md:pb-0" tabIndex={-1}>
         <Hero />
         <Problem />
         <Modules />
