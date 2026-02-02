@@ -102,9 +102,15 @@ export function AuthProvider({ children }) {
     return result
   }
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     const normalizedEmail = normalizeEmail(email)
-    return signInWithEmailAndPassword(auth, normalizedEmail, password)
+    try {
+      return await signInWithEmailAndPassword(auth, normalizedEmail, password)
+    } catch (error) {
+      // Re-throw with additional context
+      error.loginContext = 'signInWithEmailAndPassword failed'
+      throw error
+    }
   }
 
   const logout = () => {
