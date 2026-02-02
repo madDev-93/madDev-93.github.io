@@ -8,11 +8,10 @@ import {
   Play,
   Clock,
   CheckCircle,
-  Lock,
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 
 const moduleData = {
   1: {
@@ -80,6 +79,36 @@ const moduleData = {
   }
 }
 
+// Memoized lesson item component to prevent unnecessary re-renders
+const LessonItem = memo(function LessonItem({ lesson, isActive, onSelect }) {
+  return (
+    <button
+      onClick={() => onSelect(lesson.id)}
+      className={`w-full p-4 flex items-start gap-3 text-left border-b border-white/5 last:border-b-0 transition-colors ${
+        isActive ? 'bg-gold/10' : 'hover:bg-white/5'
+      }`}
+      aria-current={isActive ? 'true' : undefined}
+      aria-label={`Lesson ${lesson.id}: ${lesson.title}, ${lesson.duration}`}
+    >
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+        isActive ? 'bg-gold text-dark' : 'bg-white/10 text-gray-400'
+      }`}>
+        {lesson.completed ? (
+          <CheckCircle className="w-4 h-4" aria-label="Completed" />
+        ) : (
+          <span className="text-xs" aria-hidden="true">{lesson.id}</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm truncate ${isActive ? 'text-white' : 'text-gray-300'}`}>
+          {lesson.title}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5">{lesson.duration}</p>
+      </div>
+    </button>
+  )
+})
+
 export default function Module() {
   const { id } = useParams()
   const { hasPurchased } = useAuth()
@@ -111,6 +140,10 @@ export default function Module() {
   const currentLesson = module.lessons.find(l => l.id === activeLesson) || module.lessons[0]
   const prevModule = moduleId > 1 ? moduleId - 1 : null
   const nextModule = moduleId < 6 ? moduleId + 1 : null
+
+  const handleLessonSelect = useCallback((lessonId) => {
+    setActiveLesson(lessonId)
+  }, [])
 
   return (
     <div className="min-h-screen bg-dark">
@@ -162,24 +195,26 @@ export default function Module() {
               </div>
 
               {/* Lesson Navigation */}
-              <div className="flex items-center justify-between pt-6 border-t border-white/5">
+              <nav className="flex items-center justify-between pt-6 border-t border-white/5" aria-label="Lesson navigation">
                 <button
                   onClick={() => setActiveLesson(prev => Math.max(1, prev - 1))}
                   disabled={activeLesson === 1}
                   className="flex items-center gap-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous lesson"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                   Previous
                 </button>
                 <button
                   onClick={() => setActiveLesson(prev => Math.min(module.lessons.length, prev + 1))}
                   disabled={activeLesson === module.lessons.length}
                   className="flex items-center gap-2 text-gold hover:text-gold-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next lesson"
                 >
                   Next
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5" aria-hidden="true" />
                 </button>
-              </div>
+              </nav>
             </motion.div>
           </div>
 
@@ -201,49 +236,34 @@ export default function Module() {
               <button
                 onClick={() => setShowLessons(!showLessons)}
                 className="w-full p-4 flex items-center justify-between lg:hidden border-b border-white/5"
+                aria-expanded={showLessons}
+                aria-controls="lessons-list"
+                aria-label={showLessons ? 'Hide lessons list' : 'Show lessons list'}
               >
                 <span className="text-sm text-gray-400">
                   {module.lessons.length} lessons
                 </span>
                 {showLessons ? (
-                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                  <ChevronUp className="w-5 h-5 text-gray-400" aria-hidden="true" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                  <ChevronDown className="w-5 h-5 text-gray-400" aria-hidden="true" />
                 )}
               </button>
 
               {/* Lessons List */}
-              <div className={`${showLessons ? 'block' : 'hidden lg:block'}`}>
+              <div
+                id="lessons-list"
+                className={`${showLessons ? 'block' : 'hidden lg:block'}`}
+                role="list"
+                aria-label="Module lessons"
+              >
                 {module.lessons.map((lesson) => (
-                  <button
+                  <LessonItem
                     key={lesson.id}
-                    onClick={() => setActiveLesson(lesson.id)}
-                    className={`w-full p-4 flex items-start gap-3 text-left border-b border-white/5 last:border-b-0 transition-colors ${
-                      activeLesson === lesson.id
-                        ? 'bg-gold/10'
-                        : 'hover:bg-white/5'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      activeLesson === lesson.id
-                        ? 'bg-gold text-dark'
-                        : 'bg-white/10 text-gray-400'
-                    }`}>
-                      {lesson.completed ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <span className="text-xs">{lesson.id}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm truncate ${
-                        activeLesson === lesson.id ? 'text-white' : 'text-gray-300'
-                      }`}>
-                        {lesson.title}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">{lesson.duration}</p>
-                    </div>
-                  </button>
+                    lesson={lesson}
+                    isActive={activeLesson === lesson.id}
+                    onSelect={handleLessonSelect}
+                  />
                 ))}
               </div>
 

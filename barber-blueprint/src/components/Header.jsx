@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Scissors, Menu, X, User } from 'lucide-react'
@@ -8,11 +8,26 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user } = useAuth()
+  const rafRef = useRef(null)
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    const handleScroll = () => {
+      // Throttle with requestAnimationFrame
+      if (rafRef.current) return
+
+      rafRef.current = requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 50)
+        rafRef.current = null
+      })
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+      }
+    }
   }, [])
 
   return (
@@ -22,16 +37,17 @@ export default function Header() {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'bg-dark/95 backdrop-blur-md border-b border-white/5' : 'bg-transparent'
       }`}
+      role="banner"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <Link to="/" className="flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-gold" />
+          <Link to="/" className="flex items-center gap-2" aria-label="Barber Blueprint Home">
+            <Scissors className="w-5 h-5 text-gold" aria-hidden="true" />
             <span className="font-semibold text-sm tracking-wide uppercase">Barber Blueprint</span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8" role="navigation" aria-label="Main navigation">
             <a href="#modules" className="text-sm text-gray-400 hover:text-white transition-colors">
               Modules
             </a>
@@ -46,7 +62,7 @@ export default function Header() {
                 to="/dashboard"
                 className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
               >
-                <User className="w-4 h-4" />
+                <User className="w-4 h-4" aria-hidden="true" />
                 Dashboard
               </Link>
             ) : (
@@ -69,17 +85,27 @@ export default function Header() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" aria-hidden="true" />
+            ) : (
+              <Menu className="w-6 h-6" aria-hidden="true" />
+            )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <motion.div
+            id="mobile-menu"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             className="md:hidden pb-4"
+            role="navigation"
+            aria-label="Mobile navigation"
           >
             <nav className="flex flex-col gap-4">
               <a href="#modules" className="text-gray-400 hover:text-white transition-colors">

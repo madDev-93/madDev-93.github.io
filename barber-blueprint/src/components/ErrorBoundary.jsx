@@ -12,8 +12,10 @@ export class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
-    // TODO: Send to error tracking service (Sentry, etc.)
+    // Send to error tracking service in production
+    if (import.meta.env.PROD && window.Sentry) {
+      window.Sentry.captureException(error, { extra: errorInfo })
+    }
   }
 
   render() {

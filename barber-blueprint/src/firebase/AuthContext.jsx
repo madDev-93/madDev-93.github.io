@@ -64,8 +64,8 @@ export function AuthProvider({ children }) {
       }
 
       return { purchased: false }
-    } catch (error) {
-      console.error('Error checking purchase status:', error)
+    } catch {
+      // Silently fail - user will see unpurchased state
       return { purchased: false }
     }
   }
@@ -85,7 +85,6 @@ export function AuthProvider({ children }) {
         setLoading(false)
       })
     } catch (error) {
-      console.error('Auth initialization error:', error)
       setAuthError(error.message)
       setLoading(false)
     }

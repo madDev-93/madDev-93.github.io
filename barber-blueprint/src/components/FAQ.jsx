@@ -34,30 +34,36 @@ const faqs = [
   },
 ]
 
-function FAQItem({ faq, isOpen, onToggle }) {
+function FAQItem({ faq, isOpen, onToggle, index }) {
+  const answerId = `faq-answer-${index}`
+
   return (
-    <div className="border-b border-white/5">
+    <div className="border-b border-white/5" role="listitem">
       <button
         onClick={onToggle}
         className="w-full py-6 flex items-center justify-between text-left"
+        aria-expanded={isOpen}
+        aria-controls={answerId}
       >
         <span className="font-medium text-white pr-8">{faq.question}</span>
         <div className="flex-shrink-0 w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center">
           {isOpen ? (
-            <Minus className="w-4 h-4 text-gold" />
+            <Minus className="w-4 h-4 text-gold" aria-hidden="true" />
           ) : (
-            <Plus className="w-4 h-4 text-gray-400" />
+            <Plus className="w-4 h-4 text-gray-400" aria-hidden="true" />
           )}
         </div>
       </button>
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id={answerId}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
+            role="region"
           >
             <p className="pb-6 text-gray-400 leading-relaxed">{faq.answer}</p>
           </motion.div>
@@ -97,11 +103,14 @@ export default function FAQ() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="bg-dark-tertiary border border-white/5 rounded-2xl px-6 sm:px-8"
+          role="list"
+          aria-label="Frequently asked questions"
         >
           {faqs.map((faq, index) => (
             <FAQItem
               key={index}
               faq={faq}
+              index={index}
               isOpen={openIndex === index}
               onToggle={() => setOpenIndex(openIndex === index ? -1 : index)}
             />

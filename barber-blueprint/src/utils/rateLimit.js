@@ -1,9 +1,33 @@
 /**
- * Client-side rate limiting utility
+ * Client-side rate limiting utility with sessionStorage persistence
  * Prevents rapid-fire form submissions and brute force attempts
+ * Persists across page refresh within the same session
  */
 
-const attempts = new Map()
+const STORAGE_KEY = 'rate_limit_data'
+
+/**
+ * Get rate limit data from sessionStorage
+ */
+function getStoredData() {
+  try {
+    const data = sessionStorage.getItem(STORAGE_KEY)
+    return data ? JSON.parse(data) : {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Save rate limit data to sessionStorage
+ */
+function saveData(data) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  } catch {
+    // Storage full or unavailable - continue without persistence
+  }
+}
 
 /**
  * Check if an action is rate limited
@@ -14,21 +38,28 @@ const attempts = new Map()
  */
 export function checkRateLimit(key, maxAttempts = 5, windowMs = 60000) {
   const now = Date.now()
-  const record = attempts.get(key)
+  const data = getStoredData()
+  const record = data[key]
 
-  if (!record) {
+  if (!record || !record.timestamps) {
     return { limited: false, remainingMs: 0, attemptsLeft: maxAttempts }
   }
 
   // Clean up old attempts outside the window
   const recentAttempts = record.timestamps.filter(ts => now - ts < windowMs)
 
+  // Update stored data with cleaned attempts
+  if (recentAttempts.length !== record.timestamps.length) {
+    data[key] = { timestamps: recentAttempts }
+    saveData(data)
+  }
+
   if (recentAttempts.length >= maxAttempts) {
     const oldestAttempt = Math.min(...recentAttempts)
     const remainingMs = windowMs - (now - oldestAttempt)
     return {
       limited: true,
-      remainingMs,
+      remainingMs: Math.max(0, remainingMs),
       attemptsLeft: 0
     }
   }
@@ -46,17 +77,19 @@ export function checkRateLimit(key, maxAttempts = 5, windowMs = 60000) {
  */
 export function recordAttempt(key) {
   const now = Date.now()
-  const record = attempts.get(key)
+  const data = getStoredData()
 
-  if (record) {
-    record.timestamps.push(now)
-    // Keep only last 20 attempts to prevent memory bloat
-    if (record.timestamps.length > 20) {
-      record.timestamps = record.timestamps.slice(-20)
+  if (data[key] && Array.isArray(data[key].timestamps)) {
+    data[key].timestamps.push(now)
+    // Keep only last 20 attempts to prevent storage bloat
+    if (data[key].timestamps.length > 20) {
+      data[key].timestamps = data[key].timestamps.slice(-20)
     }
   } else {
-    attempts.set(key, { timestamps: [now] })
+    data[key] = { timestamps: [now] }
   }
+
+  saveData(data)
 }
 
 /**
@@ -64,7 +97,9 @@ export function recordAttempt(key) {
  * @param {string} key - Unique identifier for the action
  */
 export function clearRateLimit(key) {
-  attempts.delete(key)
+  const data = getStoredData()
+  delete data[key]
+  saveData(data)
 }
 
 /**
@@ -74,7 +109,7 @@ export function clearRateLimit(key) {
  */
 export function formatRemainingTime(ms) {
   const seconds = Math.ceil(ms / 1000)
-  if (seconds < 60) return `${seconds} seconds`
+  if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''}`
   const minutes = Math.ceil(seconds / 60)
-  return `${minutes} minute${minutes > 1 ? 's' : ''}`
+  return `${minutes} minute${minutes !== 1 ? 's' : ''}`
 }
