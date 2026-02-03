@@ -3,12 +3,10 @@ import {
   Scissors,
   LayoutDashboard,
   FileText,
-  Users,
   HelpCircle,
   Gift,
   BookOpen,
   Image,
-  Eye,
   X,
   Home,
   DollarSign,
@@ -40,7 +38,6 @@ const navigation = [
     ]
   },
   { name: 'Media Library', href: '/admin/media', icon: Image },
-  { name: 'Preview Site', href: '/admin/preview', icon: Eye },
 ]
 
 export default function AdminSidebar({ isOpen, onClose }) {
