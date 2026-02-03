@@ -1,16 +1,38 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Scissors, Menu, X, User } from 'lucide-react'
+import { Scissors, Menu, X, User, Shield } from 'lucide-react'
 import { useAuth } from '../firebase/AuthContext'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../firebase/config'
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const { user } = useAuth()
   const rafRef = useRef(null)
   const menuButtonRef = useRef(null)
   const firstMenuItemRef = useRef(null)
+
+  // Check if user is admin
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false)
+      return
+    }
+
+    const checkAdmin = async () => {
+      try {
+        const adminDoc = await getDoc(doc(db, 'blueprint_admins', user.uid))
+        setIsAdmin(adminDoc.exists())
+      } catch {
+        setIsAdmin(false)
+      }
+    }
+
+    checkAdmin()
+  }, [user])
 
   const closeMenu = useCallback(() => {
     setMobileMenuOpen(false)
@@ -83,11 +105,15 @@ export default function Header() {
             </a>
             {user ? (
               <Link
-                to="/dashboard"
+                to={isAdmin ? '/admin' : '/dashboard'}
                 className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
               >
-                <User className="w-4 h-4" aria-hidden="true" />
-                Dashboard
+                {isAdmin ? (
+                  <Shield className="w-4 h-4 text-gold" aria-hidden="true" />
+                ) : (
+                  <User className="w-4 h-4" aria-hidden="true" />
+                )}
+                {isAdmin ? 'Admin Portal' : 'Dashboard'}
               </Link>
             ) : (
               <Link
@@ -143,8 +169,13 @@ export default function Header() {
                 About
               </a>
               {user ? (
-                <Link to="/dashboard" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
-                  Dashboard
+                <Link
+                  to={isAdmin ? '/admin' : '/dashboard'}
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold"
+                  onClick={closeMenu}
+                >
+                  {isAdmin && <Shield className="w-4 h-4 text-gold" aria-hidden="true" />}
+                  {isAdmin ? 'Admin Portal' : 'Dashboard'}
                 </Link>
               ) : (
                 <Link to="/login" className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:text-gold" onClick={closeMenu}>
