@@ -22,13 +22,9 @@ export function AdminProvider({ children }) {
   // Check admin status
   const checkAdminStatus = async (uid) => {
     try {
-      console.log('[AdminContext] Checking admin status for UID:', uid)
       const adminDoc = await getDoc(doc(db, 'blueprint_admins', uid))
-      const exists = adminDoc.exists()
-      console.log('[AdminContext] Admin doc exists:', exists)
-      return exists
-    } catch (err) {
-      console.error('[AdminContext] Error checking admin status:', err)
+      return adminDoc.exists()
+    } catch {
       return false
     }
   }

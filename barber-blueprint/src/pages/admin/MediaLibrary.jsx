@@ -63,21 +63,16 @@ export default function MediaLibrary() {
     let cancelled = false
 
     const loadFiles = async () => {
-      console.log('[MediaLibrary] Starting to load files for tab:', activeTab)
       setLoading(true)
       setError(null)
 
       try {
         const tab = TABS.find(t => t.id === activeTab)
-        console.log('[MediaLibrary] Calling listFiles for path:', tab.path)
         const fileList = await listFiles(tab.path)
-        console.log('[MediaLibrary] Got', fileList.length, 'files')
-        // Check both mounted and not cancelled (for race condition prevention)
         if (mountedRef.current && !cancelled) {
           setFiles(fileList)
         }
       } catch (err) {
-        console.error('Error loading files:', err)
         if (mountedRef.current && !cancelled) {
           setError(err.message)
           setFiles([])

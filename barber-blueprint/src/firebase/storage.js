@@ -106,48 +106,28 @@ export async function deleteFile(url) {
 
 // List all files in a directory
 export async function listFiles(path) {
-  console.log('[Storage] listFiles called for path:', path)
-  console.log('[Storage] Storage bucket:', storage.app.options.storageBucket)
+  const listRef = ref(storage, path)
+  const result = await listAll(listRef)
 
-  try {
-    const listRef = ref(storage, path)
-    console.log('[Storage] Created ref, calling listAll...')
-
-    // Add timeout to detect hanging
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('listAll timeout after 15s')), 15000)
-    )
-
-    const result = await Promise.race([listAll(listRef), timeoutPromise])
-    console.log('[Storage] listAll returned', result.items.length, 'items')
-
-    if (result.items.length === 0) {
-      console.log('[Storage] No files found in', path)
-      return []
-    }
-
-    const results = await Promise.allSettled(
-      result.items.map(async (item) => {
-        const url = await getDownloadURL(item)
-        return {
-          name: item.name,
-          fullPath: item.fullPath,
-          url
-        }
-      })
-    )
-
-    // Filter out failed items and return only successful ones
-    const files = results
-      .filter(r => r.status === 'fulfilled')
-      .map(r => r.value)
-
-    console.log('[Storage] Returning', files.length, 'files')
-    return files
-  } catch (err) {
-    console.error('[Storage] Error in listFiles:', err.message)
-    throw err
+  if (result.items.length === 0) {
+    return []
   }
+
+  const results = await Promise.allSettled(
+    result.items.map(async (item) => {
+      const url = await getDownloadURL(item)
+      return {
+        name: item.name,
+        fullPath: item.fullPath,
+        url
+      }
+    })
+  )
+
+  // Filter out failed items and return only successful ones
+  return results
+    .filter(r => r.status === 'fulfilled')
+    .map(r => r.value)
 }
 
 // Get storage path from download URL

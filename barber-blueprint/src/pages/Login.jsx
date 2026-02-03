@@ -11,13 +11,9 @@ import { Scissors, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 // Check if user is an admin
 async function checkIsAdmin(uid) {
   try {
-    console.log('[Login] Checking admin status for UID:', uid)
     const adminDoc = await getDoc(doc(db, 'blueprint_admins', uid))
-    const isAdmin = adminDoc.exists()
-    console.log('[Login] Admin check result:', isAdmin)
-    return isAdmin
-  } catch (err) {
-    console.error('[Login] Admin check error:', err)
+    return adminDoc.exists()
+  } catch {
     return false
   }
 }
@@ -68,16 +64,12 @@ export default function Login() {
     setLoading(true)
 
     try {
-      console.log('[Login] Attempting login...')
       const userCredential = await login(email.trim().toLowerCase(), password)
-      console.log('[Login] Login successful, UID:', userCredential.user.uid)
       clearRateLimit(RATE_LIMIT_KEY)
       if (mountedRef.current) {
         // Check if user is admin and redirect accordingly
         const isAdmin = await checkIsAdmin(userCredential.user.uid)
-        const destination = isAdmin ? '/admin' : '/dashboard'
-        console.log('[Login] Navigating to:', destination)
-        navigate(destination)
+        navigate(isAdmin ? '/admin' : '/dashboard')
       }
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEY)

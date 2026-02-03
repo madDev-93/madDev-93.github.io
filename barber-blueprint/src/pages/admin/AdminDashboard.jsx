@@ -56,8 +56,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadDashboardData = async () => {
       let hasErrors = false
-      console.log('[Dashboard] Starting to load data...')
-      console.log('[Dashboard] isAdmin:', isAdmin, 'adminUser:', adminUser?.email)
 
       try {
         // Load stats for each collection with individual error handling
@@ -66,9 +64,7 @@ export default function AdminDashboard() {
 
         for (const collName of collections) {
           try {
-            console.log(`[Dashboard] Loading ${collName}...`)
             const allDocs = await getDocs(collection(db, collName))
-            console.log(`[Dashboard] ${collName} total:`, allDocs.size)
             if (!mountedRef.current) return
             const publishedDocs = await getDocs(
               query(collection(db, collName), where('status', '==', 'published'))
