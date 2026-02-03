@@ -1,10 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../firebase/config'
 import { useAuth } from '../firebase/AuthContext'
 import { validateEmail, getAuthErrorMessage } from '../utils/validation'
 import { checkRateLimit, recordAttempt, clearRateLimit, formatRemainingTime } from '../utils/rateLimit'
 import { Scissors, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+
+// Check if user is an admin
+async function checkIsAdmin(uid) {
+  try {
+    console.log('[Login] Checking admin status for UID:', uid)
+    const adminDoc = await getDoc(doc(db, 'blueprint_admins', uid))
+    const isAdmin = adminDoc.exists()
+    console.log('[Login] Admin check result:', isAdmin)
+    return isAdmin
+  } catch (err) {
+    console.error('[Login] Admin check error:', err)
+    return false
+  }
+}
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -52,10 +68,16 @@ export default function Login() {
     setLoading(true)
 
     try {
-      await login(email.trim().toLowerCase(), password)
+      console.log('[Login] Attempting login...')
+      const userCredential = await login(email.trim().toLowerCase(), password)
+      console.log('[Login] Login successful, UID:', userCredential.user.uid)
       clearRateLimit(RATE_LIMIT_KEY)
       if (mountedRef.current) {
-        navigate('/dashboard')
+        // Check if user is admin and redirect accordingly
+        const isAdmin = await checkIsAdmin(userCredential.user.uid)
+        const destination = isAdmin ? '/admin' : '/dashboard'
+        console.log('[Login] Navigating to:', destination)
+        navigate(destination)
       }
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEY)

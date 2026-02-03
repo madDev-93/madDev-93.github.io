@@ -12,6 +12,7 @@ export default function LiveActivity() {
 
   // Refs to track timers for cleanup
   const timersRef = useRef([])
+  const isMountedRef = useRef(true)
 
   const maxNotifications = 3
 
@@ -30,9 +31,13 @@ export default function LiveActivity() {
 
   const times = ['just now', '1 minute ago', '2 minutes ago', '3 minutes ago']
 
-  // Helper to track timers
+  // Helper to track timers - only runs callback if still mounted
   const addTimer = (callback, delay) => {
-    const id = setTimeout(callback, delay)
+    const id = setTimeout(() => {
+      if (isMountedRef.current) {
+        callback()
+      }
+    }, delay)
     timersRef.current.push(id)
     return id
   }
@@ -42,6 +47,15 @@ export default function LiveActivity() {
     timersRef.current.forEach(id => clearTimeout(id))
     timersRef.current = []
   }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      clearAllTimers()
+    }
+  }, [])
 
   // Track scroll position
   useEffect(() => {

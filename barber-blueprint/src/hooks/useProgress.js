@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { useAuth } from '../firebase/AuthContext'
 
@@ -14,6 +14,8 @@ export function useProgress(moduleId) {
   const [lastLessonId, setLastLessonId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Use ref for synchronous pending check to prevent race conditions
+  const pendingLessonsRef = useRef(new Set())
 
   // Load progress from Firestore
   useEffect(() => {
@@ -50,46 +52,45 @@ export function useProgress(moduleId) {
   const markLessonComplete = useCallback(async (lessonId) => {
     if (!user || !moduleId) return
 
+    // Synchronous check using ref to prevent race conditions from rapid clicks
+    if (completedLessons.includes(lessonId) || pendingLessonsRef.current.has(lessonId)) {
+      return
+    }
+
+    // Mark as pending immediately (synchronous)
+    pendingLessonsRef.current.add(lessonId)
+
     const progressRef = doc(db, 'blueprint_users', user.uid, 'progress', String(moduleId))
 
     try {
       // Optimistic update
-      setCompletedLessons(prev => {
-        if (prev.includes(lessonId)) return prev
-        return [...prev, lessonId]
-      })
+      setCompletedLessons(prev => [...prev, lessonId])
       setLastLessonId(lessonId)
 
-      // Check if document exists
-      const progressDoc = await getDoc(progressRef)
+      // Use arrayUnion for atomic update - prevents race conditions across tabs/windows
+      // setDoc with merge:true will create doc if it doesn't exist
+      await setDoc(progressRef, {
+        moduleId,
+        completedLessons: arrayUnion(lessonId),
+        lastLessonId: lessonId,
+        lastUpdated: serverTimestamp()
+      }, { merge: true })
 
-      if (progressDoc.exists()) {
-        // Update existing document
-        const currentCompleted = progressDoc.data().completedLessons || []
-        if (!currentCompleted.includes(lessonId)) {
-          await updateDoc(progressRef, {
-            completedLessons: [...currentCompleted, lessonId],
-            lastLessonId: lessonId,
-            lastUpdated: serverTimestamp()
-          })
-        }
-      } else {
-        // Create new document
-        await setDoc(progressRef, {
-          moduleId,
-          completedLessons: [lessonId],
-          lastLessonId: lessonId,
-          startedAt: serverTimestamp(),
-          lastUpdated: serverTimestamp()
-        })
+      // If doc was just created, add startedAt
+      const progressDoc = await getDoc(progressRef)
+      if (progressDoc.exists() && !progressDoc.data().startedAt) {
+        await updateDoc(progressRef, { startedAt: serverTimestamp() })
       }
     } catch (err) {
       console.error('Error marking lesson complete:', err)
       setError(err.message)
       // Revert optimistic update
       setCompletedLessons(prev => prev.filter(id => id !== lessonId))
+    } finally {
+      // Remove from pending
+      pendingLessonsRef.current.delete(lessonId)
     }
-  }, [user, moduleId])
+  }, [user, moduleId, completedLessons])
 
   // Check if a lesson is completed
   const isLessonComplete = useCallback((lessonId) => {
@@ -98,7 +99,7 @@ export function useProgress(moduleId) {
 
   // Calculate progress percentage
   const getProgressPercentage = useCallback((totalLessons) => {
-    if (totalLessons === 0) return 0
+    if (!totalLessons || totalLessons <= 0) return 0
     return Math.round((completedLessons.length / totalLessons) * 100)
   }, [completedLessons])
 
@@ -121,6 +122,7 @@ export function useAllProgress() {
   const { user } = useAuth()
   const [allProgress, setAllProgress] = useState({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!user) {
@@ -130,6 +132,7 @@ export function useAllProgress() {
 
     const loadAllProgress = async () => {
       try {
+        setError(null)
         const progress = {}
 
         // Load progress for all 6 modules
@@ -147,6 +150,7 @@ export function useAllProgress() {
         setAllProgress(progress)
       } catch (err) {
         console.error('Error loading all progress:', err)
+        setError(err.message)
       } finally {
         setLoading(false)
       }
@@ -155,5 +159,5 @@ export function useAllProgress() {
     loadAllProgress()
   }, [user])
 
-  return { allProgress, loading }
+  return { allProgress, loading, error }
 }

@@ -1,38 +1,189 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Blueprint users - users can read/write their own data
+
+    // ============ HELPER FUNCTIONS ============
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user is a blueprint admin
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/blueprint_admins/$(request.auth.uid));
+    }
+
+    // Validate string field length
+    function validString(field, maxLen) {
+      return field is string && field.size() <= maxLen;
+    }
+
+    // Validate required string fields exist and are non-empty
+    function hasRequiredString(data, field, maxLen) {
+      return field in data &&
+             data[field] is string &&
+             data[field].size() > 0 &&
+             data[field].size() <= maxLen;
+    }
+
+    // Validate number in range
+    function validNumber(num, min, max) {
+      return num is number && num >= min && num <= max;
+    }
+
+    // Validate status field
+    function validStatus(status) {
+      return status in ['draft', 'published'];
+    }
+
+    // ============ EXISTING RULES (unchanged) ============
+
     match /blueprint_users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Allow create but prevent users from setting purchased=true themselves
-      allow create: if request.auth != null
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated()
                     && request.auth.uid == userId
                     && (!request.resource.data.keys().hasAny(['purchased'])
                         || request.resource.data.purchased == false);
-      // Allow updates but prevent users from setting purchased=true themselves
-      allow update: if request.auth != null
+      allow update: if isAuthenticated()
                     && request.auth.uid == userId
                     && (
-                      // Allow if not changing purchased field
                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['purchased'])
-                      // OR allow if purchased was already true (can't downgrade)
                       || resource.data.purchased == true
                     );
 
-      // Progress tracking subcollection - users can read/write their own progress
       match /progress/{moduleId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
       }
     }
 
-    // Blueprint purchases - read only for matching email, write only via admin/webhook
     match /blueprint_purchases/{email} {
-      allow read: if request.auth != null &&
+      allow read: if isAuthenticated() &&
                     request.auth.token.email.lower() == email.lower();
-      allow write: if false; // Only Cloud Functions can write
+      allow write: if false;
     }
 
-    // Deny all other access by default
+    // ============ ADMIN RULES ============
+
+    // Admin users collection - managed via Firebase Console only
+    // Users can read their own admin doc to check status, admins can read all
+    match /blueprint_admins/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if false;
+    }
+
+    // Audit log - admins can create, no one can update/delete
+    match /admin_audit_log/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() &&
+        hasRequiredString(request.resource.data, 'action', 100) &&
+        hasRequiredString(request.resource.data, 'adminUid', 128) &&
+        request.resource.data.timestamp == request.time;
+      allow update, delete: if false;
+    }
+
+    // Site content (landing page)
+    match /site_content/{docId} {
+      // Public can read published content
+      allow read: if true;
+
+      // Only admins can write with validation
+      allow write: if isAdmin() &&
+        // Validate hero section if present
+        (!('hero' in request.resource.data) || (
+          hasRequiredString(request.resource.data.hero, 'headline', 200) &&
+          hasRequiredString(request.resource.data.hero, 'subheadline', 500) &&
+          hasRequiredString(request.resource.data.hero, 'ctaText', 50)
+        )) &&
+        // Validate pricing if present
+        (!('pricing' in request.resource.data) || (
+          validNumber(request.resource.data.pricing.currentPrice, 0, 10000) &&
+          validNumber(request.resource.data.pricing.originalPrice, 0, 10000)
+        )) &&
+        // Validate status
+        validStatus(request.resource.data.status);
+    }
+
+    // Testimonials
+    match /testimonials/{docId} {
+      // Public reads only published, admins read all
+      allow read: if resource.data.status == 'published' || isAdmin();
+
+      // Admins write with validation
+      allow create, update: if isAdmin() &&
+        hasRequiredString(request.resource.data, 'name', 100) &&
+        hasRequiredString(request.resource.data, 'text', 1000) &&
+        validNumber(request.resource.data.rating, 1, 5) &&
+        validNumber(request.resource.data.order, 0, 1000) &&
+        validStatus(request.resource.data.status);
+
+      allow delete: if isAdmin();
+    }
+
+    // FAQs
+    match /faqs/{docId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+
+      allow create, update: if isAdmin() &&
+        hasRequiredString(request.resource.data, 'question', 500) &&
+        hasRequiredString(request.resource.data, 'answer', 2000) &&
+        validNumber(request.resource.data.order, 0, 1000) &&
+        validStatus(request.resource.data.status);
+
+      allow delete: if isAdmin();
+    }
+
+    // Bonuses
+    match /bonuses/{docId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+
+      allow create, update: if isAdmin() &&
+        hasRequiredString(request.resource.data, 'title', 200) &&
+        hasRequiredString(request.resource.data, 'description', 500) &&
+        validNumber(request.resource.data.order, 0, 1000) &&
+        validStatus(request.resource.data.status);
+
+      allow delete: if isAdmin();
+    }
+
+    // Modules
+    match /modules/{moduleId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+
+      allow create, update: if isAdmin() &&
+        hasRequiredString(request.resource.data, 'title', 200) &&
+        hasRequiredString(request.resource.data, 'shortDescription', 300) &&
+        validNumber(request.resource.data.order, 1, 100) &&
+        validStatus(request.resource.data.status);
+
+      allow delete: if isAdmin();
+
+      // Lessons subcollection
+      match /lessons/{lessonId} {
+        allow read: if get(/databases/$(database)/documents/modules/$(moduleId)).data.status == 'published'
+                    || isAdmin();
+
+        allow create, update: if isAdmin() &&
+          hasRequiredString(request.resource.data, 'title', 200) &&
+          hasRequiredString(request.resource.data, 'duration', 20) &&
+          validNumber(request.resource.data.order, 1, 100) &&
+          validStatus(request.resource.data.status);
+
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Email subscribers - public can submit, admins can read
+    match /email_subscribers/{docId} {
+      allow read: if isAdmin();
+      allow create: if
+        hasRequiredString(request.resource.data, 'email', 320) &&
+        hasRequiredString(request.resource.data, 'source', 50);
+      allow update, delete: if isAdmin();
+    }
+
+    // Deny all other access
     match /{document=**} {
       allow read, write: if false;
     }

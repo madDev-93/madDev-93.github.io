@@ -1,0 +1,54 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: Check if user is admin (requires Firestore lookup)
+    function isAdmin() {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/blueprint_admins/$(request.auth.uid));
+    }
+
+    // Helper: Validate file size (in bytes)
+    function maxSize(sizeInMB) {
+      return request.resource.size < sizeInMB * 1024 * 1024;
+    }
+
+    // Helper: Validate content type
+    function isValidVideo() {
+      return request.resource.contentType.matches('video/.*') &&
+             request.resource.contentType in ['video/mp4', 'video/webm', 'video/quicktime'];
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    }
+
+    function isValidPDF() {
+      return request.resource.contentType == 'application/pdf';
+    }
+
+    // Videos: Max 500MB, video types only
+    match /videos/{allPaths=**} {
+      allow read: if true; // Public read for course content
+      allow write: if isAdmin() && isValidVideo() && maxSize(500);
+    }
+
+    // Images: Max 10MB, image types only
+    match /images/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidImage() && maxSize(10);
+    }
+
+    // PDFs: Max 50MB
+    match /pdfs/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidPDF() && maxSize(50);
+    }
+
+    // Deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

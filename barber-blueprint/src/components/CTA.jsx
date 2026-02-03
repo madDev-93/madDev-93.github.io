@@ -2,8 +2,9 @@ import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { ArrowRight, Check, Zap, Shield, RefreshCw, Lock } from 'lucide-react'
 import MagneticButton from './MagneticButton'
+import { usePublicContent } from '../hooks/useSiteContent'
 
-const included = [
+const fallbackIncluded = [
   '6 Core Modules',
   'Filming Angles Guide',
   'Equipment Setup Guide',
@@ -16,7 +17,19 @@ const included = [
   'Lifetime Updates',
 ]
 
-export default function CTA({ price = '$47', originalPrice = '$97' }) {
+const fallbackPricing = {
+  currentPrice: 47,
+  originalPrice: 97,
+  discount: '50%',
+  includedItems: fallbackIncluded,
+}
+
+export default function CTA() {
+  const { content, loading } = usePublicContent('landing')
+  const pricing = content?.pricing || fallbackPricing
+  const included = pricing.includedItems?.length > 0 ? pricing.includedItems : fallbackIncluded
+  const price = `$${pricing.currentPrice || 47}`
+  const originalPrice = `$${pricing.originalPrice || 97}`
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
@@ -88,9 +101,9 @@ export default function CTA({ price = '$47', originalPrice = '$97' }) {
             ))}
           </div>
 
-          {/* CTA Button */}
+          {/* CTA Button - Links to signup, payment integration can be added later */}
           <MagneticButton
-            href="#"
+            href="/signup"
             className="group w-full bg-gold hover:bg-gold-dark text-dark font-semibold text-lg px-8 py-5 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             Get Instant Access — {price}

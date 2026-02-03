@@ -13,7 +13,7 @@ import {
   ChevronUp,
   Check
 } from 'lucide-react'
-import { useState, memo, useCallback } from 'react'
+import { useState, memo, useCallback, useEffect } from 'react'
 
 const moduleData = {
   1: {
@@ -120,12 +120,21 @@ export default function Module() {
 
   const moduleId = parseInt(id, 10)
   // Whitelist validation - only allow valid module IDs
+  // Explicit NaN check to handle invalid params like "/modules/abc"
   const validModuleIds = [1, 2, 3, 4, 5, 6]
-  const module = validModuleIds.includes(moduleId) ? moduleData[moduleId] : null
+  const isValidModule = !Number.isNaN(moduleId) && validModuleIds.includes(moduleId)
+  const module = isValidModule ? moduleData[moduleId] : null
 
-  // Progress tracking
-  const { isLessonComplete, markLessonComplete, getProgressPercentage } = useProgress(moduleId)
+  // Progress tracking - pass null if module is invalid to avoid unnecessary Firestore queries
+  const { isLessonComplete, markLessonComplete, getProgressPercentage } = useProgress(isValidModule ? moduleId : null)
   const progressPercentage = module ? getProgressPercentage(module.lessons.length) : 0
+
+  // Redirect non-purchasers in useEffect to avoid React warning about updating during render
+  useEffect(() => {
+    if (!hasPurchased) {
+      navigate('/dashboard')
+    }
+  }, [hasPurchased, navigate])
 
   if (!module) {
     return (
@@ -140,12 +149,15 @@ export default function Module() {
     )
   }
 
+  // Return null while redirecting
   if (!hasPurchased) {
-    navigate('/dashboard')
     return null
   }
 
-  const currentLesson = module.lessons.find(l => l.id === activeLesson) || module.lessons[0]
+  // Handle edge case of empty lessons array
+  const currentLesson = module.lessons.length > 0
+    ? (module.lessons.find(l => l.id === activeLesson) || module.lessons[0])
+    : null
   const prevModule = moduleId > 1 ? moduleId - 1 : null
   const nextModule = moduleId < 6 ? moduleId + 1 : null
 
@@ -193,13 +205,17 @@ export default function Module() {
               </div>
 
               {/* Lesson Title */}
-              <h1 className="text-2xl font-bold mb-2">{currentLesson.title}</h1>
+              <h1 className="text-2xl font-bold mb-2">{currentLesson?.title || 'No lessons available'}</h1>
               <div className="flex items-center gap-4 text-sm text-gray-400 mb-6">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {currentLesson.duration}
-                </span>
-                <span>Lesson {activeLesson} of {module.lessons.length}</span>
+                {currentLesson && (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {currentLesson.duration}
+                    </span>
+                    <span>Lesson {activeLesson} of {module.lessons.length}</span>
+                  </>
+                )}
               </div>
 
               {/* Mark Complete Button */}

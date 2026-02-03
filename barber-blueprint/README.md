@@ -1,8 +1,8 @@
 # The Barber Blueprint
 
-A high-converting landing page and members area for a digital course targeted at barbers who want to build their personal brand and create income beyond chair time.
+A high-converting landing page, members area, and admin panel for a digital course targeted at barbers who want to build their personal brand and create income beyond chair time.
 
-**Live Site:** https://qwota.app/barber-blueprint/
+**Live Site:** https://barber-blueprint.web.app
 
 ## Tech Stack
 
@@ -12,15 +12,33 @@ A high-converting landing page and members area for a digital course targeted at
 - **Icons:** Lucide React
 - **Auth:** Firebase Authentication
 - **Database:** Firestore
+- **Storage:** Firebase Storage (videos, images, PDFs)
 - **Payments:** Lemonsqueezy (integration ready)
-- **Hosting:** GitHub Pages (temporary) → Custom domain (pending)
+- **Hosting:** Firebase Hosting
 
 ## Project Structure
 
 ```
 barber-blueprint/
 ├── src/
-│   ├── components/       # Reusable UI components
+│   ├── components/
+│   │   ├── admin/              # Admin panel components
+│   │   │   ├── shared/         # Reusable form components
+│   │   │   │   ├── FormField.jsx
+│   │   │   │   ├── TextInput.jsx
+│   │   │   │   ├── TextArea.jsx
+│   │   │   │   ├── NumberInput.jsx
+│   │   │   │   ├── ImageUploader.jsx
+│   │   │   │   ├── VideoUploader.jsx
+│   │   │   │   ├── PDFUploader.jsx
+│   │   │   │   ├── DragDropList.jsx
+│   │   │   │   ├── IconPicker.jsx
+│   │   │   │   ├── SaveButton.jsx
+│   │   │   │   └── StatusToggle.jsx
+│   │   │   ├── AdminLayout.jsx
+│   │   │   ├── AdminSidebar.jsx
+│   │   │   ├── AdminHeader.jsx
+│   │   │   └── AdminProtectedRoute.jsx
 │   │   ├── Header.jsx
 │   │   ├── Hero.jsx
 │   │   ├── Problem.jsx
@@ -32,36 +50,57 @@ barber-blueprint/
 │   │   ├── CTA.jsx
 │   │   ├── EmailCapture.jsx
 │   │   ├── Footer.jsx
-│   │   ├── PageLoader.jsx
-│   │   ├── ScrollProgress.jsx
-│   │   ├── MagneticButton.jsx
-│   │   ├── TiltCard.jsx
-│   │   ├── LiveActivity.jsx
-│   │   ├── MobileCTA.jsx
 │   │   ├── ProtectedRoute.jsx
 │   │   └── ErrorBoundary.jsx
-│   ├── pages/            # Route pages
-│   │   ├── Home.jsx      # Landing page
+│   ├── pages/
+│   │   ├── admin/              # Admin panel pages
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── AdminLogin.jsx
+│   │   │   ├── HeroEditor.jsx
+│   │   │   ├── AboutEditor.jsx
+│   │   │   ├── PricingEditor.jsx
+│   │   │   ├── TestimonialsManager.jsx
+│   │   │   ├── FAQsManager.jsx
+│   │   │   ├── BonusesManager.jsx
+│   │   │   ├── ModulesManager.jsx
+│   │   │   ├── LessonsManager.jsx
+│   │   │   ├── MediaLibrary.jsx
+│   │   │   └── PreviewPage.jsx
+│   │   ├── Home.jsx            # Landing page
 │   │   ├── Login.jsx
 │   │   ├── Signup.jsx
-│   │   ├── Dashboard.jsx # Members area
-│   │   ├── Module.jsx    # Course content
+│   │   ├── Dashboard.jsx       # Members area
+│   │   ├── Module.jsx          # Course content
 │   │   └── Account.jsx
-│   ├── firebase/         # Firebase config
-│   │   ├── config.js     # Uses environment variables
-│   │   └── AuthContext.jsx
-│   ├── utils/            # Utility functions
-│   │   ├── validation.js # Form validation
-│   │   └── rateLimit.js  # Rate limiting
-│   ├── App.jsx           # Router setup
-│   ├── main.jsx          # Entry point
-│   └── index.css         # Tailwind + custom styles
-├── functions/            # Firebase Cloud Functions
+│   ├── firebase/
+│   │   ├── config.js           # Firebase configuration
+│   │   ├── AuthContext.jsx     # User authentication
+│   │   ├── AdminContext.jsx    # Admin authentication
+│   │   └── storage.js          # Storage utilities
+│   ├── hooks/
+│   │   ├── useProgress.js      # Lesson progress tracking
+│   │   ├── useSiteContent.js   # Landing page content
+│   │   ├── useTestimonials.js
+│   │   ├── useFAQs.js
+│   │   ├── useBonuses.js
+│   │   ├── useModules.js
+│   │   └── useAuditLog.js
+│   ├── utils/
+│   │   ├── validation.js       # Form validation
+│   │   ├── sanitize.js         # Input sanitization
+│   │   └── rateLimit.js        # Rate limiting
+│   ├── constants/
+│   │   └── fallbackContent.js  # Default content
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── functions/                  # Firebase Cloud Functions
 │   └── src/
-│       └── index.ts      # Lemonsqueezy webhook handler
-├── firestore.rules       # Firestore security rules
-├── firebase.json         # Firebase deployment config
-├── .env.example          # Environment variables template
+│       └── index.ts            # Lemonsqueezy webhook
+├── firestore.rules             # Firestore security rules
+├── storage.rules               # Storage security rules
+├── firebase.json
+├── .env.example
 └── package.json
 ```
 
@@ -77,30 +116,40 @@ barber-blueprint/
 - Email capture for leads
 - Sticky mobile CTA bar
 - Scroll progress indicator
-- Page loader animation
-- Magnetic buttons
-- Parallax background effects
 - Live viewer count (simulated)
-- Purchase notifications (simulated)
+- **Dynamic content from Firestore with fallback**
 
 ### Members Area
 - User authentication (email/password)
-- Protected dashboard
+- Protected dashboard with progress overview
 - 6 module pages with video placeholders
 - Lesson sidebar with progress tracking
-- Account management page (change password, update email, delete account)
+- Account management (change password, update email, delete account)
 - Purchase verification via Firestore
-- Rate-limited account operations for security
+- Rate-limited account operations
+
+### Admin Panel (`/admin`)
+- **Dashboard** - Stats overview, quick links, recent activity
+- **Landing Page Editors**
+  - Hero section (headline, subheadline, CTA, stats)
+  - About section (paragraphs, quote, Instagram)
+  - Pricing section (prices, included items)
+- **Content Managers** (CRUD with drag-drop reordering)
+  - Testimonials
+  - FAQs
+  - Bonuses
+  - Course Modules
+  - Lessons (per module)
+- **Media Library** - Upload/manage images, videos, PDFs
+- **Preview Mode** - Preview draft content before publishing
+- **Audit Log** - Track all admin actions
+- **Draft/Published** status for all content
 
 ---
 
 ## Setup Instructions
 
 ### 1. Firebase Configuration
-
-✅ **COMPLETED** - Firebase project `barber-blueprint` is set up.
-
-Credentials are stored in `.env.local` (not committed):
 
 ```bash
 # Copy the example and fill in your values
@@ -117,58 +166,41 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 ```
 
-### 2. Firestore Database
+### 2. Deploy Firebase Rules
 
-✅ **COMPLETED** - Firestore created and security rules deployed.
-
-The rules ensure:
-- Users can only read/write their own data
-- Purchase records can only be written by Cloud Functions (webhook)
-- Users cannot modify their own purchase status
-
-To redeploy rules:
 ```bash
-firebase deploy --only firestore:rules --project barber-blueprint
+# Deploy Firestore and Storage rules
+firebase deploy --only firestore:rules,storage:rules --project barber-blueprint
 ```
 
-### 3. Enable Authentication
+### 3. Add Admin Users
 
-✅ **COMPLETED** - Email/Password authentication enabled and working.
+Admin users must be manually added via Firebase Console:
 
-### 3.1 API Key Restrictions
-
-✅ **COMPLETED** - API key restricted in Google Cloud Console.
-
-Required HTTP referrer restrictions (APIs & Services → Credentials → API Key):
+1. Go to Firebase Console → Firestore
+2. Create collection: `blueprint_admins`
+3. Add document with user's UID as document ID:
+```json
+{
+  "email": "your-email@example.com",
+  "name": "Your Name",
+  "role": "admin",
+  "createdAt": "<server timestamp>"
+}
 ```
-http://localhost/*
-https://qwota.app/*
-https://maddev-93.github.io/*
-```
-
-**Note:** When you get a custom domain, add it here and remove the temporary ones.
 
 ### 4. Lemonsqueezy Setup
 
-⏳ **NOT STARTED**
-
 1. Create account at [lemonsqueezy.com](https://lemonsqueezy.com)
-2. Create a new **Store**
-3. Create a new **Product**:
-   - Name: "The Barber Blueprint"
-   - Price: $47 (one-time)
-   - Add description and images
-4. Go to **Settings** → **Webhooks**
-5. Add webhook URL:
+2. Create a new **Store** and **Product**
+3. Add webhook URL:
    ```
    https://us-central1-barber-blueprint.cloudfunctions.net/lemonsqueezyWebhook
    ```
-6. Select events: `order_created`
-7. Copy the **Signing secret**
+4. Select events: `order_created`
+5. Copy the **Signing secret**
 
 ### 5. Deploy Cloud Functions
-
-⏳ **NOT STARTED**
 
 ```bash
 cd functions
@@ -181,95 +213,39 @@ firebase functions:config:set lemonsqueezy.webhook_secret="YOUR_SECRET"
 firebase deploy --only functions --project barber-blueprint
 ```
 
-### 6. Update Button Links
-
-⏳ **NOT STARTED**
-
-Once you have your Lemonsqueezy checkout URL, update the CTA buttons in `src/components/CTA.jsx`.
-
-For overlay checkout, add to `index.html`:
-```html
-<script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
-```
-
 ---
 
 ## Security Features
 
-### Implemented ✅
-- **Environment Variables**: Firebase credentials stored in `.env.local` (gitignored)
-- **Input Validation**: Email and password validation with strength indicators
-- **Rate Limiting**: Session-persistent rate limiting (5 login attempts/min, 3 reset attempts/5min)
-- **Error Message Security**: Generic error messages prevent user enumeration
-- **Webhook Validation**: HMAC-SHA256 signature verification with timing-safe comparison
-- **Firestore Rules**: Secure rules deployed - users can only access their own data
+### Implemented
+- **Environment Variables**: Firebase credentials in `.env.local` (gitignored)
+- **Input Validation**: Form validation with sanitization
+- **Input Sanitization**: XSS prevention with text/URL sanitization
+- **Rate Limiting**: Session-persistent rate limiting on auth endpoints
+- **Error Message Security**: Generic error messages prevent enumeration
+- **Webhook Validation**: HMAC-SHA256 signature verification
+- **Firestore Rules**: Secure rules - users access own data, admins manage content
+- **Storage Rules**: File type and size validation (500MB video, 10MB image, 50MB PDF)
 - **Content Security Policy**: CSP headers prevent XSS attacks
-- **Security Headers**: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
-- **API Key Restrictions**: Firebase API key restricted to specific domains in Google Cloud Console
+- **Security Headers**: X-Frame-Options, X-Content-Type-Options, etc.
+- **Admin Authorization**: Double-check with `adminUser` AND `isAdmin` flags
+- **Audit Logging**: All admin actions logged to `admin_audit_log` collection
+- **Mounted Ref Pattern**: Prevents state updates after component unmount
 
-### API Key Restrictions (Google Cloud Console)
-Firebase API key is restricted to these HTTP referrers:
-- `http://localhost/*`
-- `https://qwota.app/*`
-- `https://maddev-93.github.io/*`
+### Firestore Collections
 
-**Important:** The format must include the protocol (`http://` or `https://`) and end with `/*`.
-
----
-
-## Accessibility Features
-
-### Implemented ✅
-- **ARIA Labels**: All interactive elements have proper aria-label attributes
-- **Keyboard Navigation**: Mobile menu, FAQ accordion, and lesson navigation are keyboard accessible
-- **Screen Reader Support**: Proper role attributes (banner, navigation, list, listitem)
-- **Focus Management**: aria-expanded and aria-controls for expandable elements
-- **Semantic HTML**: Proper heading hierarchy and landmark regions
-
----
-
-## Performance Optimizations
-
-### Implemented ✅
-- **Scroll Debouncing**: requestAnimationFrame throttling on scroll handlers
-- **React.memo**: Memoized lesson list items to prevent unnecessary re-renders
-- **Passive Event Listeners**: Scroll events use `{ passive: true }`
-- **Code Splitting**: Vite automatic chunking (future: add lazy loading for routes)
-
----
-
-## TODO List
-
-### Before Launch (Required)
-- [x] Firebase project setup
-- [x] Email/Password auth enabled
-- [x] Firestore database created
-- [x] Firestore security rules deployed
-- [x] Rate limiting on auth endpoints
-- [x] Security headers (CSP, X-Frame-Options, etc.)
-- [x] Accessibility improvements (ARIA labels)
-- [x] Performance optimizations (scroll debouncing)
-- [x] API key restrictions configured
-- [x] Login/Signup working
-- [ ] Create Lemonsqueezy account and product
-- [ ] Deploy Cloud Functions for webhook
-- [ ] Update CTA buttons with Lemonsqueezy checkout link
-- [ ] Add actual video content to module pages
-
-### After Launch (Recommended)
-- [ ] Purchase and configure custom domain
-- [ ] Connect EmailCapture to email service (Mailchimp/ConvertKit)
-- [ ] Create PDF bonuses and add download links
-- [ ] Add Google Analytics or Plausible for tracking
-- [ ] Add error tracking (Sentry)
-- [ ] Add real testimonials from customers
-
-### Nice to Have (Future)
-- [ ] Lesson progress persistence to Firestore
-- [ ] Real-time viewer count with Firebase
-- [ ] Course completion certificates
-- [ ] Affiliate program integration
-- [x] Account settings (change email/password) ✅
+| Collection | Access |
+|------------|--------|
+| `blueprint_users` | User reads/writes own data |
+| `blueprint_purchases` | Read-only (webhook writes) |
+| `blueprint_admins` | Admin read-only (manual setup) |
+| `site_content` | Public read, admin write |
+| `testimonials` | Public read published, admin CRUD |
+| `faqs` | Public read published, admin CRUD |
+| `bonuses` | Public read published, admin CRUD |
+| `modules` | Public read published, admin CRUD |
+| `modules/{id}/lessons` | Public read published, admin CRUD |
+| `admin_audit_log` | Admin read, admin create only |
 
 ---
 
@@ -291,60 +267,53 @@ npm run preview
 
 ## Deployment
 
-The site is deployed via GitHub Pages as a subdirectory of the main madDev-93.github.io repo.
-
 ```bash
-# Build the project
+# Build and deploy to Firebase Hosting
 npm run build
-
-# Copy built files to root for GitHub Pages
-rm -rf assets
-cp -r dist/assets .
-cp dist/index.html .
-cp dist/index.html 404.html
-
-# Commit and push
-cd ..
-git add barber-blueprint/
-git commit -m "Deploy updates"
-git push origin main
+firebase deploy --only hosting
 ```
-
-## Moving to Custom Domain
-
-When you acquire a domain:
-
-1. Update `vite.config.js`:
-   ```javascript
-   base: '/'  // Remove '/barber-blueprint/'
-   ```
-
-2. Update `src/main.jsx`:
-   ```javascript
-   <BrowserRouter>  // Remove basename prop
-   ```
-
-3. Create new repo or update hosting settings
-4. Add CNAME file with your domain
-5. Configure DNS with your domain registrar
 
 ---
 
-## Price Configuration
+## Firestore Schema
 
-Price is set in `src/pages/Home.jsx`:
-```javascript
-const PRICE = '$47'
-const ORIGINAL_PRICE = '$97'
+### Site Content
+```
+site_content/landing
+├── hero: { badge, headline, subheadline, ctaText, stats[] }
+├── about: { headline, paragraphs[], quote, instagram }
+├── pricing: { currentPrice, originalPrice, discount, includedItems[] }
+├── status: "draft" | "published"
+└── lastModified: timestamp
 ```
 
-Update this to match your Lemonsqueezy product price.
+### Testimonials
+```
+testimonials/{id}
+├── name, location, rating (1-5), text, highlight
+├── order, status, createdAt, updatedAt
+```
+
+### FAQs
+```
+faqs/{id}
+├── question, answer
+├── order, status, createdAt, updatedAt
+```
+
+### Modules & Lessons
+```
+modules/{id}
+├── number, icon, title, shortDescription, fullDescription, duration
+├── order, status, createdAt, updatedAt
+└── lessons/{id}
+    ├── title, duration, description, videoUrl
+    ├── order, status, createdAt, updatedAt
+```
 
 ---
 
 ## Color Scheme
-
-The site uses a professional dark theme with gold accents:
 
 ```css
 --color-gold: #C9A962
@@ -354,7 +323,38 @@ The site uses a professional dark theme with gold accents:
 --color-dark-tertiary: #1A1A1A
 ```
 
-Customize in `src/index.css`.
+---
+
+## TODO List
+
+### Completed
+- [x] Firebase project setup
+- [x] Email/Password auth
+- [x] Firestore database & rules
+- [x] Storage rules for media uploads
+- [x] Rate limiting on auth endpoints
+- [x] Security headers (CSP, etc.)
+- [x] Accessibility (ARIA labels)
+- [x] Performance optimizations
+- [x] Login/Signup working
+- [x] Account settings
+- [x] Lesson progress persistence
+- [x] **Admin Panel** - Full CMS for all content
+- [x] **Media Library** - Upload videos, images, PDFs
+- [x] **Draft/Published workflow**
+- [x] **Audit logging**
+
+### Before Launch
+- [ ] Create Lemonsqueezy account and product
+- [ ] Deploy Cloud Functions for webhook
+- [ ] Update CTA buttons with checkout link
+- [ ] Add actual video content
+
+### After Launch
+- [ ] Custom domain
+- [ ] Connect EmailCapture to email service
+- [ ] Google Analytics or Plausible
+- [ ] Error tracking (Sentry)
 
 ---
 

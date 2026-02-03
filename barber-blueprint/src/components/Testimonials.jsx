@@ -1,9 +1,12 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef, useState } from 'react'
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { usePublicTestimonials } from '../hooks/useTestimonials'
 
-const testimonials = [
+// Fallback testimonials
+const fallbackTestimonials = [
   {
+    id: '1',
     name: 'Marcus J.',
     location: 'Atlanta, GA',
     rating: 5,
@@ -11,6 +14,7 @@ const testimonials = [
     highlight: 'Finally has a system',
   },
   {
+    id: '2',
     name: 'D. Williams',
     location: 'Houston, TX',
     rating: 5,
@@ -18,6 +22,7 @@ const testimonials = [
     highlight: 'Improved video quality',
   },
   {
+    id: '3',
     name: 'Chris M.',
     location: 'Miami, FL',
     rating: 5,
@@ -25,6 +30,7 @@ const testimonials = [
     highlight: 'More engagement',
   },
   {
+    id: '4',
     name: 'Anthony D.',
     location: 'Chicago, IL',
     rating: 4,
@@ -59,16 +65,21 @@ function TestimonialCard({ testimonial }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-sm font-medium" aria-hidden="true">
-            {testimonial.name.split(' ')[0]?.[0]}{testimonial.name.split(' ')[1]?.[0] || ''}
+            {(() => {
+              const parts = (testimonial.name || '').split(' ')
+              return (parts[0]?.[0] || '') + (parts[1]?.[0] || '')
+            })()}
           </div>
           <div>
             <p className="font-medium text-white">{testimonial.name}</p>
             <p className="text-sm text-gray-400">{testimonial.location}</p>
           </div>
         </div>
-        <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded">
-          {testimonial.highlight}
-        </span>
+        {testimonial.highlight && (
+          <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded">
+            {testimonial.highlight}
+          </span>
+        )}
       </div>
     </>
   )
@@ -78,6 +89,9 @@ export default function Testimonials() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const [currentIndex, setCurrentIndex] = useState(0)
+
+  const { testimonials: firestoreTestimonials, loading } = usePublicTestimonials()
+  const testimonials = firestoreTestimonials.length > 0 ? firestoreTestimonials : fallbackTestimonials
 
   const next = () => setCurrentIndex((prev) => (prev + 1) % testimonials.length)
   const prev = () => setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
@@ -106,7 +120,7 @@ export default function Testimonials() {
         <div className="hidden md:grid md:grid-cols-2 gap-6">
           {testimonials.map((testimonial, index) => (
             <motion.article
-              key={testimonial.name}
+              key={testimonial.id || testimonial.name}
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -125,10 +139,12 @@ export default function Testimonials() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
             className="bg-dark-tertiary border border-white/5 rounded-2xl p-6"
-            aria-label={`Review by ${testimonials[currentIndex].name}`}
+            aria-label={`Review by ${testimonials[currentIndex]?.name}`}
             aria-live="polite"
           >
-            <TestimonialCard testimonial={testimonials[currentIndex]} />
+            {testimonials[currentIndex] && (
+              <TestimonialCard testimonial={testimonials[currentIndex]} />
+            )}
           </motion.article>
 
           {/* Carousel Controls */}
@@ -143,7 +159,7 @@ export default function Testimonials() {
             <div className="flex gap-2" role="tablist" aria-label="Testimonial indicators">
               {testimonials.map((testimonial, index) => (
                 <button
-                  key={index}
+                  key={testimonial.id || index}
                   onClick={() => setCurrentIndex(index)}
                   className={`w-2 h-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-dark ${
                     index === currentIndex ? 'bg-gold' : 'bg-white/20'

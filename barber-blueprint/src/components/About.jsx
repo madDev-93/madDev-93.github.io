@@ -1,16 +1,54 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Scissors, Camera, Users, Quote, Instagram } from 'lucide-react'
+import { usePublicContent } from '../hooks/useSiteContent'
+
+const fallbackAbout = {
+  headline: 'Built by a Barber,\nFor Barbers',
+  paragraphs: [
+    "This isn't theory from someone who read about barbering online. This is a system built from years behind the chair, figuring out what actually works to grow a following and create income beyond just cutting hair.",
+    "Every module comes from real execution—what I've done to build my brand while still being a full-time barber and father. No fluff, no guru nonsense, just the exact playbook I use every single day.",
+  ],
+  quote: {
+    text: 'Document the work. The results will follow.',
+    attribution: 'Real execution, not theory',
+  },
+  instagram: 'ivan.m.rod',
+}
+
+const defaultCredentials = [
+  { icon: Scissors, text: 'Working Barber' },
+  { icon: Camera, text: 'Content Creator' },
+  { icon: Users, text: 'Father' },
+]
 
 export default function About() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
-  const credentials = [
-    { icon: Scissors, text: 'Working Barber' },
-    { icon: Camera, text: 'Content Creator' },
-    { icon: Users, text: 'Father' },
-  ]
+  const { content, loading } = usePublicContent('landing')
+  const about = content?.about || fallbackAbout
+  const credentials = defaultCredentials
+
+  // Parse headline for styling
+  const renderHeadline = () => {
+    const text = about.headline || fallbackAbout.headline
+    const lines = text.split('\n')
+    if (lines.length >= 2) {
+      return (
+        <>
+          {lines[0]}
+          <br />
+          <span className="text-gold">{lines[1]}</span>
+        </>
+      )
+    }
+    return text
+  }
+
+  const paragraphs = about.paragraphs?.length > 0 ? about.paragraphs : fallbackAbout.paragraphs
+  const quote = about.quote || fallbackAbout.quote
+  const instagram = about.instagram || fallbackAbout.instagram
 
   return (
     <section id="about" ref={ref} className="py-24 relative overflow-hidden">
@@ -43,9 +81,7 @@ export default function About() {
               About The Creator
             </span>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-              Built by a Barber,
-              <br />
-              <span className="text-gold">For Barbers</span>
+              {renderHeadline()}
             </h2>
 
             <div className="flex flex-wrap gap-3 mb-6">
@@ -61,30 +97,23 @@ export default function About() {
             </div>
 
             <div className="space-y-4 text-gray-400 mb-8">
-              <p>
-                This isn't theory from someone who read about barbering online. This is a system built
-                from years behind the chair, figuring out what actually works to grow a following and
-                create income beyond just cutting hair.
-              </p>
-              <p>
-                Every module comes from real execution—what I've done to build my brand while
-                still being a full-time barber and father. No fluff, no guru nonsense, just the
-                exact playbook I use every single day.
-              </p>
+              {paragraphs.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
             </div>
 
             {/* Quote */}
             <div className="bg-dark-tertiary border-l-2 border-gold rounded-r-xl p-6 mb-8">
               <Quote className="w-6 h-6 text-gold/50 mb-3" />
               <p className="text-lg text-white mb-2">
-                "Document the work. The results will follow."
+                "{quote.text}"
               </p>
-              <span className="text-sm text-gray-400">— Real execution, not theory</span>
+              <span className="text-sm text-gray-400">— {quote.attribution}</span>
             </div>
 
             {/* Instagram Follow */}
             <a
-              href="https://www.instagram.com/ivan.m.rod"
+              href={`https://www.instagram.com/${instagram}`}
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-4 bg-dark-tertiary border border-white/5 hover:border-gold/30 rounded-xl p-4 transition-all"
@@ -93,7 +122,7 @@ export default function About() {
                 <Instagram className="w-6 h-6 text-gold" aria-hidden="true" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-white group-hover:text-gold transition-colors">@ivan.m.rod</p>
+                <p className="font-semibold text-white group-hover:text-gold transition-colors">@{instagram}</p>
                 <p className="text-sm text-gray-400">Follow the journey on Instagram</p>
               </div>
               <span className="text-gold text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">

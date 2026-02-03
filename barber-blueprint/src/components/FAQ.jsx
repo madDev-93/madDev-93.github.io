@@ -1,33 +1,41 @@
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { useRef, useState } from 'react'
 import { Plus, Minus } from 'lucide-react'
+import { usePublicFAQs } from '../hooks/useFAQs'
 
-const faqs = [
+const fallbackFaqs = [
   {
+    id: '1',
     question: "I'm not good on camera. Will this still work for me?",
     answer: "Absolutely. The Blueprint focuses on filming your work, not you talking to camera. Most viral barber content is just clean footage of haircuts with good angles. You don't need to be an entertainer—you need to document your skill.",
   },
   {
+    id: '2',
     question: "What equipment do I need?",
     answer: "Just your phone. Module 3 covers the exact setup—it's literally a $20 phone holder and natural lighting from your shop window. No ring lights, no expensive cameras. The barbers blowing up right now are using the same phone in their pocket.",
   },
   {
+    id: '3',
     question: "How long until I see results?",
     answer: "Most barbers start seeing increased engagement within 2-3 weeks of consistent posting. Your first viral moment could come anytime—some hit it in week one, others in month two. The system works, but you have to actually post.",
   },
   {
+    id: '4',
     question: "I barely have time to cut hair. How do I find time for content?",
     answer: "That's exactly why this system exists. You're not creating extra content—you're documenting cuts you're already doing. Set up your phone, hit record, cut hair, done. The posting system takes 15 minutes a day max.",
   },
   {
+    id: '5',
     question: "Is this just for fades and tapers?",
     answer: "The principles work for any style—fades, tapers, beards, shears work, textured cuts, even braids and locs. Module 2 covers angles for different cut types. If you're cutting hair, this applies to you.",
   },
   {
+    id: '6',
     question: "What if I'm already posting but not growing?",
     answer: "Then you need the system. Random posting doesn't work. The Blueprint covers what content actually performs, when to post for your audience, and how to structure videos that hold attention. Strategy beats volume.",
   },
   {
+    id: '7',
     question: "Do I get lifetime access?",
     answer: "Yes. One payment, lifetime access, and every future update included. When we add new modules or strategies, you get them automatically at no extra cost.",
   },
@@ -80,6 +88,9 @@ export default function FAQ() {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const [openIndex, setOpenIndex] = useState(0)
 
+  const { faqs: firestoreFaqs, loading } = usePublicFAQs()
+  const faqs = firestoreFaqs.length > 0 ? firestoreFaqs : fallbackFaqs
+
   return (
     <section id="faq" ref={ref} className="py-24 bg-dark-secondary relative overflow-hidden">
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,7 +121,7 @@ export default function FAQ() {
         >
           {faqs.map((faq, index) => (
             <FAQItem
-              key={`faq-${index}`}
+              key={faq.id || `faq-${index}`}
               faq={faq}
               index={index}
               isOpen={openIndex === index}

@@ -1,34 +1,45 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
-import { Send, Check, ArrowRight } from 'lucide-react'
+import { Check, ArrowRight } from 'lucide-react'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '../firebase/config'
 
 export default function EmailCapture() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('idle') // idle, loading, success, error
-  const timerRef = useRef(null)
+  const [error, setError] = useState('')
 
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
-    }
-  }, [])
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email) return
 
     setStatus('loading')
+    setError('')
 
-    // Simulate API call - replace with actual email service
-    timerRef.current = setTimeout(() => {
+    try {
+      // Store email in Firestore for later retrieval
+      await addDoc(collection(db, 'email_subscribers'), {
+        email: email.toLowerCase().trim(),
+        subscribedAt: serverTimestamp(),
+        source: 'landing_page'
+      })
       setStatus('success')
       setEmail('')
-    }, 1500)
+    } catch (err) {
+      // Fallback: store in localStorage if Firestore fails
+      try {
+        const stored = JSON.parse(localStorage.getItem('email_subscribers') || '[]')
+        stored.push({ email: email.toLowerCase().trim(), date: new Date().toISOString() })
+        localStorage.setItem('email_subscribers', JSON.stringify(stored))
+        setStatus('success')
+        setEmail('')
+      } catch {
+        setStatus('error')
+        setError('Unable to subscribe. Please try again.')
+      }
+    }
   }
 
   return (
@@ -88,6 +99,10 @@ export default function EmailCapture() {
                 )}
               </button>
             </form>
+          )}
+
+          {error && (
+            <p className="text-red-400 text-sm mt-3">{error}</p>
           )}
 
           <p className="text-xs text-gray-400 mt-4">

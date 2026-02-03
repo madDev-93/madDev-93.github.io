@@ -92,3 +92,102 @@ export const getAuthErrorMessage = (errorCode, context = 'login') => {
   const errorMap = errorMaps[context] || loginErrors
   return errorMap[errorCode] || 'Something went wrong. Please try again.'
 }
+
+// ============ ADMIN FORM VALIDATORS ============
+
+export const validators = {
+  required: (value) => {
+    if (!value || (typeof value === 'string' && !value.trim())) {
+      return 'This field is required'
+    }
+    return null
+  },
+
+  maxLength: (max) => (value) => {
+    if (value && value.length > max) {
+      return `Maximum ${max} characters allowed`
+    }
+    return null
+  },
+
+  minLength: (min) => (value) => {
+    if (value && value.length < min) {
+      return `Minimum ${min} characters required`
+    }
+    return null
+  },
+
+  number: (value) => {
+    if (value !== '' && value !== null && value !== undefined && isNaN(Number(value))) {
+      return 'Must be a valid number'
+    }
+    return null
+  },
+
+  range: (min, max) => (value) => {
+    const num = Number(value)
+    if (isNaN(num)) return 'Must be a valid number'
+    if (num < min || num > max) {
+      return `Must be between ${min} and ${max}`
+    }
+    return null
+  },
+
+  positiveNumber: (value) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      const num = Number(value)
+      if (isNaN(num) || num < 0) {
+        return 'Must be a positive number'
+      }
+    }
+    return null
+  },
+
+  url: (value) => {
+    if (value && !value.startsWith('https://') && !value.startsWith('http://')) {
+      return 'Must be a valid URL starting with http:// or https://'
+    }
+    return null
+  },
+
+  duration: (value) => {
+    if (!value) return null
+    // Accept formats like "4:32", "1:23:45", "18 min", "2h 30m"
+    const durationRegex = /^(\d{1,2}:\d{2}(:\d{2})?|\d+\s*(min|h|m|hr|sec|s)(\s*\d+\s*(min|m|sec|s))?)/i
+    if (!durationRegex.test(value.trim())) {
+      return 'Invalid duration format (e.g., "4:32" or "18 min")'
+    }
+    return null
+  },
+
+  rating: (value) => {
+    const num = Number(value)
+    if (isNaN(num) || num < 1 || num > 5 || !Number.isInteger(num)) {
+      return 'Rating must be between 1 and 5'
+    }
+    return null
+  }
+}
+
+// Run multiple validators
+export function validate(value, ...validatorFns) {
+  for (const fn of validatorFns) {
+    const error = fn(value)
+    if (error) return error
+  }
+  return null
+}
+
+// Validate entire form
+export function validateForm(data, schema) {
+  const errors = {}
+
+  for (const [field, validatorFns] of Object.entries(schema)) {
+    const error = validate(data[field], ...validatorFns)
+    if (error) {
+      errors[field] = error
+    }
+  }
+
+  return Object.keys(errors).length > 0 ? errors : null
+}

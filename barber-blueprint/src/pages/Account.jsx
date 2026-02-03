@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../firebase/AuthContext'
@@ -60,6 +60,14 @@ const RATE_LIMIT_KEYS = {
 export default function Account() {
   const { user, userProfile, hasPurchased, logout, updatePassword, updateEmail, deleteAccount } = useAuth()
   const navigate = useNavigate()
+  const mountedRef = useRef(true)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   // UI State
   const [activeSection, setActiveSection] = useState(null)
@@ -89,7 +97,9 @@ export default function Account() {
       await logout()
       navigate('/')
     } catch (err) {
-      setError('Failed to sign out. Please try again.')
+      if (mountedRef.current) {
+        setError('Failed to sign out. Please try again.')
+      }
     }
   }
 
@@ -150,14 +160,20 @@ export default function Account() {
     setLoading(true)
     try {
       await updatePassword(passwordForm.currentPassword, passwordForm.newPassword)
-      setSuccess('Password updated successfully')
-      resetForms()
-      setActiveSection(null)
+      if (mountedRef.current) {
+        setSuccess('Password updated successfully')
+        resetForms()
+        setActiveSection(null)
+      }
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEYS.password)
-      setError(getAuthErrorMessage(err.code, 'password'))
+      if (mountedRef.current) {
+        setError(getAuthErrorMessage(err.code, 'password'))
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -183,22 +199,29 @@ export default function Account() {
       setError(emailError)
       return
     }
-    if (emailForm.newEmail.toLowerCase() === user?.email?.toLowerCase()) {
-      setError('New email must be different from current email')
+    const currentEmail = user?.email?.toLowerCase() || ''
+    if (!currentEmail || emailForm.newEmail.toLowerCase() === currentEmail) {
+      setError(currentEmail ? 'New email must be different from current email' : 'Unable to verify current email')
       return
     }
 
     setLoading(true)
     try {
       await updateEmail(emailForm.currentPassword, emailForm.newEmail)
-      setSuccess('Verification email sent to your new address. Please check your inbox and click the link to confirm the change.')
-      resetForms()
-      setActiveSection(null)
+      if (mountedRef.current) {
+        setSuccess('Verification email sent to your new address. Please check your inbox and click the link to confirm the change.')
+        resetForms()
+        setActiveSection(null)
+      }
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEYS.email)
-      setError(getAuthErrorMessage(err.code, 'email'))
+      if (mountedRef.current) {
+        setError(getAuthErrorMessage(err.code, 'email'))
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -228,9 +251,13 @@ export default function Account() {
       navigate('/')
     } catch (err) {
       recordAttempt(RATE_LIMIT_KEYS.delete)
-      setError(getAuthErrorMessage(err.code, 'delete'))
+      if (mountedRef.current) {
+        setError(getAuthErrorMessage(err.code, 'delete'))
+      }
     } finally {
-      setLoading(false)
+      if (mountedRef.current) {
+        setLoading(false)
+      }
     }
   }
 

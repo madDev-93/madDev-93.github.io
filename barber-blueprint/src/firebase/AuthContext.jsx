@@ -26,8 +26,14 @@ export function useAuth() {
 
 /**
  * Normalize email for consistent storage and lookup
+ * @param {string} email - Email to normalize
+ * @returns {string|null} Normalized email or null if invalid
  */
-const normalizeEmail = (email) => email?.trim().toLowerCase()
+const normalizeEmail = (email) => {
+  if (!email || typeof email !== 'string') return null
+  const trimmed = email.trim().toLowerCase()
+  return trimmed.length > 0 ? trimmed : null
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -35,37 +41,52 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
 
-  // Check if user has purchased
+  // Check if user has purchased (with timeout to prevent hanging)
   const checkPurchaseStatus = async (uid, email) => {
     const normalizedEmail = normalizeEmail(email)
 
+    // Add timeout to prevent infinite hanging
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Purchase check timeout')), 10000)
+    )
+
     try {
-      // Check user document first
-      const userDoc = await getDoc(doc(db, 'blueprint_users', uid))
+      const checkPromise = async () => {
+        // Check user document first
+        const userDoc = await getDoc(doc(db, 'blueprint_users', uid))
 
-      if (userDoc.exists()) {
-        const data = userDoc.data()
-        if (data.purchased) {
-          return data
+        if (userDoc.exists()) {
+          const data = userDoc.data()
+          if (data.purchased) {
+            return data
+          }
         }
+
+        // Check purchase by email (for webhook-created records)
+        if (!normalizedEmail) {
+          return { purchased: false }
+        }
+
+        const emailDoc = await getDoc(doc(db, 'blueprint_purchases', normalizedEmail))
+
+        if (emailDoc.exists() && emailDoc.data().verified) {
+          // Purchase verified via webhook - return purchased state
+          // Note: We don't write to blueprint_users from client to prevent tampering
+          return {
+            purchased: true,
+            purchaseDate: emailDoc.data().verifiedAt || new Date().toISOString()
+          }
+        }
+
+        return { purchased: false, verified: true }
       }
 
-      // Check purchase by email (for webhook-created records)
-      const emailDoc = await getDoc(doc(db, 'blueprint_purchases', normalizedEmail))
-
-      if (emailDoc.exists() && emailDoc.data().verified) {
-        // Purchase verified via webhook - return purchased state
-        // Note: We don't write to blueprint_users from client to prevent tampering
-        return {
-          purchased: true,
-          purchaseDate: emailDoc.data().verifiedAt || new Date().toISOString()
-        }
-      }
-
-      return { purchased: false }
-    } catch {
-      // Silently fail - user will see unpurchased state
-      return { purchased: false }
+      return await Promise.race([checkPromise(), timeoutPromise])
+    } catch (err) {
+      // Log error for debugging but don't expose to user
+      console.error('Error checking purchase status:', err)
+      // Return unverified state so UI can distinguish between "no purchase" and "check failed"
+      return { purchased: false, verified: false, error: err.message }
     }
   }
 

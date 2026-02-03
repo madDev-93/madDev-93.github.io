@@ -12,8 +12,9 @@ export default function Dashboard() {
 
   // Calculate progress percentage for a module
   const getModuleProgress = (moduleId, totalLessons) => {
-    const progress = allProgress[moduleId]
-    if (!progress || !progress.completedLessons) return 0
+    if (!totalLessons || totalLessons <= 0) return 0
+    const progress = allProgress?.[moduleId]
+    if (!progress?.completedLessons?.length) return 0
     return Math.round((progress.completedLessons.length / totalLessons) * 100)
   }
 

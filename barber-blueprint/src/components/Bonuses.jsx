@@ -1,20 +1,25 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
+import * as LucideIcons from 'lucide-react'
 import { Gift, ClipboardList, Calendar, Flame, Zap, Shield, RefreshCw } from 'lucide-react'
+import { usePublicBonuses } from '../hooks/useBonuses'
 
-const bonuses = [
+const fallbackBonuses = [
   {
-    icon: ClipboardList,
+    id: '1',
+    icon: 'ClipboardList',
     title: 'Weekly Filming Checklist',
     description: 'Never wonder what to film again. A printable checklist to ensure you capture everything you need each week.',
   },
   {
-    icon: Calendar,
+    id: '2',
+    icon: 'Calendar',
     title: 'Daily Posting Framework',
     description: 'The exact posting schedule for maximum reach. Know what to post and when across Instagram and TikTok.',
   },
   {
-    icon: Flame,
+    id: '3',
+    icon: 'Flame',
     title: 'Mindset Rules',
     description: 'The mental game that separates those who make it from those who quit. Daily disciplines for content creators.',
   },
@@ -26,9 +31,17 @@ const terms = [
   { icon: RefreshCw, text: 'Lifetime Updates' },
 ]
 
+// Get icon component from string name
+function getIcon(iconName) {
+  return LucideIcons[iconName] || Gift
+}
+
 export default function Bonuses() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+
+  const { bonuses: firestoreBonuses, loading } = usePublicBonuses()
+  const bonuses = firestoreBonuses.length > 0 ? firestoreBonuses : fallbackBonuses
 
   return (
     <section id="bonuses" ref={ref} className="py-24 bg-dark-secondary relative overflow-hidden">
@@ -53,24 +66,27 @@ export default function Bonuses() {
 
         {/* Bonus Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
-          {bonuses.map((bonus, index) => (
-            <motion.div
-              key={bonus.title}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="relative bg-dark-tertiary border border-white/5 rounded-2xl p-6 hover:border-gold/20 transition-all duration-300"
-            >
-              <div className="absolute top-4 right-4 text-xs font-medium text-gold">
-                Included
-              </div>
-              <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mb-4">
-                <bonus.icon className="w-5 h-5 text-gold" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{bonus.title}</h3>
-              <p className="text-sm text-gray-400">{bonus.description}</p>
-            </motion.div>
-          ))}
+          {bonuses.map((bonus, index) => {
+            const IconComponent = getIcon(bonus.icon)
+            return (
+              <motion.div
+                key={bonus.id || bonus.title}
+                initial={{ opacity: 0, y: 30 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="relative bg-dark-tertiary border border-white/5 rounded-2xl p-6 hover:border-gold/20 transition-all duration-300"
+              >
+                <div className="absolute top-4 right-4 text-xs font-medium text-gold">
+                  Included
+                </div>
+                <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mb-4">
+                  <IconComponent className="w-5 h-5 text-gold" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{bonus.title}</h3>
+                <p className="text-sm text-gray-400">{bonus.description}</p>
+              </motion.div>
+            )
+          })}
         </div>
 
         {/* Terms */}

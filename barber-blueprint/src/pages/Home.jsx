@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
+import { Eye, X } from 'lucide-react'
 import Header from '../components/Header'
 import Hero from '../components/Hero'
 import Problem from '../components/Problem'
@@ -21,6 +22,7 @@ const ORIGINAL_PRICE = '$97'
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
+  const [isPreview, setIsPreview] = useState(false)
   const { scrollY } = useScroll()
 
   const y1 = useTransform(scrollY, [0, 3000], [0, -400])
@@ -32,8 +34,34 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Check for preview mode
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    setIsPreview(urlParams.get('preview') === 'true')
+  }, [])
+
+  const closePreview = () => {
+    // Clear preview data and redirect to normal page
+    sessionStorage.removeItem('preview_landing')
+    window.location.href = '/'
+  }
+
   return (
     <div className="relative">
+      {/* Preview Mode Banner */}
+      {isPreview && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-gold text-dark px-4 py-2 flex items-center justify-center gap-3">
+          <Eye className="w-4 h-4" />
+          <span className="text-sm font-medium">Preview Mode - Showing unsaved changes</span>
+          <button
+            onClick={closePreview}
+            className="ml-4 p-1 hover:bg-dark/10 rounded transition-colors"
+            aria-label="Exit preview"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {/* Skip to main content link for keyboard users */}
       <a
         href="#main-content"
