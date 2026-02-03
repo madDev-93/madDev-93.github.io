@@ -54,20 +54,28 @@ export default function About() {
     <section id="about" ref={ref} className="py-24 relative overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Image Placeholder */}
+          {/* Creator Photo */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="aspect-[4/5] bg-dark-tertiary rounded-2xl border border-white/5 overflow-hidden" role="img" aria-label="Photo placeholder for the course creator">
-              <div className="w-full h-full bg-dark-secondary flex items-center justify-center">
-                <div className="text-center" aria-hidden="true">
-                  <Scissors className="w-12 h-12 text-white/10 mx-auto mb-4" />
-                  <span className="text-white/20 text-sm">Creator Photo</span>
+            <div className="aspect-[4/5] bg-dark-tertiary rounded-2xl border border-white/5 overflow-hidden" role="img" aria-label={about.photo ? "Photo of the course creator" : "Photo placeholder for the course creator"}>
+              {about.photo ? (
+                <img
+                  src={about.photo}
+                  alt="Course creator"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-dark-secondary flex items-center justify-center">
+                  <div className="text-center" aria-hidden="true">
+                    <Scissors className="w-12 h-12 text-white/10 mx-auto mb-4" />
+                    <span className="text-white/20 text-sm">Creator Photo</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
 

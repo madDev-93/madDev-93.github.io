@@ -4,10 +4,11 @@ import { useSiteContent, savePreviewData } from '../../hooks/useSiteContent'
 import FormField from '../../components/admin/shared/FormField'
 import TextInput from '../../components/admin/shared/TextInput'
 import TextArea from '../../components/admin/shared/TextArea'
+import ImageUploader from '../../components/admin/shared/ImageUploader'
 import SaveButton from '../../components/admin/shared/SaveButton'
 import PreviewModal from '../../components/admin/shared/PreviewModal'
 import AboutPreview from '../../components/admin/previews/AboutPreview'
-import { sanitizeText, sanitizeInstagramHandle } from '../../utils/sanitize'
+import { sanitizeText, sanitizeInstagramHandle, sanitizeUrl } from '../../utils/sanitize'
 import { validators, validateForm } from '../../utils/validation'
 import { AlertCircle, Plus, Trash2, RotateCcw, Instagram, Eye } from 'lucide-react'
 
@@ -15,6 +16,7 @@ export default function AboutEditor() {
   const { content, loading, error: loadError, saving, saveSection } = useSiteContent('landing')
 
   const [formData, setFormData] = useState({
+    photo: '',
     headline: '',
     paragraphs: [],
     quote: { text: '', attribution: '' },
@@ -40,6 +42,7 @@ export default function AboutEditor() {
   useEffect(() => {
     if (content?.about) {
       const loadedData = {
+        photo: content.about.photo || '',
         headline: content.about.headline || '',
         paragraphs: content.about.paragraphs || [],
         quote: content.about.quote || { text: '', attribution: '' },
@@ -120,6 +123,7 @@ export default function AboutEditor() {
 
     try {
       const sanitizedData = {
+        photo: sanitizeUrl(formData.photo),
         headline: sanitizeText(formData.headline),
         paragraphs: formData.paragraphs.map(p => sanitizeText(p)).filter(p => p),
         quote: {
@@ -182,6 +186,19 @@ export default function AboutEditor() {
 
         {/* Form */}
         <div className="bg-dark-tertiary border border-white/5 rounded-xl p-6 space-y-6">
+          {/* Photo Upload */}
+          <FormField
+            label="Creator Photo"
+            htmlFor="photo"
+            hint="Upload a photo of yourself (recommended: 4:5 aspect ratio)"
+          >
+            <ImageUploader
+              value={formData.photo}
+              onChange={(url) => handleChange('photo', url)}
+              path="images/about"
+            />
+          </FormField>
+
           <FormField
             label="Section Headline"
             htmlFor="headline"
@@ -192,7 +209,7 @@ export default function AboutEditor() {
               id="headline"
               value={formData.headline}
               onChange={(e) => handleChange('headline', e.target.value)}
-              placeholder="e.g., From Chair Renter to Content Creator"
+              placeholder="e.g., Built by a Barber, For Barbers"
               maxLength={200}
               error={!!errors.headline}
             />
