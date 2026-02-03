@@ -4,12 +4,12 @@ import { useSiteContent, savePreviewData } from '../../hooks/useSiteContent'
 import FormField from '../../components/admin/shared/FormField'
 import TextInput from '../../components/admin/shared/TextInput'
 import TextArea from '../../components/admin/shared/TextArea'
+import SaveButton from '../../components/admin/shared/SaveButton'
 import PreviewModal from '../../components/admin/shared/PreviewModal'
-import EditorToolbar from '../../components/admin/shared/EditorToolbar'
 import HeroPreview from '../../components/admin/previews/HeroPreview'
 import { sanitizeText } from '../../utils/sanitize'
 import { validators, validateForm } from '../../utils/validation'
-import { AlertCircle, Plus, Trash2 } from 'lucide-react'
+import { AlertCircle, Plus, Trash2, RotateCcw, Eye } from 'lucide-react'
 
 export default function HeroEditor() {
   const { content, loading, error: loadError, saving, saveSection } = useSiteContent('landing')
@@ -163,17 +163,13 @@ export default function HeroEditor() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        {/* Sticky Toolbar */}
-        <EditorToolbar
-          title="Hero Section"
-          subtitle="Edit the main hero section on the landing page"
-          onPreview={handlePreview}
-          onReset={handleReset}
-          onSave={handleSave}
-          saving={saving}
-          saved={saved}
-          hasChanges={hasChanges}
-        />
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Hero Section</h1>
+          <p className="text-gray-400 text-sm mt-1">
+            Edit the main hero section on the landing page
+          </p>
+        </div>
 
         {/* Error display */}
         {(loadError || saveError) && (
@@ -304,6 +300,45 @@ export default function HeroEditor() {
           </div>
         </div>
 
+        {/* Status Banner */}
+        {saved && (
+          <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm">
+              <strong>Saved!</strong> Your changes are now live on the public site.
+            </span>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handlePreview}
+            className="text-sm text-gray-400 hover:text-white flex items-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            Preview Changes
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleReset}
+              disabled={saving || !hasChanges}
+              className="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset
+            </button>
+            <SaveButton
+              onClick={handleSave}
+              loading={saving}
+              saved={saved}
+              disabled={!hasChanges}
+            >
+              Save Changes
+            </SaveButton>
+          </div>
+        </div>
       </motion.div>
 
       {/* Preview Modal */}
