@@ -107,14 +107,21 @@ export default function PreviewPage() {
         <div
           className="bg-dark-secondary border border-white/10 rounded-xl overflow-hidden mx-auto transition-all duration-300"
           style={{
-            maxWidth: DEVICE_SIZES[device].width,
-            height: DEVICE_SIZES[device].height
+            maxWidth: DEVICE_SIZES[device].width
           }}
         >
+          {/* Preview Mode Banner */}
+          <div className="bg-gold text-dark px-4 py-2 flex items-center justify-center gap-2">
+            <div className="w-2 h-2 bg-dark rounded-full animate-pulse" />
+            <span className="text-sm font-semibold uppercase tracking-wide">Preview Mode</span>
+            <span className="text-sm">— {currentTab.label} ({DEVICE_SIZES[device].label})</span>
+          </div>
+
           <iframe
             key={iframeKey}
             src={baseUrl + currentTab.path}
-            className="w-full h-full border-0"
+            className="w-full border-0"
+            style={{ height: DEVICE_SIZES[device].height }}
             title={`Preview - ${currentTab.label}`}
           />
         </div>
