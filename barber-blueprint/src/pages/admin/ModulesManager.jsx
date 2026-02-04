@@ -273,7 +273,7 @@ export default function ModulesManager() {
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <FormField label="Module Number" htmlFor="number">
                 <TextInput
                   id="number"
@@ -291,7 +291,7 @@ export default function ModulesManager() {
                 />
               </FormField>
 
-              <FormField label="Duration" htmlFor="duration">
+              <FormField label="Duration" htmlFor="duration" className="col-span-2 sm:col-span-1">
                 <TextInput
                   id="duration"
                   value={formData.duration}

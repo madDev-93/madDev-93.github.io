@@ -4,10 +4,11 @@ export default function FormField({
   error,
   required = false,
   hint,
+  className = '',
   children
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5 ${className}`}>
       {label && (
         <label
           htmlFor={htmlFor}
