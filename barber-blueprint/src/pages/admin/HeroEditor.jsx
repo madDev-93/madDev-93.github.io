@@ -164,11 +164,21 @@ export default function HeroEditor() {
         className="space-y-6"
       >
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold">Hero Section</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Edit the main hero section on the landing page
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Hero Section</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              Edit the main hero section on the landing page
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handlePreview}
+            className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors text-sm font-medium"
+          >
+            <Eye className="w-4 h-4" />
+            Preview Changes
+          </button>
         </div>
 
         {/* Error display */}
@@ -311,33 +321,23 @@ export default function HeroEditor() {
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-end gap-3">
           <button
-            type="button"
-            onClick={handlePreview}
-            className="text-sm text-gray-400 hover:text-white flex items-center gap-2"
+            onClick={handleReset}
+            disabled={saving || !hasChanges}
+            className="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <Eye className="w-4 h-4" />
-            Preview Changes
+            <RotateCcw className="w-4 h-4" />
+            Reset
           </button>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleReset}
-              disabled={saving || !hasChanges}
-              className="px-6 py-2.5 text-sm font-semibold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset
-            </button>
-            <SaveButton
-              onClick={handleSave}
-              loading={saving}
-              saved={saved}
-              disabled={!hasChanges}
-            >
-              Save Changes
-            </SaveButton>
-          </div>
+          <SaveButton
+            onClick={handleSave}
+            loading={saving}
+            saved={saved}
+            disabled={!hasChanges}
+          >
+            Save Changes
+          </SaveButton>
         </div>
       </motion.div>
 
