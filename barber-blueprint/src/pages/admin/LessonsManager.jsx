@@ -355,7 +355,7 @@ export default function LessonsManager() {
                 <button
                   type="button"
                   onClick={() => setShowPreview(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors font-semibold"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 rounded-lg transition-colors font-semibold"
                 >
                   <Eye className="w-4 h-4" />
                   Preview as User
@@ -364,7 +364,7 @@ export default function LessonsManager() {
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-5 py-2.5 rounded-lg transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Add Lesson
