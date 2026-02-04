@@ -280,27 +280,79 @@ export default function LessonsManager() {
           Back to Modules
         </Link>
 
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
-              {module ? `Module ${module.number}: ${module.title}` : 'Lessons'}
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              Manage lessons for this module. Drag to reorder.
-            </p>
+        {/* Module Info Card */}
+        {module && (
+          <div className="bg-dark-tertiary border border-white/5 rounded-xl p-5">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                {/* Module Number Badge */}
+                <div className="w-14 h-14 bg-gold/10 border border-gold/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-gold font-bold text-xl">{module.number || '01'}</span>
+                </div>
+                {/* Module Details */}
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-xl font-bold">{module.title}</h1>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      module.status === 'published'
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                    }`}>
+                      {module.status === 'published' ? 'Published' : 'Draft'}
+                    </span>
+                  </div>
+                  {module.shortDescription && (
+                    <p className="text-gray-400 text-sm mb-2">{module.shortDescription}</p>
+                  )}
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Video className="w-3.5 h-3.5" />
+                      {lessons.length} {lessons.length === 1 ? 'lesson' : 'lessons'}
+                    </span>
+                    {module.duration && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {module.duration}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {/* Actions */}
+              <div className="flex items-center gap-3">
+                {lessons.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors font-semibold"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Preview as User
+                  </button>
+                )}
+                {!isEditing && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Lesson
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {lessons.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowPreview(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors font-semibold"
-              >
-                <Eye className="w-4 h-4" />
-                Preview as User
-              </button>
-            )}
+        )}
+
+        {/* Fallback Header when no module */}
+        {!module && !moduleLoading && (
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Lessons</h1>
+              <p className="text-gray-400 text-sm mt-1">
+                Manage lessons for this module. Drag to reorder.
+              </p>
+            </div>
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
@@ -311,7 +363,7 @@ export default function LessonsManager() {
               </button>
             )}
           </div>
-        </div>
+        )}
 
         {/* Error display */}
         {(error || saveError) && (
