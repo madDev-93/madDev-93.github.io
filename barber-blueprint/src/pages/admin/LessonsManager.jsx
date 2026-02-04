@@ -295,7 +295,7 @@ export default function LessonsManager() {
               <button
                 type="button"
                 onClick={() => setShowPreview(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors font-semibold"
               >
                 <Eye className="w-4 h-4" />
                 Preview as User
