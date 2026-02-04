@@ -14,8 +14,48 @@ import {
   RefreshCw,
   FolderOpen,
   Copy,
-  Check
+  Check,
+  Folder,
+  Calendar,
+  Clock
 } from 'lucide-react'
+
+// Format section name for display
+const formatSectionName = (section) => {
+  if (section === 'general') return 'General'
+  return section
+    .split('/')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' → ')
+}
+
+// Format date for display
+const formatDate = (dateString) => {
+  if (!dateString) return 'Unknown'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+// Group files by section
+const groupBySection = (files) => {
+  const groups = {}
+  files.forEach(file => {
+    const section = file.section || 'general'
+    if (!groups[section]) {
+      groups[section] = []
+    }
+    groups[section].push(file)
+  })
+  // Sort files within each group by date (newest first)
+  Object.values(groups).forEach(group => {
+    group.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  })
+  return groups
+}
 
 const TABS = [
   { id: 'images', label: 'Images', icon: Image, path: 'images' },
@@ -206,19 +246,19 @@ export default function MediaLibrary() {
           <img
             src={file.url}
             alt={file.name}
-            className="w-full h-32 object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-lg"
           />
         )
       case 'videos':
         return (
-          <div className="w-full h-32 bg-black rounded-lg flex items-center justify-center">
-            <Video className="w-10 h-10 text-gray-600" />
+          <div className="w-full h-full bg-black rounded-lg flex items-center justify-center">
+            <Video className="w-8 h-8 text-gray-600" />
           </div>
         )
       case 'pdfs':
         return (
-          <div className="w-full h-32 bg-red-500/10 rounded-lg flex items-center justify-center">
-            <FileText className="w-10 h-10 text-red-400" />
+          <div className="w-full h-full bg-red-500/10 rounded-lg flex items-center justify-center">
+            <FileText className="w-8 h-8 text-red-400" />
           </div>
         )
       default:
@@ -296,7 +336,7 @@ export default function MediaLibrary() {
           </div>
         )}
 
-        {/* Files grid */}
+        {/* Files grouped by section */}
         {loading && !showUploader ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
@@ -313,46 +353,80 @@ export default function MediaLibrary() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {files.map(file => (
-              <div
-                key={file.fullPath}
-                className="group bg-dark-tertiary border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-colors"
-              >
-                {renderFilePreview(file)}
-                <div className="p-3">
-                  <p className="text-sm font-medium truncate mb-2" title={file.name}>
-                    {file.name}
-                  </p>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleCopyUrl(file.url)}
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded transition-colors"
-                      title="Copy URL"
+          <div className="space-y-8">
+            {Object.entries(groupBySection(files)).map(([section, sectionFiles]) => (
+              <div key={section}>
+                {/* Section Header */}
+                <div className="flex items-center gap-2 mb-4">
+                  <Folder className="w-4 h-4 text-gold" />
+                  <h3 className="text-sm font-semibold text-gold uppercase tracking-wide">
+                    {formatSectionName(section)}
+                  </h3>
+                  <span className="text-xs text-gray-500">({sectionFiles.length})</span>
+                </div>
+
+                {/* Files Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sectionFiles.map(file => (
+                    <div
+                      key={file.fullPath}
+                      className="group bg-dark-tertiary border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-colors"
                     >
-                      {copiedUrl === file.url ? (
-                        <Check className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                    <a
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded transition-colors"
-                      title="Open in new tab"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    <button
-                      onClick={() => setDeleteConfirm(file)}
-                      className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                      <div className="flex gap-4 p-4">
+                        {/* Thumbnail */}
+                        <div className="flex-shrink-0 w-24 h-24">
+                          {renderFilePreview(file)}
+                        </div>
+
+                        {/* File Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white mb-1 break-words" title={file.name}>
+                            {file.name}
+                          </p>
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>{formatDate(file.createdAt)}</span>
+                          </div>
+                          {file.size && (
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(file.size)}
+                            </p>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 mt-2">
+                            <button
+                              onClick={() => handleCopyUrl(file.url)}
+                              className="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded transition-colors"
+                              title="Copy URL"
+                            >
+                              {copiedUrl === file.url ? (
+                                <Check className="w-4 h-4 text-green-400" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                            <a
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded transition-colors"
+                              title="Open in new tab"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={() => setDeleteConfirm(file)}
+                              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

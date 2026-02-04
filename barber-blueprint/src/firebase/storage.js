@@ -1,4 +1,4 @@
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject, listAll } from 'firebase/storage'
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject, listAll, getMetadata } from 'firebase/storage'
 import { storage } from './config'
 
 // File type validation
@@ -109,13 +109,26 @@ export async function listFiles(path) {
   const listRef = ref(storage, path)
   const result = await listAll(listRef)
 
-  // Get files at this level
+  // Get files at this level with metadata
   const filePromises = result.items.map(async (item) => {
-    const url = await getDownloadURL(item)
+    const [url, metadata] = await Promise.all([
+      getDownloadURL(item),
+      getMetadata(item)
+    ])
+
+    // Extract section from path (e.g., "images/about" -> "about")
+    const pathParts = item.fullPath.split('/')
+    const section = pathParts.length > 2 ? pathParts.slice(1, -1).join('/') : 'general'
+
     return {
       name: item.name,
       fullPath: item.fullPath,
-      url
+      url,
+      section,
+      size: metadata.size,
+      contentType: metadata.contentType,
+      createdAt: metadata.timeCreated,
+      updatedAt: metadata.updated
     }
   })
 
