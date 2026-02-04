@@ -345,6 +345,12 @@ modules/{id}
 - [x] **Audit logging**
 
 ### Before Launch
+- [ ] **Add brother as admin** - When you have his email:
+  1. Have him create an account on the site
+  2. Get his Firebase Auth UID from Firebase Console → Authentication
+  3. Add document to `blueprint_admins` collection in Firestore (use UID as doc ID)
+  4. Run: `node scripts/setAdminClaim.cjs brothers-email@example.com`
+  5. He signs out and back in (required for custom claim to take effect)
 - [ ] Create Lemonsqueezy account and product
 - [ ] Deploy Cloud Functions for webhook
 - [ ] Update CTA buttons with checkout link

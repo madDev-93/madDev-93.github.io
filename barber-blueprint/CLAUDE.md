@@ -59,13 +59,20 @@ git push origin main
 - `/pdfs/` - PDF files (max 50MB)
 
 ### Admin User Setup
-Add admin users manually in Firebase Console:
+
+**Step 1: Add to Firestore (for admin panel access)**
 1. Go to Firestore Database
 2. Create document in `blueprint_admins` collection
 3. Use the user's Firebase Auth UID as the document ID
 4. Add fields: `email`, `name`, `role: "admin"`, `createdAt`
 
-Current admin UID: `DskWRmLrgKfiV5rS08E1brrF2Tv2`
+**Step 2: Set Custom Claim (for file uploads)**
+```bash
+node scripts/setAdminClaim.cjs user-email@example.com
+```
+Then the user must sign out and sign back in.
+
+Current admin: `jomen12@icloud.com` (UID: `DskWRmLrgKfiV5rS08E1brrF2Tv2`)
 
 ## Project Structure
 
@@ -129,7 +136,8 @@ VITE_FIREBASE_MEASUREMENT_ID=
 ## Common Issues & Solutions
 
 ### "No permission" on Storage uploads
-- Verify user is in `blueprint_admins` collection
+- User must have admin custom claim set: `node scripts/setAdminClaim.cjs email@example.com`
+- User must sign out and back in after claim is set
 - Check Storage rules are deployed: `firebase deploy --only storage`
 
 ### Login redirects to wrong page
@@ -157,3 +165,4 @@ firebase deploy --only firestore   # Deploy Firestore rules
 firebase deploy --only storage     # Deploy Storage rules
 firebase deploy --only functions   # Deploy Cloud Functions
 ```
+

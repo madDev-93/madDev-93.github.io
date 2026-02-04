@@ -2,10 +2,14 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper: Check if user is admin (requires Firestore lookup)
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Check if user has admin custom claim
     function isAdmin() {
-      return request.auth != null &&
-        firestore.exists(/databases/(default)/documents/blueprint_admins/$(request.auth.uid));
+      return isAuthenticated() && request.auth.token.admin == true;
     }
 
     // Helper: Validate file size (in bytes)
