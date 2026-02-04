@@ -104,30 +104,39 @@ export async function deleteFile(url) {
   }
 }
 
-// List all files in a directory
+// List all files in a directory (recursive)
 export async function listFiles(path) {
   const listRef = ref(storage, path)
   const result = await listAll(listRef)
 
-  if (result.items.length === 0) {
-    return []
-  }
+  // Get files at this level
+  const filePromises = result.items.map(async (item) => {
+    const url = await getDownloadURL(item)
+    return {
+      name: item.name,
+      fullPath: item.fullPath,
+      url
+    }
+  })
 
-  const results = await Promise.allSettled(
-    result.items.map(async (item) => {
-      const url = await getDownloadURL(item)
-      return {
-        name: item.name,
-        fullPath: item.fullPath,
-        url
-      }
-    })
-  )
+  // Recursively get files from subdirectories
+  const subfolderPromises = result.prefixes.map(async (prefix) => {
+    return listFiles(prefix.fullPath)
+  })
 
-  // Filter out failed items and return only successful ones
-  return results
+  const [fileResults, subfolderResults] = await Promise.all([
+    Promise.allSettled(filePromises),
+    Promise.all(subfolderPromises)
+  ])
+
+  // Combine files from this level and all subfolders
+  const files = fileResults
     .filter(r => r.status === 'fulfilled')
     .map(r => r.value)
+
+  const subfolderFiles = subfolderResults.flat()
+
+  return [...files, ...subfolderFiles]
 }
 
 // Get storage path from download URL
