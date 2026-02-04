@@ -12,9 +12,11 @@ import SaveButton from '../../components/admin/shared/SaveButton'
 import StatusToggle from '../../components/admin/shared/StatusToggle'
 import DragDropList from '../../components/admin/shared/DragDropList'
 import VideoUploader from '../../components/admin/shared/VideoUploader'
+import PreviewModal from '../../components/admin/shared/PreviewModal'
+import LessonPreview from '../../components/admin/previews/LessonPreview'
 import { sanitizeText } from '../../utils/sanitize'
 import { validators, validateForm } from '../../utils/validation'
-import { AlertCircle, Plus, Trash2, Edit2, X, ArrowLeft, Clock, Video, Play } from 'lucide-react'
+import { AlertCircle, Plus, Trash2, Edit2, X, ArrowLeft, Clock, Video, Play, Eye } from 'lucide-react'
 
 export default function LessonsManager() {
   const { moduleId } = useParams()
@@ -48,6 +50,7 @@ export default function LessonsManager() {
   const [formErrors, setFormErrors] = useState({})
   const [saveError, setSaveError] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
 
   // Mounted ref to prevent state updates after unmount
   const mountedRef = useRef(true)
@@ -278,7 +281,7 @@ export default function LessonsManager() {
         </Link>
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold">
               {module ? `Module ${module.number}: ${module.title}` : 'Lessons'}
@@ -287,15 +290,27 @@ export default function LessonsManager() {
               Manage lessons for this module. Drag to reorder.
             </p>
           </div>
-          {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-4 py-2 rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Lesson
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {lessons.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gold/10 text-gold hover:bg-gold/20 rounded-lg transition-colors text-sm font-medium"
+              >
+                <Eye className="w-4 h-4" />
+                Preview as User
+              </button>
+            )}
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Lesson
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Error display */}
@@ -435,6 +450,18 @@ export default function LessonsManager() {
           </div>
         )}
       </motion.div>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        title="Preview as User"
+      >
+        <LessonPreview
+          module={module}
+          lessons={lessons.filter(l => l.status === 'published')}
+        />
+      </PreviewModal>
     </div>
   )
 }
