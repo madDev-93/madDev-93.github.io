@@ -310,18 +310,18 @@ export default function LessonsManager() {
 
         {/* Module Info Card */}
         <div className="bg-dark-tertiary border border-white/5 rounded-xl p-5">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div className="flex items-start gap-4">
               {/* Module Number Badge */}
-              <div className="w-14 h-14 bg-gold/10 border border-gold/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span className="text-gold font-bold text-xl">{module?.number || '—'}</span>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gold/10 border border-gold/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-gold font-bold text-lg sm:text-xl">{module?.number || '—'}</span>
               </div>
               {/* Module Details */}
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-xl font-bold">{module?.title || 'Lessons'}</h1>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h1 className="text-lg sm:text-xl font-bold">{module?.title || 'Lessons'}</h1>
                   {module && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
                       module.status === 'published'
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                         : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
@@ -350,24 +350,26 @@ export default function LessonsManager() {
               </div>
             </div>
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {lessons.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowPreview(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 rounded-lg transition-colors font-semibold"
+                  className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 rounded-lg transition-colors font-semibold text-sm sm:text-base"
                 >
                   <Eye className="w-4 h-4" />
-                  Preview as User
+                  <span className="hidden sm:inline">Preview as User</span>
+                  <span className="sm:hidden">Preview</span>
                 </button>
               )}
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-5 py-2.5 rounded-lg transition-colors"
+                  className="flex items-center gap-2 bg-gold hover:bg-gold-dark text-dark font-semibold px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg transition-colors text-sm sm:text-base"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Lesson
+                  <span className="hidden sm:inline">Add Lesson</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
               )}
             </div>
