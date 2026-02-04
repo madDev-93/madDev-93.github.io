@@ -1,92 +1,125 @@
 import { motion } from 'framer-motion'
-import { Check, ArrowRight } from 'lucide-react'
+import { Check, ArrowRight, Zap, Shield, RefreshCw, Lock } from 'lucide-react'
 
 export default function PricingPreview({ data }) {
   const { currentPrice, originalPrice, discount, includedItems } = data
 
-  const calculatedDiscount = originalPrice > 0
-    ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
-    : 0
+  const price = `$${currentPrice || 47}`
+  const origPrice = `$${originalPrice || 97}`
 
   return (
-    <section className="py-20 bg-dark">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <span className="text-gold text-sm font-medium uppercase tracking-wider">Get Access</span>
-            <h2 className="text-3xl md:text-4xl font-bold mt-2">
-              Start Your Journey Today
-            </h2>
-          </motion.div>
+    <section className="py-24 bg-dark-secondary relative overflow-hidden">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header - matches actual CTA.jsx */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <span className="text-gold text-sm font-medium tracking-widest uppercase mb-4 block">
+            Get Started Today
+          </span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+            Ready to Build Your
+            <br />
+            <span className="text-gold">Barber Brand?</span>
+          </h2>
+          <p className="text-gray-400 max-w-xl mx-auto">
+            Stop letting content creation overwhelm you. Get the exact system to turn your
+            daily haircuts into income, influence, and freedom.
+          </p>
+        </motion.div>
 
-          {/* Pricing Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-dark-secondary border border-gold/20 rounded-2xl p-8 relative overflow-hidden"
-          >
-            {/* Discount Badge */}
-            {calculatedDiscount > 0 && (
-              <div className="absolute top-4 right-4 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">
-                {discount || `${calculatedDiscount}% OFF`}
-              </div>
-            )}
+        {/* Pricing Card - matches actual CTA.jsx */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-dark-tertiary border border-gold/20 rounded-2xl p-8 sm:p-10"
+        >
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold mb-4">The Barber Blueprint</h3>
 
             {/* Price */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <span className="text-5xl md:text-6xl font-bold text-gold">
-                  ${currentPrice}
-                </span>
-                {originalPrice > currentPrice && (
-                  <span className="text-2xl text-gray-500 line-through">
-                    ${originalPrice}
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-400">One-time payment, lifetime access</p>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <span className="text-4xl sm:text-5xl font-bold text-white">{price}</span>
+              {originalPrice > currentPrice && (
+                <span className="text-xl text-gray-400 line-through">{origPrice}</span>
+              )}
             </div>
+            {discount && (
+              <p className="text-sm text-gold">Save {discount} — Limited Time</p>
+            )}
+          </div>
 
-            {/* Included Items */}
-            {includedItems && includedItems.length > 0 && (
-              <div className="space-y-3 mb-8">
-                {includedItems.map((item, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-gold" />
-                    </div>
-                    <span className="text-gray-300">{item}</span>
+          {/* What's Included */}
+          {includedItems && includedItems.length > 0 ? (
+            <ul className="grid sm:grid-cols-2 gap-3 mb-8">
+              {includedItems.map((item, index) => (
+                <li key={index} className="flex items-center gap-3">
+                  <div className="w-5 h-5 bg-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3 text-gold" />
                   </div>
-                ))}
+                  <span className="text-sm text-gray-300">{item}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 italic text-center mb-8">
+              No included items added yet.
+            </p>
+          )}
+
+          {/* Terms - matches actual CTA.jsx */}
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-8 py-6 border-y border-white/5">
+            {[
+              { icon: Zap, text: 'Instant Access' },
+              { icon: Shield, text: 'One-Time Payment' },
+              { icon: RefreshCw, text: 'Lifetime Updates' },
+            ].map((term) => (
+              <div key={term.text} className="flex items-center gap-2 text-gray-400">
+                <term.icon className="w-4 h-4 text-gold" />
+                <span className="text-sm">{term.text}</span>
               </div>
-            )}
+            ))}
+          </div>
 
-            {includedItems?.length === 0 && (
-              <p className="text-gray-500 italic text-center mb-8">
-                No included items added yet.
-              </p>
-            )}
+          {/* CTA Button - matches actual CTA.jsx */}
+          <button className="group w-full bg-gold hover:bg-gold-dark text-dark font-semibold text-lg px-8 py-5 rounded-lg transition-colors flex items-center justify-center gap-2">
+            Get Instant Access — {price}
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
 
-            {/* CTA Button */}
-            <button className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gold hover:bg-gold-dark text-dark font-semibold rounded-xl transition-colors">
-              Get Instant Access
-              <ArrowRight className="w-5 h-5" />
-            </button>
+          {/* Guarantee */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-400">
+              30-day money-back guarantee. No questions asked.
+            </p>
+          </div>
 
-            {/* Trust badges */}
-            <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-center gap-6 text-sm text-gray-500">
-              <span>Secure checkout</span>
-              <span>Instant access</span>
-              <span>Lifetime updates</span>
+          {/* Secure Payment - matches actual CTA.jsx */}
+          <div className="mt-6 pt-6 border-t border-white/5">
+            <div className="flex items-center justify-center gap-2 text-gray-400 mb-4">
+              <Lock className="w-4 h-4" />
+              <span className="text-xs">Secure 256-bit SSL Encrypted Payment</span>
             </div>
-          </motion.div>
-        </div>
+
+            {/* Payment Icons */}
+            <div className="flex items-center justify-center gap-4 opacity-50">
+              <svg className="h-6" viewBox="0 0 50 16" fill="currentColor">
+                <path d="M19.5 1.5l-2.8 13h-2.3l2.8-13h2.3zm11.4 8.4l1.2-3.3.7 3.3h-1.9zm2.6 4.6h2.1l-1.9-13h-2c-.4 0-.8.2-1 .6l-3.5 12.4h2.4l.5-1.3h2.9l.5 1.3zm-6.1-4.2c0-3.4-4.7-3.6-4.7-5.1 0-.5.5-1 1.5-1.1.5 0 1.9-.1 3.4.7l.6-2.8c-.8-.3-1.9-.6-3.2-.6-3.4 0-5.8 1.8-5.8 4.4 0 1.9 1.7 3 3 3.6 1.4.7 1.8 1.1 1.8 1.7 0 .9-1.1 1.3-2.1 1.4-1.8 0-2.8-.5-3.6-.9l-.6 2.9c.8.4 2.3.7 3.9.7 3.6 0 6-1.8 6-4.5l-.2-.4zM8.4 1.5L4.8 14.5H2.3L.5 3.6c-.1-.5-.2-.6-.6-.8C-.9 2.4 0 2.6 0 2.6l.1-.6h3.7c.5 0 .9.3 1 .9l.9 4.8 2.3-5.7h2.4v.5z"/>
+              </svg>
+              <svg className="h-6" viewBox="0 0 50 30" fill="currentColor">
+                <circle cx="15" cy="15" r="15" fillOpacity="0.8"/>
+                <circle cx="35" cy="15" r="15" fillOpacity="0.6"/>
+              </svg>
+              <span className="text-xs">AMEX</span>
+              <span className="text-xs">Apple Pay</span>
+              <span className="text-xs">Google Pay</span>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   )
