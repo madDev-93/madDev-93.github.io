@@ -43,19 +43,19 @@ export default function IconPicker({
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-left transition-colors ${
+        className={`w-full h-[42px] flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 text-left transition-colors ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20'
         }`}
       >
-        <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center">
+        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
           {SelectedIcon ? (
-            <SelectedIcon className="w-4 h-4 text-gold" />
+            <SelectedIcon className="w-5 h-5 text-gold" />
           ) : (
             <span className="text-gray-500 text-xs">?</span>
           )}
         </div>
-        <span className="flex-1 text-sm">
-          {value || 'Select an icon'}
+        <span className="flex-1 text-sm truncate">
+          {value || 'Select icon'}
         </span>
       </button>
 
