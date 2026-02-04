@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import { useLessons } from '../../hooks/useModules'
+import { modules as fallbackModules } from '../../constants/modules'
 import FormField from '../../components/admin/shared/FormField'
 import TextInput from '../../components/admin/shared/TextInput'
 import TextArea from '../../components/admin/shared/TextArea'
@@ -80,9 +81,36 @@ export default function LessonsManager() {
         if (!mountedRef.current) return
         if (moduleDoc.exists()) {
           setModule({ id: moduleDoc.id, ...moduleDoc.data() })
+        } else {
+          // Try fallback modules
+          const fallback = fallbackModules.find(m => String(m.id) === moduleId)
+          if (fallback) {
+            setModule({
+              id: String(fallback.id),
+              number: fallback.number,
+              title: fallback.title,
+              shortDescription: fallback.shortDescription,
+              fullDescription: fallback.fullDescription,
+              duration: fallback.duration,
+              status: 'published'
+            })
+          }
         }
       } catch (err) {
         console.error('Error loading module:', err)
+        // Try fallback on error
+        const fallback = fallbackModules.find(m => String(m.id) === moduleId)
+        if (fallback && mountedRef.current) {
+          setModule({
+            id: String(fallback.id),
+            number: fallback.number,
+            title: fallback.title,
+            shortDescription: fallback.shortDescription,
+            fullDescription: fallback.fullDescription,
+            duration: fallback.duration,
+            status: 'published'
+          })
+        }
       } finally {
         if (mountedRef.current) {
           setModuleLoading(false)
