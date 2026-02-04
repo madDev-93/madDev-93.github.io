@@ -357,7 +357,13 @@ modules/{id}
 - [ ] Add actual video content
 
 ### After Launch
-- [ ] Custom domain
+- [ ] **Move to own repo/domain** - Currently hosted under qwota.app via parent repo:
+  1. Create new GitHub repo (e.g., `barber-blueprint`)
+  2. Update `vite.config.js` base path (remove `/barber-blueprint/`)
+  3. Update all hardcoded URLs in `index.html` (canonical, og:url, og:image)
+  4. Set up custom domain in GitHub Pages or Firebase Hosting
+  5. Update Firebase Auth authorized domains
+  6. Update Google Cloud API key restrictions
 - [ ] Connect EmailCapture to email service
 - [ ] Google Analytics or Plausible
 - [ ] Error tracking (Sentry)
