@@ -124,20 +124,12 @@ export default function CTA() {
               <span className="text-xs">Secure 256-bit SSL Encrypted Payment</span>
             </div>
 
-            {/* Payment Icons */}
-            <div className="flex items-center justify-center gap-4 opacity-50" aria-label="Accepted payment methods: Visa, Mastercard, AMEX, Apple Pay, Google Pay">
-              <svg className="h-6" viewBox="0 0 50 16" fill="currentColor" aria-hidden="true">
-                <title>Visa</title>
-                <path d="M19.5 1.5l-2.8 13h-2.3l2.8-13h2.3zm11.4 8.4l1.2-3.3.7 3.3h-1.9zm2.6 4.6h2.1l-1.9-13h-2c-.4 0-.8.2-1 .6l-3.5 12.4h2.4l.5-1.3h2.9l.5 1.3zm-6.1-4.2c0-3.4-4.7-3.6-4.7-5.1 0-.5.5-1 1.5-1.1.5 0 1.9-.1 3.4.7l.6-2.8c-.8-.3-1.9-.6-3.2-.6-3.4 0-5.8 1.8-5.8 4.4 0 1.9 1.7 3 3 3.6 1.4.7 1.8 1.1 1.8 1.7 0 .9-1.1 1.3-2.1 1.4-1.8 0-2.8-.5-3.6-.9l-.6 2.9c.8.4 2.3.7 3.9.7 3.6 0 6-1.8 6-4.5l-.2-.4zM8.4 1.5L4.8 14.5H2.3L.5 3.6c-.1-.5-.2-.6-.6-.8C-.9 2.4 0 2.6 0 2.6l.1-.6h3.7c.5 0 .9.3 1 .9l.9 4.8 2.3-5.7h2.4v.5z"/>
-              </svg>
-              <svg className="h-6" viewBox="0 0 50 30" fill="currentColor" aria-hidden="true">
-                <title>Mastercard</title>
-                <circle cx="15" cy="15" r="15" fillOpacity="0.8"/>
-                <circle cx="35" cy="15" r="15" fillOpacity="0.6"/>
-              </svg>
-              <span className="text-xs" aria-hidden="true">AMEX</span>
-              <span className="text-xs" aria-hidden="true">Apple Pay</span>
-              <span className="text-xs" aria-hidden="true">Google Pay</span>
+            {/* Payment Methods */}
+            <div className="flex items-center justify-center gap-3" aria-label="Accepted payment methods: Visa, Mastercard, AMEX, Apple Pay">
+              <span className="text-xs font-medium text-gray-500 px-2 py-1 border border-white/10 rounded">Visa</span>
+              <span className="text-xs font-medium text-gray-500 px-2 py-1 border border-white/10 rounded">Mastercard</span>
+              <span className="text-xs font-medium text-gray-500 px-2 py-1 border border-white/10 rounded">AMEX</span>
+              <span className="text-xs font-medium text-gray-500 px-2 py-1 border border-white/10 rounded">Apple Pay</span>
             </div>
           </div>
         </motion.div>
