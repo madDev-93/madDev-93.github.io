@@ -92,16 +92,6 @@ export default function HeroPreview({ data }) {
         )}
       </div>
 
-      {/* Scroll Indicator - matches actual Hero.jsx */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <div className="w-6 h-10 border border-white/20 rounded-full flex justify-center">
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-1 h-1 bg-white/40 rounded-full mt-2"
-          />
-        </div>
-      </div>
     </section>
   )
 }
