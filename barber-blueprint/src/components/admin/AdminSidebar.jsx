@@ -10,7 +10,8 @@ import {
   X,
   Home,
   DollarSign,
-  MessageSquareQuote
+  MessageSquareQuote,
+  Eye
 } from 'lucide-react'
 
 const navigation = [
@@ -43,13 +44,13 @@ const navigation = [
 export default function AdminSidebar({ isOpen, onClose }) {
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 w-64 bg-dark-secondary border-r border-white/5 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+      className={`fixed inset-y-0 left-0 z-50 w-64 bg-dark-secondary border-r border-white/5 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Admin navigation"
     >
       {/* Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Scissors className="w-5 h-5 text-gold" aria-hidden="true" />
           <span className="font-semibold text-sm tracking-wide uppercase">Admin Panel</span>
@@ -64,7 +65,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
+      <nav className="p-4 space-y-1 overflow-y-auto flex-1">
         {navigation.map((item) => (
           item.items ? (
             <div key={item.name} className="mb-4">
@@ -111,6 +112,27 @@ export default function AdminSidebar({ isOpen, onClose }) {
           )
         ))}
       </nav>
+
+      {/* Preview Footer - Very Prominent */}
+      <div className="p-4 border-t border-white/5 flex-shrink-0">
+        <NavLink
+          to="/admin/preview"
+          onClick={onClose}
+          className={({ isActive }) =>
+            `flex items-center justify-center gap-3 w-full py-4 rounded-xl font-semibold text-base transition-all ${
+              isActive
+                ? 'bg-gold text-dark'
+                : 'bg-gold/20 text-gold hover:bg-gold hover:text-dark border-2 border-gold/50 hover:border-gold'
+            }`
+          }
+        >
+          <Eye className="w-5 h-5" aria-hidden="true" />
+          Preview Site
+        </NavLink>
+        <p className="text-center text-xs text-gray-500 mt-2">
+          See how your changes look
+        </p>
+      </div>
     </aside>
   )
 }

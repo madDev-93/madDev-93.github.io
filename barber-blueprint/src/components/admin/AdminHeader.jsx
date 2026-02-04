@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '../../firebase/config'
 import { useAdmin } from '../../firebase/AdminContext'
-import { Menu, LogOut, ExternalLink, Eye } from 'lucide-react'
+import { Menu, LogOut, ExternalLink } from 'lucide-react'
 
 export default function AdminHeader({ onMenuClick }) {
   const { adminUser } = useAdmin()
@@ -32,15 +32,6 @@ export default function AdminHeader({ onMenuClick }) {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Preview button */}
-          <Link
-            to="/admin/preview"
-            className="flex items-center gap-2 text-sm bg-gold/10 text-gold hover:bg-gold/20 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <Eye className="w-4 h-4" />
-            <span className="hidden sm:inline">Preview</span>
-          </Link>
-
           {/* View live site link */}
           <Link
             to="/"
