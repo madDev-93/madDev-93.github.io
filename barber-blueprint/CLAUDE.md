@@ -72,7 +72,9 @@ node scripts/setAdminClaim.cjs user-email@example.com
 ```
 Then the user must sign out and sign back in.
 
-Current admin: `jomen12@icloud.com` (UID: `DskWRmLrgKfiV5rS08E1brrF2Tv2`)
+Current admins:
+- `jomen12@icloud.com` (UID: `DskWRmLrgKfiV5rS08E1brrF2Tv2`)
+- `ivanmendoza64@gmail.com` (UID: `S7BC7ut67JWgYUrevSEvdYIxU3u2`)
 
 ## Project Structure
 
