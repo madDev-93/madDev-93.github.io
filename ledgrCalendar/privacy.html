@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ledgr Calendar Privacy Policy">
+  <title>Privacy Policy - Ledgr Calendar</title>
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #030712;
+      --surface: #111827;
+      --text: #F9FAFB;
+      --text-secondary: #9CA3AF;
+      --accent: #34D399;
+      --radius: 1rem;
+    }
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    header {
+      padding: 1.5rem 0;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .logo img { width: 36px; height: 36px; border-radius: 8px; }
+    .logo span { font-size: 1.125rem; font-weight: 600; }
+    .page-header {
+      padding: 2rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 2rem;
+    }
+    .page-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .page-header .date { font-size: 0.875rem; color: var(--text-secondary); }
+    .content h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 2rem 0 0.75rem;
+      color: var(--accent);
+    }
+    .content h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .content p {
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+    .content ul {
+      color: var(--text-secondary);
+      margin: 0 0 1rem 1.5rem;
+    }
+    .content li { margin-bottom: 0.35rem; }
+    .content strong { color: var(--text); }
+    .content a { color: var(--accent); text-decoration: none; }
+    .content a:hover { text-decoration: underline; }
+    footer {
+      padding: 3rem 0 2rem;
+      text-align: center;
+    }
+    footer nav {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    footer a { color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; }
+    footer a:hover { color: var(--accent); }
+    footer .copyright { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="/ledgrCalendar/" class="logo">
+        <img src="images/app-icon.png" alt="Ledgr Calendar">
+        <span>Ledgr Calendar</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <h1>Privacy Policy</h1>
+      <p class="date">Last updated: February 2026</p>
+    </div>
+
+    <div class="content">
+      <h2>1. Overview</h2>
+      <p>Ledgr Calendar ("the App") is a personal finance tracking app developed by Jorge Mendoza. Your privacy is important to us. This policy explains what data the App accesses, how it is used, and how it is protected.</p>
+      <p><strong>The short version:</strong> All your financial data stays on your device. We do not collect, transmit, or sell your personal or financial information.</p>
+
+      <h2>2. Data We Access</h2>
+
+      <h3>Financial Data (Apple FinanceKit)</h3>
+      <p>With your explicit permission, Ledgr Calendar may access transaction data from Apple Wallet through Apple's FinanceKit framework. This includes:</p>
+      <ul>
+        <li>Transaction descriptions and merchant names</li>
+        <li>Transaction amounts and dates</li>
+        <li>Account names (e.g., Apple Card, Apple Cash, Savings)</li>
+      </ul>
+      <p><strong>This data is processed entirely on your device.</strong> It is never sent to any server, cloud service, or third party. FinanceKit data access is controlled by the operating system and requires your explicit authorization through a system prompt provided by Apple.</p>
+
+      <h3>Data You Enter</h3>
+      <p>You may manually enter or import financial data including:</p>
+      <ul>
+        <li>Income and expense entries (names, amounts, dates, categories)</li>
+        <li>Recurring bill and payment schedules</li>
+        <li>CSV file imports from banks or spreadsheets</li>
+      </ul>
+
+      <h2>3. Data Storage</h2>
+      <p>All data is stored locally on your device using Apple's SwiftData framework. Specifically:</p>
+      <ul>
+        <li><strong>On-device only:</strong> Your financial entries, settings, and preferences are stored in a local database on your iPhone</li>
+        <li><strong>No cloud sync:</strong> Data is not uploaded to iCloud, our servers, or any third-party cloud service</li>
+        <li><strong>No accounts:</strong> The App does not require you to create an account or sign in</li>
+        <li><strong>UserDefaults:</strong> Basic app preferences (theme, sync settings) are stored in UserDefaults on your device</li>
+      </ul>
+
+      <h2>4. Data We Do NOT Collect</h2>
+      <p>Ledgr Calendar does <strong>not</strong> collect, store, or transmit:</p>
+      <ul>
+        <li>Personal identification information (name, email, phone number)</li>
+        <li>Financial account numbers, credentials, or login information</li>
+        <li>Location data</li>
+        <li>Usage analytics or behavioral tracking data</li>
+        <li>Advertising identifiers</li>
+        <li>Any data to third-party servers</li>
+      </ul>
+
+      <h2>5. Third-Party Services</h2>
+      <p>Ledgr Calendar does not integrate with any third-party analytics, advertising, or data collection services. The only external framework used is Apple's FinanceKit, which operates entirely on-device under Apple's privacy controls.</p>
+
+      <h2>6. Data Sharing</h2>
+      <p>We do not share, sell, rent, or trade your personal or financial data with anyone. Period.</p>
+
+      <h2>7. Data Deletion</h2>
+      <p>Since all data is stored locally on your device:</p>
+      <ul>
+        <li>You can delete individual entries at any time within the App</li>
+        <li>You can disconnect Apple Wallet accounts in Settings to stop importing</li>
+        <li>Uninstalling the App permanently removes all data</li>
+      </ul>
+
+      <h2>8. Security</h2>
+      <p>Your data benefits from the security measures built into iOS:</p>
+      <ul>
+        <li>Device encryption (data at rest is encrypted by iOS)</li>
+        <li>App sandboxing (other apps cannot access Ledgr Calendar's data)</li>
+        <li>FinanceKit authorization is managed by the operating system</li>
+        <li>No network transmission means no risk of data interception</li>
+      </ul>
+
+      <h2>9. Children's Privacy</h2>
+      <p>Ledgr Calendar is not directed at children under 13. We do not knowingly collect data from children.</p>
+
+      <h2>10. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated date. Continued use of the App after changes constitutes acceptance of the updated policy.</p>
+
+      <h2>11. Contact</h2>
+      <p>If you have questions about this Privacy Policy, contact us at:</p>
+      <p><strong>Email:</strong> <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a></p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <nav>
+        <a href="/ledgrCalendar/">Home</a>
+        <a href="/ledgrCalendar/privacy.html">Privacy</a>
+        <a href="mailto:jomen12@icloud.com">Support</a>
+      </nav>
+      <p class="copyright">&copy; 2025 Jorge Mendoza. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
