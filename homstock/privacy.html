@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HomStock Privacy Policy">
+  <title>Privacy Policy - HomStock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #030712; --surface: #111827; --text: #F9FAFB; --text-secondary: #9CA3AF; --accent: #45B0AE; }
+    body { font-family: 'Outfit', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.7; }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+    header { padding: 1.5rem 0; }
+    .logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--text); font-size: 1.125rem; font-weight: 600; }
+    .page-header { padding: 2rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 2rem; }
+    .page-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .page-header .date { font-size: 0.875rem; color: var(--text-secondary); }
+    .content h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: var(--accent); }
+    .content p { color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .content ul { color: var(--text-secondary); margin: 0 0 1rem 1.5rem; }
+    .content li { margin-bottom: 0.35rem; }
+    .content strong { color: var(--text); }
+    .content a { color: var(--accent); text-decoration: none; }
+    footer { padding: 3rem 0 2rem; text-align: center; }
+    footer .copyright { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <header><div class="container"><a href="/homstock/" class="logo">HomStock</a></div></header>
+  <main class="container">
+    <div class="page-header">
+      <h1>Privacy Policy</h1>
+      <p class="date">Last updated: April 2026</p>
+    </div>
+    <div class="content">
+      <h2>1. Overview</h2>
+      <p>HomStock ("the App") is a household inventory management app developed by Jorge Mendoza. This policy explains what data the App collects, how it is used, and how it is protected.</p>
+      <p><strong>The short version:</strong> Your data is stored securely in Firebase and is only shared with members of your household. We do not sell your data.</p>
+
+      <h2>2. Data We Collect</h2>
+      <p>When you use HomStock, the following data is collected and stored:</p>
+      <ul>
+        <li><strong>Account information:</strong> Your Apple ID display name and email (via Sign in with Apple)</li>
+        <li><strong>Household data:</strong> Product inventory, shopping lists, and household member information</li>
+        <li><strong>Receipt data:</strong> Photos of receipts, extracted item names, prices, and store information</li>
+        <li><strong>Device tokens:</strong> For push notifications when household members share updates</li>
+      </ul>
+
+      <h2>3. How We Use Your Data</h2>
+      <ul>
+        <li>To provide household inventory tracking and shopping list features</li>
+        <li>To parse receipt photos using Google Gemini AI for item extraction</li>
+        <li>To send push notifications to household members</li>
+        <li>To calculate spending breakdowns and product price history</li>
+      </ul>
+
+      <h2>4. Data Storage & Security</h2>
+      <p>All data is stored in <strong>Google Firebase</strong> (Firestore and Cloud Storage), secured with Firebase Authentication and Firestore security rules. Data is encrypted in transit and at rest.</p>
+      <p>Receipt images are stored in Firebase Cloud Storage and are accessible only to authenticated household members.</p>
+
+      <h2>5. AI Processing</h2>
+      <p>Receipt photos are processed using Google Gemini AI via Firebase Cloud Functions. Only extracted OCR text is sent to Google's Gemini API for parsing — images are not sent to AI. Google's AI services are subject to <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</p>
+
+      <h2>6. Data Sharing</h2>
+      <p>Your data is shared only with:</p>
+      <ul>
+        <li><strong>Your household members:</strong> Other users you invite can see shared inventory, shopping lists, and receipts</li>
+        <li><strong>Google Firebase:</strong> For data storage and cloud functions</li>
+        <li><strong>Google Gemini AI:</strong> Receipt text for parsing only</li>
+      </ul>
+      <p>We do <strong>not</strong> sell, rent, or trade your data with advertisers or data brokers.</p>
+
+      <h2>7. Data Deletion</h2>
+      <ul>
+        <li>You can delete individual receipts, products, and shopping list items within the App</li>
+        <li>You can leave a household to remove your association with shared data</li>
+        <li>To request complete account deletion, contact us at the email below</li>
+      </ul>
+
+      <h2>8. Children's Privacy</h2>
+      <p>HomStock is not directed at children under 13. We do not knowingly collect data from children.</p>
+
+      <h2>9. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated date.</p>
+
+      <h2>10. Contact</h2>
+      <p>If you have questions, contact us at:</p>
+      <p><strong>Email:</strong> <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a></p>
+    </div>
+  </main>
+  <footer><div class="container"><p class="copyright">&copy; 2026 Jorge Mendoza. All rights reserved.</p></div></footer>
+</body>
+</html>
