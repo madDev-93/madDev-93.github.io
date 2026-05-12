@@ -31,7 +31,7 @@
   <main class="container">
     <div class="page-header">
       <h1>Privacy Policy</h1>
-      <p class="date">Last updated: April 2026</p>
+      <p class="date">Last updated: May 2026</p>
     </div>
     <div class="content">
       <h2>1. Overview</h2>
@@ -45,6 +45,7 @@
         <li><strong>Household data:</strong> Product inventory, shopping lists, and household member information</li>
         <li><strong>Receipt data:</strong> Photos of receipts, extracted item names, prices, and store information</li>
         <li><strong>Device tokens:</strong> For push notifications when household members share updates</li>
+        <li><strong>Subscription status:</strong> Whether you have an active HomStock Pro subscription, the product purchased, transaction identifiers, and expiration dates (used to grant Pro features and for subscription analytics)</li>
       </ul>
 
       <h2>3. How We Use Your Data</h2>
@@ -62,29 +63,41 @@
       <h2>5. AI Processing</h2>
       <p>Receipt photos are processed using Google Gemini AI via Firebase Cloud Functions. Only extracted OCR text is sent to Google's Gemini API for parsing — images are not sent to AI. Google's AI services are subject to <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</p>
 
-      <h2>6. Data Sharing</h2>
+      <h2>6. In-App Purchases &amp; Subscriptions</h2>
+      <p>HomStock Pro is offered as a monthly or annual auto-renewable subscription. Payment is processed by <strong>Apple</strong> via the App Store; we never see your payment information.</p>
+      <p>To verify entitlement and provide subscription analytics, we share the following data with <strong>RevenueCat, Inc.</strong> (a third-party subscription infrastructure provider):</p>
+      <ul>
+        <li>A pseudonymous user identifier (your Firebase UID)</li>
+        <li>Apple-issued transaction metadata: product identifier, purchase date, expiration date, original transaction ID, and environment (Sandbox or Production)</li>
+        <li>Country code and currency of the transaction</li>
+      </ul>
+      <p>RevenueCat does <strong>not</strong> receive your name, email, receipt photos, or any other app content. RevenueCat's processing is governed by its <a href="https://www.revenuecat.com/privacy/">Privacy Policy</a> and <a href="https://www.revenuecat.com/dpa/">Data Processing Addendum</a>.</p>
+
+      <h2>7. Data Sharing</h2>
       <p>Your data is shared only with:</p>
       <ul>
         <li><strong>Your household members:</strong> Other users you invite can see shared inventory, shopping lists, and receipts</li>
-        <li><strong>Google Firebase:</strong> For data storage and cloud functions</li>
+        <li><strong>Google Firebase:</strong> For authentication, data storage, cloud functions, and remote configuration</li>
         <li><strong>Google Gemini AI:</strong> Receipt text for parsing only</li>
+        <li><strong>Apple:</strong> Payment processing for in-app subscriptions</li>
+        <li><strong>RevenueCat:</strong> Subscription entitlement verification and analytics (see section 6)</li>
       </ul>
       <p>We do <strong>not</strong> sell, rent, or trade your data with advertisers or data brokers.</p>
 
-      <h2>7. Data Deletion</h2>
+      <h2>8. Data Deletion</h2>
       <ul>
         <li>You can delete individual receipts, products, and shopping list items within the App</li>
         <li>You can leave a household to remove your association with shared data</li>
         <li>To request complete account deletion, contact us at the email below</li>
       </ul>
 
-      <h2>8. Children's Privacy</h2>
+      <h2>9. Children's Privacy</h2>
       <p>HomStock is not directed at children under 13. We do not knowingly collect data from children.</p>
 
-      <h2>9. Changes to This Policy</h2>
+      <h2>10. Changes to This Policy</h2>
       <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated date.</p>
 
-      <h2>10. Contact</h2>
+      <h2>11. Contact</h2>
       <p>If you have questions, contact us at:</p>
       <p><strong>Email:</strong> <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a></p>
     </div>
