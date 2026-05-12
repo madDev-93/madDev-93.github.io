@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HomStock Support</title>
+<meta name="description" content="Support for HomStock — the receipt-scanning pantry and household inventory app for iPhone.">
+<meta name="robots" content="index,follow">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1a1d21;
+    --muted: #5a6470;
+    --accent: #2f6f63;
+    --border: #e6e8ec;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 56px 24px 80px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .tagline {
+    color: var(--muted);
+    font-size: 17px;
+    margin: 0;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  p { margin: 0 0 12px; color: var(--ink); }
+  p.muted { color: var(--muted); }
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  a:hover { text-decoration: underline; }
+  .contact-btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .contact-btn:hover { background: #245851; text-decoration: none; }
+  details {
+    border-top: 1px solid var(--border);
+    padding: 14px 0;
+  }
+  details:first-of-type { border-top: none; padding-top: 4px; }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    list-style: none;
+    position: relative;
+    padding-right: 24px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+";
+    position: absolute;
+    right: 0;
+    top: -2px;
+    font-size: 22px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  details[open] summary::after { content: "−"; }
+  details p { margin-top: 10px; color: var(--muted); }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">Support</div>
+    <h1>HomStock</h1>
+    <p class="tagline">Receipt-scanning pantry & household inventory for iPhone.</p>
+  </header>
+
+  <div class="card">
+    <h2>Need help?</h2>
+    <p>The fastest way to reach us is email. We read every message and usually reply within one business day.</p>
+    <a class="contact-btn" href="mailto:jorgem@scholaro.com?subject=HomStock%20Support">Email Support</a>
+    <p class="muted" style="margin-top:14px;font-size:14px;">
+      <a href="mailto:jorgem@scholaro.com">jorgem@scholaro.com</a>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Frequently asked</h2>
+
+    <details>
+      <summary>How does receipt scanning work?</summary>
+      <p>Open HomStock, tap the scan button, and point your camera at a grocery receipt. The app reads the line items, sorts each product into a category (Fridge, Pantry, Frozen, etc.), and adds them to your stock automatically. You can edit or delete anything before saving.</p>
+    </details>
+
+    <details>
+      <summary>Where is my data stored?</summary>
+      <p>Your inventory, receipts, and shopping lists are stored on your device and sync privately through your iCloud account. There is no sign-up, no separate cloud account, and your data is never sold or shared.</p>
+    </details>
+
+    <details>
+      <summary>A receipt didn't scan correctly. What can I do?</summary>
+      <p>Make sure the receipt is well-lit, flat, and fully in frame. If specific line items are misread, you can tap any item after a scan to edit the name, category, or price. If you keep running into issues with a particular store's receipts, email us a sample and we'll improve recognition for it.</p>
+    </details>
+
+    <details>
+      <summary>How do I delete an item or a whole scan?</summary>
+      <p>Swipe left on any item in your Stock or Shopping List to delete it. To delete an entire scanned receipt, open the receipt from your scan history and tap Delete.</p>
+    </details>
+
+    <details>
+      <summary>Can I use HomStock on iPad?</summary>
+      <p>HomStock is built for iPhone. It will run on iPad in compatibility mode, but the experience is optimized for phone-sized screens.</p>
+    </details>
+
+    <details>
+      <summary>Does HomStock work without internet?</summary>
+      <p>Yes — receipt scanning and inventory management work offline. Items will sync to your other devices via iCloud the next time you're online.</p>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Feature requests &amp; feedback</h2>
+    <p>HomStock is built by a small team and your feedback shapes what we build next. Tell us what's missing, what's broken, or what would make the app indispensable for your household.</p>
+    <p><a href="mailto:jorgem@scholaro.com?subject=HomStock%20Feedback">Send feedback →</a></p>
+  </div>
+
+  <footer>
+    © 2026 Jorge Mendoza · HomStock
+  </footer>
+
+</div>
+</body>
+</html>
