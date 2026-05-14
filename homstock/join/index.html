@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-itunes-app" content="app-id=REPLACE_ME">
+<meta name="theme-color" content="#f6f6f6">
+<title>Join household — HomStock</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: linear-gradient(180deg, #f6f6f6 0%, #ececef 100%);
+    color: #1c1c1e;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    max-width: 440px;
+    width: 100%;
+    background: white;
+    border-radius: 28px;
+    padding: 40px 28px 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    text-align: center;
+  }
+  .logo {
+    font-size: 3rem;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin: 12px 0 4px;
+  }
+  p.lead {
+    color: #6c6c70;
+    margin: 8px 0 20px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+  }
+  .code-label {
+    font-size: 0.75rem;
+    color: #8e8e93;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 12px 0 8px;
+  }
+  .code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 6px;
+    background: #f0f0f3;
+    padding: 18px 24px;
+    border-radius: 16px;
+    display: inline-block;
+    margin: 0 0 28px;
+    user-select: all;
+  }
+  .btn {
+    display: block;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 16px;
+    border-radius: 16px;
+    margin: 12px 0;
+    transition: opacity 0.15s ease;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn-primary {
+    background: #007aff;
+    color: white;
+  }
+  .btn-secondary {
+    background: white;
+    color: #007aff;
+    border: 1px solid #d1d1d6;
+  }
+  .footnote {
+    font-size: 0.8rem;
+    color: #8e8e93;
+    margin-top: 18px;
+    line-height: 1.45;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🏠</div>
+    <h1>Join a household</h1>
+    <p class="lead">You've been invited to share a household on HomStock.</p>
+    <div class="code-label">Invite code</div>
+    <div class="code" id="code">—</div>
+    <a class="btn btn-primary" id="open-app" href="#">Open in HomStock</a>
+    <a class="btn btn-secondary" id="get-app" href="https://apps.apple.com/app/idREPLACE_ME">Get HomStock</a>
+    <p class="footnote">Open this link on an iPhone for the best experience. If you don't have the app, install it and tap the link again — your invite code will be ready to enter.</p>
+  </div>
+<script>
+(function () {
+  // Pull the invite code from either the path (/homstock/join/CODE) or the
+  // query string (?code=CODE), then surface it on the page and wire the
+  // "Open in HomStock" button to the custom scheme as a same-page fallback.
+  var path = window.location.pathname.replace(/\/$/, '');
+  var pathMatch = path.match(/\/homstock\/join\/([A-Za-z0-9]+)$/);
+  var params = new URLSearchParams(window.location.search);
+  var code = ((pathMatch && pathMatch[1]) || params.get('code') || '').toUpperCase();
+
+  if (code) {
+    document.getElementById('code').textContent = code;
+    document.getElementById('open-app').href = 'homstock://join?code=' + encodeURIComponent(code);
+  } else {
+    document.getElementById('open-app').style.display = 'none';
+  }
+})();
+</script>
+</body>
+</html>

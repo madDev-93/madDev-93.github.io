@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["FZ2TRNHUSX.com.jorgemendoza.HomStock"],
+        "components": [
+          {
+            "/": "/homstock/join/*",
+            "comment": "Matches homstock/join/<invite-code>"
+          },
+          {
+            "/": "/homstock/join",
+            "?": { "code": "*" },
+            "comment": "Matches homstock/join?code=<invite-code>"
+          }
+        ]
+      }
+    ]
+  }
+}
