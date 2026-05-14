@@ -5,13 +5,18 @@
         "appIDs": ["FZ2TRNHUSX.com.jorgemendoza.HomStock"],
         "components": [
           {
-            "/": "/homstock/join/*",
-            "comment": "Matches homstock/join/<invite-code>"
+            "/": "/homstock/join/",
+            "?": { "code": "*" },
+            "comment": "Trailing-slash form with ?code= (primary, used by share)"
           },
           {
             "/": "/homstock/join",
             "?": { "code": "*" },
-            "comment": "Matches homstock/join?code=<invite-code>"
+            "comment": "No-slash form with ?code= (tolerance)"
+          },
+          {
+            "/": "/homstock/join/*",
+            "comment": "Path-based form /homstock/join/CODE (legacy/QR)"
           }
         ]
       }
