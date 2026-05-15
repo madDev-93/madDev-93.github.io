@@ -17,11 +17,15 @@
     .page-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
     .page-header .date { font-size: 0.875rem; color: var(--text-secondary); }
     .content h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: var(--accent); }
+    .content h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
     .content p { color: var(--text-secondary); margin-bottom: 0.75rem; }
     .content ul { color: var(--text-secondary); margin: 0 0 1rem 1.5rem; }
     .content li { margin-bottom: 0.35rem; }
     .content strong { color: var(--text); }
     .content a { color: var(--accent); text-decoration: none; }
+    .content table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: 0.9rem; }
+    .content th, .content td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); vertical-align: top; }
+    .content th { color: var(--text); font-weight: 600; }
     footer { padding: 3rem 0 2rem; text-align: center; }
     footer .copyright { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.6; }
   </style>
@@ -31,77 +35,103 @@
   <main class="container">
     <div class="page-header">
       <h1>Privacy Policy</h1>
-      <p class="date">Last updated: May 2026</p>
+      <p class="date">Last updated: 15 May 2026</p>
     </div>
     <div class="content">
-      <h2>1. Overview</h2>
-      <p>HomStock ("the App") is a household inventory management app developed by Jorge Mendoza. This policy explains what data the App collects, how it is used, and how it is protected.</p>
-      <p><strong>The short version:</strong> Your data is stored securely in Firebase and is only shared with members of your household. We do not sell your data.</p>
 
-      <h2>2. Data We Collect</h2>
-      <p>When you use HomStock, the following data is collected and stored:</p>
+      <h2>1. Who we are</h2>
+      <p>HomStock ("the App") is developed and operated by <strong>Jorge Mendoza</strong>, a sole proprietor based in Illinois, USA, acting as the <strong>data controller</strong> for the personal data described in this policy.</p>
+      <p>For privacy-related questions, requests, or complaints, contact: <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a>.</p>
+
+      <h2>2. The short version</h2>
+      <p>HomStock stores your household data in Google Firebase. It is shared only with members of your household and the limited service providers listed below. We do not sell or rent your data, we don't run ads, and we don't track you across other apps or websites.</p>
+
+      <h2>3. What data we collect</h2>
+      <table>
+        <tr><th>Category</th><th>What it includes</th></tr>
+        <tr><td>Account</td><td>Display name and email address from Sign in with Apple; a Firebase user identifier (UID)</td></tr>
+        <tr><td>Household</td><td>Household name, invite code, member list, your role (owner / member)</td></tr>
+        <tr><td>Receipts</td><td>Photos you scan, extracted item names + prices, store name and address, totals, and the date</td></tr>
+        <tr><td>Shopping list</td><td>Items you add, quantities, categories, notes, who added each item, who checked it off, and any "for [name]" attribution</td></tr>
+        <tr><td>Product catalog</td><td>Product display names and image URLs created when receipts are scanned</td></tr>
+        <tr><td>Device registration</td><td>A push-notification token per signed-in device, used to deliver shopping-list notifications</td></tr>
+        <tr><td>Subscription</td><td>Whether you have HomStock Pro, the product identifier, transaction ID, purchase date, and expiration date</td></tr>
+        <tr><td>App preferences</td><td>Appearance mode, theme choice, and which sections of the UI are collapsed — stored locally on your device</td></tr>
+      </table>
+
+      <h2>4. Why we collect it, and our legal basis (GDPR Article 6)</h2>
+      <table>
+        <tr><th>Purpose</th><th>Legal basis</th></tr>
+        <tr><td>Provide the core features — accounts, households, receipts, shopping lists, push notifications, subscription entitlement</td><td><strong>Article 6(1)(b) — performance of the contract</strong> between you and HomStock</td></tr>
+        <tr><td>Maintain the integrity of the service — clean up stale push tokens, enforce abuse-prevention rate limits on receipt scanning</td><td><strong>Article 6(1)(f) — our legitimate interests</strong> in keeping the service working</td></tr>
+        <tr><td>Comply with App Store, tax, and other legal obligations</td><td><strong>Article 6(1)(c) — legal obligation</strong></td></tr>
+      </table>
+      <p>We do not currently process any data on the basis of consent (Article 6(1)(a)) — no analytics, no marketing, no ad tracking. If that ever changes, we will request your explicit, opt-in consent.</p>
+
+      <h2>5. Service providers ("sub-processors")</h2>
+      <p>The following third parties process limited personal data on our behalf under a written data-processing agreement:</p>
+      <table>
+        <tr><th>Provider</th><th>Purpose</th><th>Location</th></tr>
+        <tr><td>Google Cloud / Firebase (Auth, Firestore, Storage, Cloud Functions, Cloud Messaging, Remote Config, App Check)</td><td>Backend hosting, authentication, push delivery</td><td>USA (us-central1 region)</td></tr>
+        <tr><td>Google Gemini (via Firebase Cloud Functions)</td><td>Parsing the text extracted from receipt photos into structured items and prices</td><td>USA</td></tr>
+        <tr><td>Apple Inc.</td><td>Sign in with Apple, App Store payment processing, APNs push delivery</td><td>USA / EU data centers</td></tr>
+        <tr><td>RevenueCat, Inc.</td><td>Subscription entitlement verification and ledger (receives a pseudonymous Firebase UID and Apple transaction metadata only)</td><td>USA</td></tr>
+        <tr><td>Open Food Facts</td><td>Anonymous product-image lookup by product name — no user identifiers sent</td><td>EU (France)</td></tr>
+      </table>
+      <p>We do <strong>not</strong> share your data with advertisers or data brokers.</p>
+
+      <h2>6. International data transfers</h2>
+      <p>Your data is stored on servers in the United States (Google Cloud, us-central1). Where these transfers fall under the GDPR or UK GDPR, they are covered by the <strong>Standard Contractual Clauses (SCCs)</strong> incorporated into the <a href="https://firebase.google.com/terms/data-processing-terms">Firebase Data Processing and Security Terms</a> and Google's broader Cloud Data Processing Addendum, and supplemented by Google's technical and organizational safeguards described in those documents.</p>
+
+      <h2>7. How long we keep your data</h2>
       <ul>
-        <li><strong>Account information:</strong> Your Apple ID display name and email (via Sign in with Apple)</li>
-        <li><strong>Household data:</strong> Product inventory, shopping lists, and household member information</li>
-        <li><strong>Receipt data:</strong> Photos of receipts, extracted item names, prices, and store information</li>
-        <li><strong>Device tokens:</strong> For push notifications when household members share updates</li>
-        <li><strong>Subscription status:</strong> Whether you have an active HomStock Pro subscription, the product purchased, transaction identifiers, and expiration dates (used to grant Pro features and for subscription analytics)</li>
+        <li><strong>Account, household, receipts, shopping items, products:</strong> retained for as long as your account exists.</li>
+        <li><strong>Push notification tokens:</strong> automatically removed when a device no longer accepts deliveries.</li>
+        <li><strong>App preferences:</strong> stored on your device and removed when you delete the App.</li>
+        <li><strong>Subscription transaction records:</strong> retained for as long as required to provide service and meet legal/accounting obligations.</li>
+        <li><strong>Backups:</strong> deleted data may persist in Google Cloud's encrypted backups for up to 180 days before being purged, as described in Google's Data Processing and Security Terms.</li>
       </ul>
 
-      <h2>3. How We Use Your Data</h2>
+      <h2>8. What happens when you delete your account</h2>
+      <p>You can delete your account at any time from <strong>Account → Delete Account</strong> in the App. When you do:</p>
       <ul>
-        <li>To provide household inventory tracking and shopping list features</li>
-        <li>To parse receipt photos using Google Gemini AI for item extraction</li>
-        <li>To send push notifications to household members</li>
-        <li>To calculate spending breakdowns and product price history</li>
+        <li>Your user profile, Firebase Auth record, and subscription ledger entries are permanently deleted.</li>
+        <li>If you are the sole member of a household, the entire household is deleted: its receipts, shopping list, product catalog, and invite code are removed.</li>
+        <li>If you are a member of a household that still has other members, you are removed from the member list. <strong>Receipts you scanned, shopping items you added, and products you created remain visible to the remaining household members</strong>, because that content is also their household record. The App tells you this before you confirm deletion.</li>
+        <li>If you are the household owner and other members remain, ownership transfers to the longest-tenured remaining member.</li>
       </ul>
+      <p>To revoke Sign in with Apple after deletion, go to iOS Settings → your Apple ID → Sign-In & Security → Sign in with Apple → HomStock → Stop Using Apple ID.</p>
 
-      <h2>4. Data Storage & Security</h2>
-      <p>All data is stored in <strong>Google Firebase</strong> (Firestore and Cloud Storage), secured with Firebase Authentication and Firestore security rules. Data is encrypted in transit and at rest.</p>
-      <p>Receipt images are stored in Firebase Cloud Storage and are accessible only to authenticated household members.</p>
-
-      <h2>5. AI Processing</h2>
-      <p>Receipt photos are processed using Google Gemini AI via Firebase Cloud Functions. Only extracted OCR text is sent to Google's Gemini API for parsing — images are not sent to AI. Google's AI services are subject to <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</p>
-
-      <h2>6. In-App Purchases &amp; Subscriptions</h2>
-      <p>HomStock Pro is offered as a monthly or annual auto-renewable subscription. Payment is processed by <strong>Apple</strong> via the App Store; we never see your payment information.</p>
-      <p>To verify entitlement and provide subscription analytics, we share the following data with <strong>RevenueCat, Inc.</strong> (a third-party subscription infrastructure provider):</p>
+      <h2>9. Your rights under GDPR and UK GDPR</h2>
+      <p>If you are in the European Economic Area, the UK, or Switzerland, you have the following rights regarding your personal data:</p>
       <ul>
-        <li>A pseudonymous user identifier (your Firebase UID)</li>
-        <li>Apple-issued transaction metadata: product identifier, purchase date, expiration date, original transaction ID, and environment (Sandbox or Production)</li>
-        <li>Country code and currency of the transaction</li>
+        <li><strong>Access (Article 15)</strong> — get a copy of the personal data we hold about you.</li>
+        <li><strong>Rectification (Article 16)</strong> — correct inaccurate or incomplete data. Most data can be edited directly in the App.</li>
+        <li><strong>Erasure (Article 17)</strong> — delete your account using <strong>Account → Delete Account</strong>, or email us.</li>
+        <li><strong>Portability (Article 20)</strong> — download a machine-readable copy of your data using <strong>Account → Privacy &amp; data → Export My Data</strong> in the App. The export is provided as a JSON file.</li>
+        <li><strong>Restriction (Article 18)</strong> — ask us to pause processing of certain data while a dispute is resolved.</li>
+        <li><strong>Objection (Article 21)</strong> — object to processing we carry out under "legitimate interests".</li>
+        <li><strong>Withdraw consent</strong> — where we ever ask for consent, you can withdraw it at any time.</li>
+        <li><strong>Lodge a complaint</strong> with your local supervisory authority. A list of EU/EEA authorities is available at <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en">edpb.europa.eu/about-edpb/about-edpb/members</a>. For the UK, the ICO is at <a href="https://ico.org.uk/">ico.org.uk</a>.</li>
       </ul>
-      <p>RevenueCat does <strong>not</strong> receive your name, email, receipt photos, or any other app content. RevenueCat's processing is governed by its <a href="https://www.revenuecat.com/privacy/">Privacy Policy</a> and <a href="https://www.revenuecat.com/dpa/">Data Processing Addendum</a>.</p>
+      <p>To exercise any of these rights, email <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a>. We will respond within 30 days as required by Article 12.</p>
 
-      <h2>7. Data Sharing</h2>
-      <p>Your data is shared only with:</p>
-      <ul>
-        <li><strong>Your household members:</strong> Other users you invite can see shared inventory, shopping lists, and receipts</li>
-        <li><strong>Google Firebase:</strong> For authentication, data storage, cloud functions, and remote configuration</li>
-        <li><strong>Google Gemini AI:</strong> Receipt text for parsing only</li>
-        <li><strong>Apple:</strong> Payment processing for in-app subscriptions</li>
-        <li><strong>RevenueCat:</strong> Subscription entitlement verification and analytics (see section 6)</li>
-      </ul>
-      <p>We do <strong>not</strong> sell, rent, or trade your data with advertisers or data brokers.</p>
+      <h2>10. Security</h2>
+      <p>Data is encrypted in transit (TLS) and at rest by Google Cloud. Access is gated by Firebase Authentication and Firestore security rules so only authenticated members of your household can read your data. App Check is enabled to protect Cloud Functions against abuse. We do not have direct access to your receipt photos or shopping lists; we only see them in aggregate when troubleshooting at your request.</p>
+      <p>If we ever discover a personal-data breach that is likely to result in risk to you, we will notify the relevant supervisory authority within 72 hours and contact you directly when required.</p>
 
-      <h2>8. Data Deletion</h2>
-      <ul>
-        <li>You can delete individual receipts, products, and shopping list items within the App</li>
-        <li>You can leave a household to remove your association with shared data</li>
-        <li>To request complete account deletion, contact us at the email below</li>
-      </ul>
+      <h2>11. Children</h2>
+      <p>HomStock is not directed to, and we do not knowingly collect personal data from, anyone under 16. If you believe a child has provided us with personal data, contact us and we will delete it.</p>
 
-      <h2>9. Children's Privacy</h2>
-      <p>HomStock is not directed at children under 13. We do not knowingly collect data from children.</p>
+      <h2>12. Changes to this policy</h2>
+      <p>We may update this policy from time to time. When we do, we will change the "Last updated" date above. Material changes will also be announced in the App.</p>
 
-      <h2>10. Changes to This Policy</h2>
-      <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated date.</p>
+      <h2>13. Contact</h2>
+      <p><strong>Jorge Mendoza</strong> (sole proprietor) — <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a></p>
+      <p>For requests under the EU Digital Services Act or to identify our published trader contact information, see the HomStock listing on the EU App Store.</p>
 
-      <h2>11. Contact</h2>
-      <p>If you have questions, contact us at:</p>
-      <p><strong>Email:</strong> <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a></p>
     </div>
   </main>
-  <footer><div class="container"><p class="copyright">&copy; 2026 Jorge Mendoza. All rights reserved.</p></div></footer>
+  <footer><div class="container"><p class="copyright">&copy; 2026 Jorge Mendoza. All rights reserved. &middot; <a href="/homstock/terms.html">Terms</a></p></div></footer>
 </body>
 </html>
