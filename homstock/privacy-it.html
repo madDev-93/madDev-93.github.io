@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Informativa sulla privacy di HomStock">
+  <title>Informativa sulla privacy - HomStock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #030712; --surface: #111827; --text: #F9FAFB; --text-secondary: #9CA3AF; --accent: #45B0AE; }
+    body { font-family: 'Outfit', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.7; }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+    header { padding: 1.5rem 0; }
+    .header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--text); font-size: 1.125rem; font-weight: 600; }
+    .lang-switcher { background: var(--surface); color: var(--text); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.4rem 0.6rem; font-family: inherit; font-size: 0.875rem; cursor: pointer; }
+    .lang-switcher:focus { outline: none; border-color: var(--accent); }
+    .page-header { padding: 2rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 2rem; }
+    .page-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .page-header .date { font-size: 0.875rem; color: var(--text-secondary); }
+    .content h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: var(--accent); }
+    .content h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+    .content p { color: var(--text-secondary); margin-bottom: 0.75rem; }
+    .content ul { color: var(--text-secondary); margin: 0 0 1rem 1.5rem; }
+    .content li { margin-bottom: 0.35rem; }
+    .content strong { color: var(--text); }
+    .content a { color: var(--accent); text-decoration: none; }
+    .content table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: 0.9rem; }
+    .content th, .content td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); vertical-align: top; }
+    .content th { color: var(--text); font-weight: 600; }
+    footer { padding: 3rem 0 2rem; text-align: center; }
+    footer .copyright { font-size: 0.75rem; color: var(--text-secondary); opacity: 0.6; }
+  </style>
+</head>
+<body>
+  <header><div class="container header-row">
+    <a href="/homstock/" class="logo">HomStock</a>
+    <select class="lang-switcher" id="langSwitcher" aria-label="Lingua">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="it" selected>Italiano</option>
+      <option value="pt-BR">Português (Brasil)</option>
+    </select>
+  </div></header>
+  <main class="container">
+    <div class="page-header">
+      <h1>Informativa sulla privacy</h1>
+      <p class="date">Ultimo aggiornamento: 15 maggio 2026</p>
+    </div>
+    <div class="content">
+
+      <h2>1. Chi siamo</h2>
+      <p>HomStock ("l'App") è sviluppata e gestita da <strong>Jorge Mendoza</strong>, lavoratore autonomo con sede in Illinois (USA), che agisce in qualità di <strong>titolare del trattamento</strong> dei dati personali descritti nella presente informativa.</p>
+      <p>Per domande, richieste o reclami in materia di privacy, scriva a: <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a>.</p>
+
+      <h2>2. In breve</h2>
+      <p>HomStock conserva i dati della Sua famiglia in Google Firebase. Sono condivisi soltanto con i membri della Sua famiglia e con i pochi fornitori di servizi elencati di seguito. Non vendiamo né affittiamo i Suoi dati, non mostriamo pubblicità e non La tracciamo su altre app o siti web.</p>
+
+      <h2>3. Quali dati raccogliamo</h2>
+      <table>
+        <tr><th>Categoria</th><th>Cosa include</th></tr>
+        <tr><td>Account</td><td>Nome visualizzato e indirizzo e-mail forniti da Sign in with Apple; un identificativo utente Firebase (UID)</td></tr>
+        <tr><td>Famiglia</td><td>Nome della famiglia, codice d'invito, elenco dei membri e il Suo ruolo (proprietario / membro)</td></tr>
+        <tr><td>Scontrini</td><td>Foto che acquisisce, nomi e prezzi degli articoli estratti, nome e indirizzo del negozio, totali e data</td></tr>
+        <tr><td>Lista della spesa</td><td>Articoli aggiunti, quantità, categorie, note, chi ha aggiunto ogni articolo, chi lo ha contrassegnato come completato ed eventuali attribuzioni "per [nome]"</td></tr>
+        <tr><td>Catalogo prodotti</td><td>Nomi visualizzati e URL delle immagini dei prodotti creati quando vengono acquisiti gli scontrini</td></tr>
+        <tr><td>Registrazione del dispositivo</td><td>Un token di notifiche push per ogni dispositivo con accesso effettuato, usato per inviare le notifiche relative alla lista della spesa</td></tr>
+        <tr><td>Abbonamento</td><td>Se possiede HomStock Pro, l'identificatore del prodotto, l'ID transazione, la data di acquisto e la data di scadenza</td></tr>
+        <tr><td>Preferenze dell'App</td><td>Modalità d'aspetto, tema scelto e sezioni dell'interfaccia compresse — memorizzate localmente sul Suo dispositivo</td></tr>
+      </table>
+
+      <h2>4. Perché li raccogliamo e la nostra base giuridica (art. 6 GDPR)</h2>
+      <table>
+        <tr><th>Finalità</th><th>Base giuridica</th></tr>
+        <tr><td>Fornire le funzionalità principali — account, famiglie, scontrini, liste della spesa, notifiche push, diritti di abbonamento</td><td><strong>Art. 6, par. 1, lett. b — esecuzione del contratto</strong> tra Lei e HomStock</td></tr>
+        <tr><td>Mantenere l'integrità del servizio — eliminare i token push non più validi, applicare limiti di utilizzo anti-abuso sulla scansione degli scontrini</td><td><strong>Art. 6, par. 1, lett. f — nostro legittimo interesse</strong> a mantenere il servizio funzionante</td></tr>
+        <tr><td>Rispettare gli obblighi dell'App Store, fiscali e di altra natura legale</td><td><strong>Art. 6, par. 1, lett. c — obbligo legale</strong></td></tr>
+      </table>
+      <p>Attualmente non trattiamo dati sulla base del consenso (art. 6, par. 1, lett. a) — niente analisi, niente marketing, niente tracciamento pubblicitario. Se ciò dovesse cambiare, chiederemo il Suo consenso esplicito e opt-in.</p>
+
+      <h2>5. Fornitori di servizi ("sub-responsabili del trattamento")</h2>
+      <p>I seguenti soggetti terzi trattano una quantità limitata di dati personali per nostro conto sulla base di un contratto scritto di trattamento dei dati:</p>
+      <table>
+        <tr><th>Fornitore</th><th>Finalità</th><th>Ubicazione</th></tr>
+        <tr><td>Google Cloud / Firebase (Auth, Firestore, Storage, Cloud Functions, Cloud Messaging, Remote Config, App Check)</td><td>Hosting backend, autenticazione, consegna delle notifiche push</td><td>USA (regione us-central1)</td></tr>
+        <tr><td>Google Gemini (tramite Firebase Cloud Functions)</td><td>Analisi del testo estratto dalle foto degli scontrini per ottenere articoli e prezzi strutturati</td><td>USA</td></tr>
+        <tr><td>Apple Inc.</td><td>Sign in with Apple, gestione dei pagamenti su App Store, consegna delle notifiche push tramite APNs</td><td>Data center in USA / UE</td></tr>
+        <tr><td>RevenueCat, Inc.</td><td>Verifica e registro dei diritti di abbonamento (riceve solo un UID Firebase pseudonimo e i metadati della transazione Apple)</td><td>USA</td></tr>
+        <tr><td>Open Food Facts</td><td>Ricerca anonima delle immagini dei prodotti tramite nome — non vengono trasmessi identificativi utente</td><td>UE (Francia)</td></tr>
+      </table>
+      <p><strong>Non</strong> condividiamo i Suoi dati con inserzionisti o data broker.</p>
+
+      <h2>6. Trasferimenti internazionali di dati</h2>
+      <p>I Suoi dati sono conservati su server situati negli Stati Uniti (Google Cloud, us-central1). Quando tali trasferimenti rientrano nell'ambito del GDPR o del GDPR del Regno Unito, sono disciplinati dalle <strong>Clausole Contrattuali Standard (SCC)</strong> integrate nei <a href="https://firebase.google.com/terms/data-processing-terms">Firebase Data Processing and Security Terms</a> e nel più ampio Cloud Data Processing Addendum di Google, e sono integrati dalle misure tecniche e organizzative di Google descritte in tali documenti.</p>
+
+      <h2>7. Per quanto tempo conserviamo i Suoi dati</h2>
+      <ul>
+        <li><strong>Account, famiglia, scontrini, articoli della spesa, prodotti:</strong> conservati finché esiste il Suo account.</li>
+        <li><strong>Token delle notifiche push:</strong> rimossi automaticamente quando un dispositivo non accetta più le consegne.</li>
+        <li><strong>Preferenze dell'App:</strong> memorizzate sul Suo dispositivo e rimosse quando elimina l'App.</li>
+        <li><strong>Registri delle transazioni di abbonamento:</strong> conservati per il tempo necessario a fornire il servizio e a soddisfare gli obblighi legali e contabili.</li>
+        <li><strong>Backup:</strong> i dati eliminati possono permanere nei backup cifrati di Google Cloud per un massimo di 180 giorni prima di essere definitivamente rimossi, come descritto nei Data Processing and Security Terms di Google.</li>
+      </ul>
+
+      <h2>8. Cosa succede quando elimina il Suo account</h2>
+      <p>Può eliminare il Suo account in qualsiasi momento da <strong>Account → Elimina account</strong> nell'App. Quando lo fa:</p>
+      <ul>
+        <li>Il Suo profilo utente, il record di Firebase Auth e le voci del registro degli abbonamenti vengono eliminati in modo permanente.</li>
+        <li>Se è l'unico membro di una famiglia, l'intera famiglia viene eliminata: i suoi scontrini, la lista della spesa, il catalogo prodotti e il codice d'invito vengono rimossi.</li>
+        <li>Se è membro di una famiglia che ha ancora altri membri, viene rimosso dall'elenco dei membri. <strong>Gli scontrini che ha scansionato, gli articoli della spesa che ha aggiunto e i prodotti che ha creato restano visibili agli altri membri della famiglia</strong>, poiché tali contenuti fanno parte anche del loro archivio familiare. L'App La informa di ciò prima di confermare l'eliminazione.</li>
+        <li>Se è il proprietario della famiglia e restano altri membri, la proprietà viene trasferita al membro rimasto con maggiore anzianità.</li>
+      </ul>
+      <p>Per revocare Sign in with Apple dopo l'eliminazione, vada in Impostazioni iOS → il Suo Apple ID → Accesso e sicurezza → Sign in with Apple → HomStock → Smetti di usare Apple ID.</p>
+
+      <h2>9. I Suoi diritti ai sensi del GDPR e del GDPR del Regno Unito</h2>
+      <p>Se si trova nello Spazio economico europeo, nel Regno Unito o in Svizzera, Le spettano i seguenti diritti sui Suoi dati personali:</p>
+      <ul>
+        <li><strong>Accesso (art. 15)</strong> — ottenere una copia dei dati personali che deteniamo su di Lei.</li>
+        <li><strong>Rettifica (art. 16)</strong> — correggere dati inesatti o incompleti. La maggior parte dei dati può essere modificata direttamente nell'App.</li>
+        <li><strong>Cancellazione (art. 17)</strong> — eliminare il Suo account tramite <strong>Account → Elimina account</strong>, oppure scriverci.</li>
+        <li><strong>Portabilità (art. 20)</strong> — scaricare una copia leggibile da macchina dei Suoi dati tramite <strong>Account → Privacy e dati → Esporta i miei dati</strong> nell'App. L'esportazione è fornita come file JSON.</li>
+        <li><strong>Limitazione (art. 18)</strong> — chiederci di sospendere il trattamento di determinati dati in attesa della risoluzione di una controversia.</li>
+        <li><strong>Opposizione (art. 21)</strong> — opporsi al trattamento che effettuiamo sulla base del "legittimo interesse".</li>
+        <li><strong>Revoca del consenso</strong> — qualora Le sia stato richiesto un consenso, può revocarlo in qualsiasi momento.</li>
+        <li><strong>Presentare reclamo</strong> alla Sua autorità di controllo locale. L'elenco delle autorità UE/SEE è disponibile su <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en">edpb.europa.eu/about-edpb/about-edpb/members</a>. In Italia l'autorità è il Garante per la protezione dei dati personali (<a href="https://www.garanteprivacy.it/">garanteprivacy.it</a>); nel Regno Unito è l'ICO (<a href="https://ico.org.uk/">ico.org.uk</a>).</li>
+      </ul>
+      <p>Per esercitare uno qualsiasi di questi diritti, scriva a <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a>. Risponderemo entro 30 giorni come richiesto dall'art. 12.</p>
+
+      <h2>10. Sicurezza</h2>
+      <p>I dati sono cifrati in transito (TLS) e a riposo da Google Cloud. L'accesso è regolato da Firebase Authentication e dalle regole di sicurezza di Firestore, in modo che solo i membri autenticati della Sua famiglia possano leggere i Suoi dati. App Check è abilitato per proteggere le Cloud Functions dagli abusi. Non abbiamo accesso diretto alle foto degli scontrini o alle liste della spesa; le vediamo solo in forma aggregata quando risolviamo problemi su Sua richiesta.</p>
+      <p>Se dovessimo rilevare una violazione dei dati personali che possa comportare un rischio per Lei, lo notificheremo all'autorità di controllo competente entro 72 ore e La contatteremo direttamente quando richiesto.</p>
+
+      <h2>11. Minori</h2>
+      <p>HomStock non è rivolta, e non raccogliamo consapevolmente dati personali, da persone di età inferiore ai 16 anni. Se ritiene che un minore ci abbia fornito dati personali, ci contatti e li elimineremo.</p>
+
+      <h2>12. Modifiche alla presente informativa</h2>
+      <p>Possiamo aggiornare questa informativa di tanto in tanto. Quando lo faremo, modificheremo la data di "Ultimo aggiornamento" indicata sopra. Le modifiche sostanziali saranno comunicate anche nell'App.</p>
+
+      <h2>13. Contatti</h2>
+      <p><strong>Jorge Mendoza</strong> (lavoratore autonomo) — <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a></p>
+      <p>Per le richieste ai sensi del Regolamento UE sui servizi digitali (DSA) o per identificare i nostri recapiti pubblicati come professionista, consulti la scheda di HomStock sull'App Store dell'UE.</p>
+
+    </div>
+  </main>
+  <footer><div class="container"><p class="copyright">&copy; 2026 Jorge Mendoza. Tutti i diritti riservati. &middot; <a href="/homstock/terms-it.html">Termini</a></p></div></footer>
+  <script>
+    (function () {
+      var PAGE = 'privacy';
+      var CURRENT = 'it';
+      var FILES = { 'en': PAGE + '.html', 'es': PAGE + '-es.html', 'fr': PAGE + '-fr.html', 'de': PAGE + '-de.html', 'it': PAGE + '-it.html', 'pt-BR': PAGE + '-pt-BR.html' };
+      var sel = document.getElementById('langSwitcher');
+      if (sel) {
+        sel.value = CURRENT;
+        sel.addEventListener('change', function () {
+          var v = sel.value;
+          if (FILES[v] && v !== CURRENT) window.location.href = FILES[v];
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

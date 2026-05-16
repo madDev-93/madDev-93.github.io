@@ -12,7 +12,16 @@
     body { font-family: 'Outfit', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.7; }
     .container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
     header { padding: 1.5rem 0; }
+    .header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: var(--text); font-size: 1.125rem; font-weight: 600; }
+    .lang-switcher { background: var(--surface); color: var(--text); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.4rem 0.6rem; font-family: inherit; font-size: 0.875rem; cursor: pointer; }
+    .lang-switcher:focus { outline: none; border-color: var(--accent); }
+    .lang-banner { background: var(--surface); border: 1px solid rgba(69,176,174,0.3); border-radius: 8px; padding: 0.875rem 1rem; margin-bottom: 1.5rem; display: none; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .lang-banner.show { display: flex; }
+    .lang-banner p { margin: 0; color: var(--text); font-size: 0.9rem; }
+    .lang-banner-actions { display: flex; gap: 0.5rem; }
+    .lang-banner button { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.4rem 0.85rem; font-family: inherit; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+    .lang-banner button.dismiss { background: transparent; color: var(--text-secondary); }
     .page-header { padding: 2rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 2rem; }
     .page-header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
     .page-header .date { font-size: 0.875rem; color: var(--text-secondary); }
@@ -31,8 +40,25 @@
   </style>
 </head>
 <body>
-  <header><div class="container"><a href="/homstock/" class="logo">HomStock</a></div></header>
+  <header><div class="container header-row">
+    <a href="/homstock/" class="logo">HomStock</a>
+    <select class="lang-switcher" id="langSwitcher" aria-label="Language">
+      <option value="en" selected>English</option>
+      <option value="es">Español</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="it">Italiano</option>
+      <option value="pt-BR">Português (Brasil)</option>
+    </select>
+  </div></header>
   <main class="container">
+    <div class="lang-banner" id="langBanner" role="region" aria-live="polite">
+      <p id="langBannerText"></p>
+      <div class="lang-banner-actions">
+        <button type="button" id="langBannerSwitch"></button>
+        <button type="button" class="dismiss" id="langBannerDismiss"></button>
+      </div>
+    </div>
     <div class="page-header">
       <h1>Privacy Policy</h1>
       <p class="date">Last updated: 15 May 2026</p>
@@ -133,5 +159,55 @@
     </div>
   </main>
   <footer><div class="container"><p class="copyright">&copy; 2026 Jorge Mendoza. All rights reserved. &middot; <a href="/homstock/terms.html">Terms</a></p></div></footer>
+  <script>
+    (function () {
+      var PAGE = 'privacy';
+      var CURRENT = 'en';
+      var LOCALES = {
+        'es': { name: 'Español', file: PAGE + '-es.html', banner: 'Esta página también está disponible en español. ¿Cambiar?', cta: 'Cambiar', dismiss: 'Cerrar' },
+        'fr': { name: 'Français', file: PAGE + '-fr.html', banner: 'Cette page est également disponible en français. Changer ?', cta: 'Changer', dismiss: 'Fermer' },
+        'de': { name: 'Deutsch', file: PAGE + '-de.html', banner: 'Diese Seite ist auch auf Deutsch verfügbar. Wechseln?', cta: 'Wechseln', dismiss: 'Schließen' },
+        'it': { name: 'Italiano', file: PAGE + '-it.html', banner: 'Questa pagina è disponibile anche in italiano. Cambiare?', cta: 'Cambia', dismiss: 'Chiudi' },
+        'pt': { name: 'Português', file: PAGE + '-pt-BR.html', banner: 'Esta página também está disponível em português. Trocar?', cta: 'Trocar', dismiss: 'Fechar' }
+      };
+      var FILES = {
+        'en': PAGE + '.html',
+        'es': PAGE + '-es.html',
+        'fr': PAGE + '-fr.html',
+        'de': PAGE + '-de.html',
+        'it': PAGE + '-it.html',
+        'pt-BR': PAGE + '-pt-BR.html'
+      };
+      var sel = document.getElementById('langSwitcher');
+      if (sel) {
+        sel.value = CURRENT;
+        sel.addEventListener('change', function () {
+          var v = sel.value;
+          if (FILES[v] && v !== CURRENT) window.location.href = FILES[v];
+        });
+      }
+      try {
+        var raw = (navigator.language || (navigator.languages && navigator.languages[0]) || '').toLowerCase();
+        var primary = raw.split('-')[0];
+        var key = primary;
+        if (primary === 'pt') key = 'pt';
+        if (LOCALES[key] && key !== CURRENT && localStorage.getItem('homstock-lang-dismiss-' + PAGE + '-' + key) !== '1') {
+          var banner = document.getElementById('langBanner');
+          var txt = document.getElementById('langBannerText');
+          var go = document.getElementById('langBannerSwitch');
+          var dm = document.getElementById('langBannerDismiss');
+          txt.textContent = LOCALES[key].banner;
+          go.textContent = LOCALES[key].cta;
+          dm.textContent = LOCALES[key].dismiss;
+          banner.classList.add('show');
+          go.addEventListener('click', function () { window.location.href = LOCALES[key].file; });
+          dm.addEventListener('click', function () {
+            localStorage.setItem('homstock-lang-dismiss-' + PAGE + '-' + key, '1');
+            banner.classList.remove('show');
+          });
+        }
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>
