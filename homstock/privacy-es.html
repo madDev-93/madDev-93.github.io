@@ -48,7 +48,7 @@
   <main class="container">
     <div class="page-header">
       <h1>Política de Privacidad</h1>
-      <p class="date">Última actualización: 15 de mayo de 2026</p>
+      <p class="date">Última actualización: 18 de mayo de 2026</p>
     </div>
     <div class="content">
 
@@ -67,26 +67,33 @@
         <tr><td>Recibos</td><td>Fotos que escanea, nombres y precios de los artículos extraídos, nombre y dirección de la tienda, totales y fecha</td></tr>
         <tr><td>Lista de la compra</td><td>Artículos que añade, cantidades, categorías, notas, quién añadió cada artículo, quién lo marcó como hecho y cualquier atribución "para [nombre]"</td></tr>
         <tr><td>Catálogo de productos</td><td>Nombres y URL de imágenes de productos creados al escanear los recibos</td></tr>
-        <tr><td>Registro de dispositivo</td><td>Un token de notificaciones push por cada dispositivo con sesión iniciada, utilizado para enviar notificaciones de la lista de la compra</td></tr>
+        <tr><td>Planes de comidas</td><td>Planes de comidas semanales que cree, las comidas de cada día, los ingredientes, las notas y el estado de cocinado / no cocinado. Compartidos con los miembros de su hogar.</td></tr>
+        <tr><td>Preferencias alimentarias <em>(si decide configurarlas)</em></td><td>Indicadores dietéticos autodeclarados (vegetariano, vegano, pescetariano, sin gluten, sin lácteos, sin frutos secos, halal, kosher). Se utilizan únicamente para personalizar las sugerencias de comidas. Consulte el §4 a continuación para la base jurídica de categoría especial.</td></tr>
+        <tr><td>Preferencias de notificaciones</td><td>Un interruptor por usuario que controla si se envía la notificación opcional "Repaso semanal de comidas" los sábados por la noche.</td></tr>
+        <tr><td>Registro de dispositivo</td><td>Un token de notificaciones push por cada dispositivo con sesión iniciada, utilizado para enviar notificaciones de la lista de la compra y del repaso semanal de comidas</td></tr>
         <tr><td>Suscripción</td><td>Si tiene HomStock Pro, el identificador del producto, el ID de transacción, la fecha de compra y la fecha de vencimiento</td></tr>
         <tr><td>Preferencias de la App</td><td>Modo de apariencia, tema elegido y qué secciones de la interfaz están plegadas — almacenadas localmente en su dispositivo</td></tr>
       </table>
 
-      <h2>4. Por qué los recopilamos y nuestra base jurídica (artículo 6 del RGPD)</h2>
+      <h2>4. Por qué los recopilamos y nuestra base jurídica (artículos 6 y 9 del RGPD)</h2>
       <table>
         <tr><th>Finalidad</th><th>Base jurídica</th></tr>
-        <tr><td>Prestar las funciones principales — cuentas, hogares, recibos, listas de la compra, notificaciones push, derechos de suscripción</td><td><strong>Artículo 6(1)(b) — ejecución del contrato</strong> entre usted y HomStock</td></tr>
-        <tr><td>Mantener la integridad del servicio — depurar tokens push obsoletos, aplicar límites de uso del escaneo de recibos para prevenir abusos</td><td><strong>Artículo 6(1)(f) — nuestro interés legítimo</strong> en mantener el servicio operativo</td></tr>
+        <tr><td>Prestar las funciones principales — cuentas, hogares, recibos, listas de la compra, planes de comidas, notificaciones push, derechos de suscripción</td><td><strong>Artículo 6(1)(b) — ejecución del contrato</strong> entre usted y HomStock</td></tr>
+        <tr><td>Personalizar las sugerencias de comidas en función de sus preferencias alimentarias (solo si decide configurarlas)</td><td><strong>Artículo 9(2)(a) — consentimiento explícito</strong>, recogido en el momento en que guarda preferencias en la pantalla Dietética. Los indicadores religiosos (halal, kosher) y los relacionados con la salud (sin gluten, sin lácteos, sin frutos secos) se tratan como datos de "categoría especial" en virtud del artículo 9 y solo se procesan sobre esta base de consentimiento explícito.</td></tr>
+        <tr><td>Enviar el recordatorio opcional del sábado por la noche "Repaso semanal de comidas"</td><td><strong>Artículo 6(1)(b)</strong> — es un recordatorio de sus propios datos planificados. Solo se envía si lo habilita explícitamente en la hoja informativa de la App o en Ajustes → Notificaciones, y únicamente las semanas en las que haya planificado al menos una comida.</td></tr>
+        <tr><td>Mantener la integridad del servicio — depurar tokens push obsoletos, aplicar límites de uso del escaneo de recibos y de las llamadas a la IA de sugerencias / planificación automática para prevenir abusos</td><td><strong>Artículo 6(1)(f) — nuestro interés legítimo</strong> en mantener el servicio operativo</td></tr>
         <tr><td>Cumplir con las obligaciones del App Store, fiscales y otras obligaciones legales</td><td><strong>Artículo 6(1)(c) — obligación legal</strong></td></tr>
       </table>
-      <p>Actualmente no tratamos ningún dato sobre la base del consentimiento (artículo 6(1)(a)) — sin analítica, sin marketing y sin seguimiento publicitario. Si esto cambiase en el futuro, solicitaremos su consentimiento explícito y voluntario.</p>
+      <p>Puede retirar su consentimiento para el tratamiento de las preferencias alimentarias en cualquier momento borrando los interruptores en la pantalla Dietética o escribiéndonos. La retirada del consentimiento no afecta al tratamiento llevado a cabo antes de su retirada ni a ninguna otra funcionalidad.</p>
+      <p>Actualmente no tratamos ningún otro dato sobre la base del consentimiento — sin analítica, sin marketing y sin seguimiento publicitario. Si esto cambiase en el futuro, solicitaremos su consentimiento explícito y voluntario.</p>
 
       <h2>5. Proveedores de servicios ("subencargados del tratamiento")</h2>
       <p>Los siguientes terceros tratan datos personales limitados por nuestra cuenta en virtud de un contrato escrito de tratamiento de datos:</p>
       <table>
         <tr><th>Proveedor</th><th>Finalidad</th><th>Ubicación</th></tr>
-        <tr><td>Google Cloud / Firebase (Auth, Firestore, Storage, Cloud Functions, Cloud Messaging, Remote Config, App Check)</td><td>Alojamiento backend, autenticación, envío de notificaciones push</td><td>EE. UU. (región us-central1)</td></tr>
-        <tr><td>Google Gemini (a través de Firebase Cloud Functions)</td><td>Análisis del texto extraído de las fotos de los recibos para obtener artículos y precios estructurados</td><td>EE. UU.</td></tr>
+        <tr><td>Google Cloud / Firebase (Auth, Firestore, Storage, Cloud Functions, Cloud Messaging, Remote Config, App Check)</td><td>Alojamiento backend, autenticación, envío de notificaciones push, tareas en segundo plano programadas</td><td>EE. UU. (región us-central1)</td></tr>
+        <tr><td>Google Gemini (a través de Firebase Cloud Functions)</td><td>Análisis del texto extraído de las fotos de los recibos para obtener artículos y precios estructurados; generación de sugerencias de comidas y planes semanales a partir de su despensa y de sus preferencias alimentarias</td><td>EE. UU.</td></tr>
+        <tr><td>Pexels</td><td>Búsqueda anónima de imágenes de archivo por nombre de comida para ilustrar las sugerencias — no se envían identificadores de usuario</td><td>EE. UU.</td></tr>
         <tr><td>Apple Inc.</td><td>Sign in with Apple, procesamiento de pagos del App Store, envío de notificaciones push mediante APNs</td><td>Centros de datos en EE. UU. / UE</td></tr>
         <tr><td>RevenueCat, Inc.</td><td>Verificación y registro de los derechos de suscripción (recibe únicamente un UID seudonimizado de Firebase y metadatos de la transacción de Apple)</td><td>EE. UU.</td></tr>
         <tr><td>Open Food Facts</td><td>Búsqueda anónima de imágenes de productos por nombre — no se envían identificadores de usuario</td><td>UE (Francia)</td></tr>
@@ -99,6 +106,9 @@
       <h2>7. Cuánto tiempo conservamos sus datos</h2>
       <ul>
         <li><strong>Cuenta, hogar, recibos, artículos de la compra y productos:</strong> se conservan mientras exista su cuenta.</li>
+        <li><strong>Planes de comidas:</strong> se conservan mientras exista su cuenta / hogar. Compartidos con los miembros de su hogar.</li>
+        <li><strong>Preferencias alimentarias:</strong> se conservan hasta que las borre en la pantalla Dietética o hasta que elimine su cuenta.</li>
+        <li><strong>Preferencias de notificaciones:</strong> se conservan hasta que desactive la opción o hasta que elimine su cuenta.</li>
         <li><strong>Tokens de notificaciones push:</strong> se eliminan automáticamente cuando un dispositivo deja de aceptar entregas.</li>
         <li><strong>Preferencias de la App:</strong> se guardan en su dispositivo y se eliminan al desinstalar la App.</li>
         <li><strong>Registros de transacciones de suscripción:</strong> se conservan durante el tiempo necesario para prestar el servicio y cumplir con las obligaciones legales y contables.</li>
@@ -108,9 +118,9 @@
       <h2>8. Qué ocurre cuando elimina su cuenta</h2>
       <p>Puede eliminar su cuenta en cualquier momento desde <strong>Cuenta → Eliminar cuenta</strong> dentro de la App. Cuando lo haga:</p>
       <ul>
-        <li>Su perfil de usuario, el registro de Firebase Auth y las entradas del registro de suscripción se eliminarán de forma permanente.</li>
-        <li>Si es el único miembro de un hogar, se eliminará el hogar entero: sus recibos, lista de la compra, catálogo de productos y código de invitación se borrarán.</li>
-        <li>Si es miembro de un hogar que aún cuenta con otros miembros, se le retirará de la lista de miembros. <strong>Los recibos que haya escaneado, los artículos de la compra que haya añadido y los productos que haya creado seguirán siendo visibles para el resto de los miembros del hogar</strong>, porque ese contenido también forma parte de su registro de hogar. La App le informa de esto antes de confirmar la eliminación.</li>
+        <li>Su perfil de usuario, el registro de Firebase Auth, sus preferencias alimentarias, sus preferencias de notificaciones y las entradas del registro de suscripción se eliminarán de forma permanente.</li>
+        <li>Si es el único miembro de un hogar, se eliminará el hogar entero: sus recibos, lista de la compra, catálogo de productos, planes de comidas, programas recurrentes y código de invitación se borrarán.</li>
+        <li>Si es miembro de un hogar que aún cuenta con otros miembros, se le retirará de la lista de miembros. <strong>Los recibos que haya escaneado, los artículos de la compra que haya añadido, los planes de comidas a los que haya contribuido y los productos que haya creado seguirán siendo visibles para el resto de los miembros del hogar</strong>, porque ese contenido también forma parte de su registro de hogar. La App le informa de esto antes de confirmar la eliminación.</li>
         <li>Si es el propietario del hogar y quedan otros miembros, la propiedad se transferirá al miembro restante con más antigüedad.</li>
       </ul>
       <p>Para revocar Sign in with Apple después de la eliminación, vaya a Ajustes de iOS → su Apple ID → Inicio de sesión y seguridad → Sign in with Apple → HomStock → Dejar de usar Apple ID.</p>
@@ -121,16 +131,16 @@
         <li><strong>Acceso (artículo 15)</strong> — obtener una copia de los datos personales que tenemos sobre usted.</li>
         <li><strong>Rectificación (artículo 16)</strong> — corregir datos inexactos o incompletos. La mayoría de los datos pueden editarse directamente en la App.</li>
         <li><strong>Supresión (artículo 17)</strong> — eliminar su cuenta desde <strong>Cuenta → Eliminar cuenta</strong>, o escribirnos.</li>
-        <li><strong>Portabilidad (artículo 20)</strong> — descargar una copia legible por máquina de sus datos desde <strong>Cuenta → Privacidad y datos → Exportar mis datos</strong> en la App. La exportación se entrega como un archivo JSON.</li>
+        <li><strong>Portabilidad (artículo 20)</strong> — descargar una copia legible por máquina de sus datos desde <strong>Cuenta → Privacidad y datos → Exportar mis datos</strong> en la App. La exportación incluye los planes de comidas (de los últimos 90 días), las preferencias alimentarias y las preferencias de notificaciones, además de las categorías descritas en el §3.</li>
         <li><strong>Limitación (artículo 18)</strong> — pedirnos que suspendamos el tratamiento de determinados datos mientras se resuelve una controversia.</li>
         <li><strong>Oposición (artículo 21)</strong> — oponerse al tratamiento que llevamos a cabo en virtud del "interés legítimo".</li>
-        <li><strong>Retirar el consentimiento</strong> — cuando le hayamos pedido consentimiento, podrá retirarlo en cualquier momento.</li>
+        <li><strong>Retirar el consentimiento</strong> — para las preferencias alimentarias, borre los interruptores en la pantalla Dietética en cualquier momento. Para las notificaciones, desactive la opción en Ajustes → Notificaciones → Repaso semanal de comidas.</li>
         <li><strong>Presentar una reclamación</strong> ante su autoridad de control local. Puede consultar la lista de autoridades de la UE/EEE en <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en">edpb.europa.eu/about-edpb/about-edpb/members</a>. En España, la autoridad es la AEPD (<a href="https://www.aepd.es/">aepd.es</a>); en el Reino Unido, la ICO (<a href="https://ico.org.uk/">ico.org.uk</a>).</li>
       </ul>
       <p>Para ejercer cualquiera de estos derechos, escriba a <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a>. Responderemos en un plazo de 30 días, según lo exigido por el artículo 12.</p>
 
       <h2>10. Seguridad</h2>
-      <p>Los datos se cifran en tránsito (TLS) y en reposo por parte de Google Cloud. El acceso se controla mediante Firebase Authentication y las reglas de seguridad de Firestore, de modo que solo los miembros autenticados de su hogar pueden leer sus datos. App Check está habilitado para proteger las Cloud Functions frente a abusos. No tenemos acceso directo a las fotos de sus recibos ni a su lista de la compra; solo los vemos de forma agregada cuando resolvemos incidencias a petición suya.</p>
+      <p>Los datos se cifran en tránsito (TLS) y en reposo por parte de Google Cloud. El acceso se controla mediante Firebase Authentication y las reglas de seguridad de Firestore, de modo que solo los miembros autenticados de su hogar pueden leer sus datos. Las preferencias alimentarias y las preferencias de notificaciones se almacenan en una ruta privada por usuario que solo usted puede leer y escribir (no los demás miembros del hogar). App Check está habilitado para proteger las Cloud Functions frente a abusos. No tenemos acceso directo a las fotos de sus recibos, su lista de la compra, sus planes de comidas ni sus preferencias alimentarias; solo los vemos de forma agregada cuando resolvemos incidencias a petición suya.</p>
       <p>Si detectamos una brecha de seguridad de datos personales que pueda suponer un riesgo para usted, lo notificaremos a la autoridad de control competente en un plazo de 72 horas y le contactaremos directamente cuando sea necesario.</p>
 
       <h2>11. Menores</h2>

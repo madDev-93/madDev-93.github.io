@@ -48,7 +48,7 @@
   <main class="container">
     <div class="page-header">
       <h1>Politique de confidentialité</h1>
-      <p class="date">Dernière mise à jour : 15 mai 2026</p>
+      <p class="date">Dernière mise à jour : 18 mai 2026</p>
     </div>
     <div class="content">
 
@@ -67,26 +67,33 @@
         <tr><td>Tickets de caisse</td><td>Photos que vous numérisez, noms et prix des articles extraits, nom et adresse du magasin, totaux et date</td></tr>
         <tr><td>Liste de courses</td><td>Articles ajoutés, quantités, catégories, notes, qui a ajouté chaque article, qui l'a coché et toute mention « pour [nom] »</td></tr>
         <tr><td>Catalogue de produits</td><td>Noms d'affichage des produits et URL des images créés lors de la numérisation des tickets</td></tr>
-        <tr><td>Enregistrement de l'appareil</td><td>Un jeton de notification push par appareil connecté, utilisé pour livrer les notifications de liste de courses</td></tr>
+        <tr><td>Plans de repas</td><td>Plans de repas hebdomadaires que vous créez, les repas de chaque jour, les ingrédients, les notes et le statut cuisiné / non cuisiné. Partagés avec les membres de votre foyer.</td></tr>
+        <tr><td>Préférences alimentaires <em>(si vous choisissez de les définir)</em></td><td>Préférences alimentaires auto-déclarées (végétarien, végan, pescétarien, sans gluten, sans produits laitiers, sans noix, halal, casher). Utilisées uniquement pour personnaliser les suggestions de repas. Voir §4 ci-dessous pour la base juridique des catégories particulières.</td></tr>
+        <tr><td>Préférences de notification</td><td>Un commutateur par utilisateur qui contrôle si la notification optionnelle « Récap hebdo des repas » est envoyée le samedi soir.</td></tr>
+        <tr><td>Enregistrement de l'appareil</td><td>Un jeton de notification push par appareil connecté, utilisé pour livrer les notifications de liste de courses et de récap hebdo des repas</td></tr>
         <tr><td>Abonnement</td><td>Le fait que vous ayez HomStock Pro, l'identifiant du produit, l'ID de transaction, la date d'achat et la date d'expiration</td></tr>
         <tr><td>Préférences de l'App</td><td>Mode d'apparence, thème choisi et sections de l'interface réduites — stockés localement sur votre appareil</td></tr>
       </table>
 
-      <h2>4. Pourquoi nous les collectons, et notre base juridique (article 6 du RGPD)</h2>
+      <h2>4. Pourquoi nous les collectons, et notre base juridique (articles 6 et 9 du RGPD)</h2>
       <table>
         <tr><th>Finalité</th><th>Base juridique</th></tr>
-        <tr><td>Fournir les fonctionnalités essentielles — comptes, foyers, tickets, listes de courses, notifications push, droits liés à l'abonnement</td><td><strong>Article 6, paragraphe 1, point b) — exécution du contrat</strong> entre vous et HomStock</td></tr>
-        <tr><td>Maintenir l'intégrité du service — purger les jetons push obsolètes, appliquer des limites de débit pour éviter les abus sur la numérisation des tickets</td><td><strong>Article 6, paragraphe 1, point f) — nos intérêts légitimes</strong> à maintenir le service en fonctionnement</td></tr>
+        <tr><td>Fournir les fonctionnalités essentielles — comptes, foyers, tickets, listes de courses, plans de repas, notifications push, droits liés à l'abonnement</td><td><strong>Article 6, paragraphe 1, point b) — exécution du contrat</strong> entre vous et HomStock</td></tr>
+        <tr><td>Personnaliser les suggestions de repas en fonction de vos préférences alimentaires (uniquement si vous choisissez de les définir)</td><td><strong>Article 9, paragraphe 2, point a) — consentement explicite</strong>, recueilli au moment où vous enregistrez des préférences sur l'écran Alimentation. Les indicateurs religieux (halal, casher) et liés à la santé (sans gluten, sans produits laitiers, sans noix) sont traités comme des données de « catégorie particulière » au titre de l'article 9 et ne sont traités que sur cette base de consentement explicite.</td></tr>
+        <tr><td>Envoyer le rappel facultatif du samedi soir « Récap hebdo des repas »</td><td><strong>Article 6, paragraphe 1, point b)</strong> — il s'agit d'un rappel de vos propres données planifiées. Il n'est envoyé que si vous l'activez explicitement dans la feuille d'information de l'App ou dans Réglages → Notifications, et uniquement pour les semaines où vous avez planifié au moins un repas.</td></tr>
+        <tr><td>Maintenir l'intégrité du service — purger les jetons push obsolètes, appliquer des limites de débit pour éviter les abus sur la numérisation des tickets et les appels d'IA pour les suggestions de repas / planification automatique</td><td><strong>Article 6, paragraphe 1, point f) — nos intérêts légitimes</strong> à maintenir le service en fonctionnement</td></tr>
         <tr><td>Respecter les obligations de l'App Store, fiscales et autres obligations légales</td><td><strong>Article 6, paragraphe 1, point c) — obligation légale</strong></td></tr>
       </table>
-      <p>Nous ne traitons actuellement aucune donnée sur la base du consentement (article 6, paragraphe 1, point a)) — pas d'analytique, pas de marketing, pas de suivi publicitaire. Si cela devait changer, nous solliciterions votre consentement explicite et exprès.</p>
+      <p>Vous pouvez retirer votre consentement au traitement des préférences alimentaires à tout moment en effaçant les commutateurs sur l'écran Alimentation, ou en nous écrivant. Le retrait du consentement n'a pas d'effet sur les traitements effectués avant le retrait et n'affecte aucune autre fonctionnalité.</p>
+      <p>Nous ne traitons actuellement aucune autre donnée sur la base du consentement — pas d'analytique, pas de marketing, pas de suivi publicitaire. Si cela devait changer, nous solliciterions votre consentement explicite et exprès.</p>
 
       <h2>5. Prestataires de services (« sous-traitants ultérieurs »)</h2>
       <p>Les tiers suivants traitent un volume limité de données personnelles pour notre compte dans le cadre d'un contrat écrit de traitement des données :</p>
       <table>
         <tr><th>Prestataire</th><th>Finalité</th><th>Localisation</th></tr>
-        <tr><td>Google Cloud / Firebase (Auth, Firestore, Storage, Cloud Functions, Cloud Messaging, Remote Config, App Check)</td><td>Hébergement backend, authentification, livraison des notifications push</td><td>États-Unis (région us-central1)</td></tr>
-        <tr><td>Google Gemini (via Firebase Cloud Functions)</td><td>Analyse du texte extrait des photos de tickets pour produire des articles et des prix structurés</td><td>États-Unis</td></tr>
+        <tr><td>Google Cloud / Firebase (Auth, Firestore, Storage, Cloud Functions, Cloud Messaging, Remote Config, App Check)</td><td>Hébergement backend, authentification, livraison des notifications push, tâches d'arrière-plan planifiées</td><td>États-Unis (région us-central1)</td></tr>
+        <tr><td>Google Gemini (via Firebase Cloud Functions)</td><td>Analyse du texte extrait des photos de tickets pour produire des articles et des prix structurés ; génération de suggestions de repas et de plans hebdomadaires à partir de votre garde-manger et de vos préférences alimentaires</td><td>États-Unis</td></tr>
+        <tr><td>Pexels</td><td>Recherche anonyme d'images d'illustration par nom de repas pour illustrer les suggestions — aucun identifiant utilisateur n'est transmis</td><td>États-Unis</td></tr>
         <tr><td>Apple Inc.</td><td>Sign in with Apple, traitement des paiements de l'App Store, livraison des notifications push via APNs</td><td>Centres de données aux États-Unis / dans l'UE</td></tr>
         <tr><td>RevenueCat, Inc.</td><td>Vérification et registre des droits d'abonnement (reçoit uniquement un UID Firebase pseudonymisé et des métadonnées de transaction Apple)</td><td>États-Unis</td></tr>
         <tr><td>Open Food Facts</td><td>Recherche anonyme d'images de produits par nom — aucun identifiant utilisateur n'est transmis</td><td>UE (France)</td></tr>
@@ -99,6 +106,9 @@
       <h2>7. Combien de temps nous conservons vos données</h2>
       <ul>
         <li><strong>Compte, foyer, tickets, articles de la liste de courses, produits :</strong> conservés tant que votre compte existe.</li>
+        <li><strong>Plans de repas :</strong> conservés tant que votre compte / foyer existe. Partagés avec les membres de votre foyer.</li>
+        <li><strong>Préférences alimentaires :</strong> conservées jusqu'à ce que vous les effaciez sur l'écran Alimentation, ou jusqu'à ce que vous supprimiez votre compte.</li>
+        <li><strong>Préférences de notification :</strong> conservées jusqu'à ce que vous désactiviez l'option, ou jusqu'à ce que vous supprimiez votre compte.</li>
         <li><strong>Jetons de notification push :</strong> automatiquement supprimés lorsqu'un appareil n'accepte plus les livraisons.</li>
         <li><strong>Préférences de l'App :</strong> stockées sur votre appareil et supprimées lorsque vous désinstallez l'App.</li>
         <li><strong>Registres des transactions d'abonnement :</strong> conservés aussi longtemps que nécessaire pour fournir le service et satisfaire aux obligations légales et comptables.</li>
@@ -108,9 +118,9 @@
       <h2>8. Que se passe-t-il lorsque vous supprimez votre compte</h2>
       <p>Vous pouvez supprimer votre compte à tout moment depuis <strong>Compte → Supprimer le compte</strong> dans l'App. Lorsque vous le faites :</p>
       <ul>
-        <li>Votre profil utilisateur, votre enregistrement Firebase Auth et vos entrées dans le registre d'abonnement sont supprimés définitivement.</li>
-        <li>Si vous êtes le seul membre d'un foyer, le foyer entier est supprimé : ses tickets, sa liste de courses, son catalogue de produits et son code d'invitation sont effacés.</li>
-        <li>Si vous êtes membre d'un foyer comptant encore d'autres membres, vous êtes retiré de la liste des membres. <strong>Les tickets que vous avez numérisés, les articles que vous avez ajoutés et les produits que vous avez créés restent visibles pour les autres membres du foyer</strong>, car ces contenus font également partie de leur foyer. L'App vous en informe avant que vous confirmiez la suppression.</li>
+        <li>Votre profil utilisateur, votre enregistrement Firebase Auth, vos préférences alimentaires, vos préférences de notification et vos entrées dans le registre d'abonnement sont supprimés définitivement.</li>
+        <li>Si vous êtes le seul membre d'un foyer, le foyer entier est supprimé : ses tickets, sa liste de courses, son catalogue de produits, ses plans de repas, ses planifications récurrentes et son code d'invitation sont effacés.</li>
+        <li>Si vous êtes membre d'un foyer comptant encore d'autres membres, vous êtes retiré de la liste des membres. <strong>Les tickets que vous avez numérisés, les articles que vous avez ajoutés, les plans de repas auxquels vous avez contribué et les produits que vous avez créés restent visibles pour les autres membres du foyer</strong>, car ces contenus font également partie de leur foyer. L'App vous en informe avant que vous confirmiez la suppression.</li>
         <li>Si vous êtes le propriétaire du foyer et que d'autres membres restent, la propriété est transférée au membre restant ayant la plus grande ancienneté.</li>
       </ul>
       <p>Pour révoquer Sign in with Apple après la suppression, allez dans Réglages iOS → votre identifiant Apple → Connexion et sécurité → Sign in with Apple → HomStock → Ne plus utiliser l'identifiant Apple.</p>
@@ -121,16 +131,16 @@
         <li><strong>Accès (article 15)</strong> — obtenir une copie des données personnelles que nous détenons à votre sujet.</li>
         <li><strong>Rectification (article 16)</strong> — corriger des données inexactes ou incomplètes. La plupart des données peuvent être modifiées directement dans l'App.</li>
         <li><strong>Effacement (article 17)</strong> — supprimer votre compte via <strong>Compte → Supprimer le compte</strong>, ou nous écrire.</li>
-        <li><strong>Portabilité (article 20)</strong> — télécharger une copie lisible par machine de vos données via <strong>Compte → Confidentialité et données → Exporter mes données</strong> dans l'App. L'export est fourni sous forme de fichier JSON.</li>
+        <li><strong>Portabilité (article 20)</strong> — télécharger une copie lisible par machine de vos données via <strong>Compte → Confidentialité et données → Exporter mes données</strong> dans l'App. L'export inclut les plans de repas (90 derniers jours), les préférences alimentaires et les préférences de notification, en plus des catégories décrites au §3.</li>
         <li><strong>Limitation (article 18)</strong> — nous demander de suspendre le traitement de certaines données pendant la résolution d'un litige.</li>
         <li><strong>Opposition (article 21)</strong> — vous opposer aux traitements que nous réalisons sur la base de « l'intérêt légitime ».</li>
-        <li><strong>Retrait du consentement</strong> — lorsque nous vous demandons un consentement, vous pouvez le retirer à tout moment.</li>
+        <li><strong>Retrait du consentement</strong> — pour les préférences alimentaires, effacez les commutateurs sur l'écran Alimentation à tout moment. Pour les notifications, désactivez l'option dans Réglages → Notifications → Récap hebdo des repas.</li>
         <li><strong>Introduire une réclamation</strong> auprès de votre autorité de contrôle locale. La liste des autorités de l'UE/EEE est disponible sur <a href="https://edpb.europa.eu/about-edpb/about-edpb/members_en">edpb.europa.eu/about-edpb/about-edpb/members</a>. En France, l'autorité est la CNIL (<a href="https://www.cnil.fr/">cnil.fr</a>) ; au Royaume-Uni, l'ICO (<a href="https://ico.org.uk/">ico.org.uk</a>).</li>
       </ul>
       <p>Pour exercer l'un de ces droits, écrivez à <a href="mailto:jomen12@icloud.com">jomen12@icloud.com</a>. Nous vous répondrons dans un délai de 30 jours conformément à l'article 12.</p>
 
       <h2>10. Sécurité</h2>
-      <p>Les données sont chiffrées en transit (TLS) et au repos par Google Cloud. L'accès est contrôlé par Firebase Authentication et les règles de sécurité Firestore, de sorte que seuls les membres authentifiés de votre foyer peuvent lire vos données. App Check est activé pour protéger les Cloud Functions contre les abus. Nous n'avons pas d'accès direct à vos photos de tickets ni à vos listes de courses ; nous ne les voyons de manière agrégée que lorsque nous diagnostiquons un problème à votre demande.</p>
+      <p>Les données sont chiffrées en transit (TLS) et au repos par Google Cloud. L'accès est contrôlé par Firebase Authentication et les règles de sécurité Firestore, de sorte que seuls les membres authentifiés de votre foyer peuvent lire vos données. Les préférences alimentaires et les préférences de notification sont stockées dans un chemin privé par utilisateur, lisible et modifiable uniquement par vous (pas par les autres membres du foyer). App Check est activé pour protéger les Cloud Functions contre les abus. Nous n'avons pas d'accès direct à vos photos de tickets, à vos listes de courses, à vos plans de repas ni à vos préférences alimentaires ; nous ne les voyons de manière agrégée que lorsque nous diagnostiquons un problème à votre demande.</p>
       <p>Si nous découvrions une violation de données personnelles susceptible d'entraîner un risque pour vous, nous le notifierions à l'autorité de contrôle compétente dans un délai de 72 heures et vous contacterions directement lorsque cela est requis.</p>
 
       <h2>11. Enfants</h2>
