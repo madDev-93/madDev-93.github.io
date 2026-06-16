@@ -1,0 +1,126 @@
+/* ============================================================
+   Qwota v2 — interaction layer (Aceternity-inspired, executed in v2's
+   restrained, editorial style: surgical teal, no glows/glass/gradients).
+   Loaded only by index.html, AFTER qwota-v2.css. Reuses v2 tokens.
+
+   Progressive enhancement: JS adds `fx-ready` to <html> before anything
+   hides, so with JS off (or reduced motion) NOTHING is hidden.
+   ============================================================ */
+
+/* ---- 1. Hero line cascade (Lift. / Fuel. / Recover.) -------------- */
+.fx-ready .fx-cascade .fx-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(0.18em);
+  filter: blur(8px);
+}
+.fx-cascade.is-in .fx-line {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  transition: opacity 0.7s ease,
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.7s ease;
+  transition-delay: calc(var(--i, 0) * 130ms);
+}
+/* the teal accent underline draws in, just after the last line */
+.fx-ready .fx-cascade .hero__title .accent,
+.fx-ready.fx-cascade-host .hero__title .accent { border-bottom-color: transparent; }
+.fx-cascade .accent { position: relative; }
+.fx-ready .fx-cascade .accent::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: -0.12em; height: 0.12em;
+  background: var(--teal);
+  transform: scaleX(0); transform-origin: left;
+}
+.fx-cascade.is-in .accent::after {
+  transform: scaleX(1);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--n, 3) * 130ms + 120ms);
+}
+
+/* ---- 2. Word reveals (manifesto + feature headings) --------------- */
+.fx-ready .fx-words .fx-w {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.16em);
+  filter: blur(5px);
+}
+.fx-words.is-in .fx-w {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  transition: opacity 0.55s ease,
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.55s ease;
+  transition-delay: calc(var(--i, 0) * 36ms);
+}
+
+/* ---- 3. Floating hero annotations (uses v2's .annot styles) ------- */
+.fx-ready .annot { opacity: 0; transform: translateY(9px); }
+.hero__stage.fx-annots-in .annot {
+  opacity: 1; transform: none;
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero__stage.fx-annots-in .annot--1 { transition-delay: 0.45s; }
+.hero__stage.fx-annots-in .annot--2 { transition-delay: 0.62s; }
+.hero__stage.fx-annots-in .annot--3 { transition-delay: 0.79s; }
+/* a barely-there idle drift so the callouts feel alive, not pasted on */
+@media (hover: hover) and (pointer: fine) {
+  .hero__stage.fx-annots-in .annot--1 { animation: fx-float 7s ease-in-out 1.2s infinite; }
+  .hero__stage.fx-annots-in .annot--2 { animation: fx-float 8s ease-in-out 1.6s infinite reverse; }
+  .hero__stage.fx-annots-in .annot--3 { animation: fx-float 7.5s ease-in-out 1.9s infinite; }
+}
+@keyframes fx-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+@media (max-width: 820px) { .annot { display: none; } }
+
+/* ---- 4. Tracing beam down the 01–04 feature region ---------------- */
+.fx-beam {
+  position: fixed; width: 1px; top: 22vh; bottom: 22vh;
+  background: var(--hair); z-index: 20; opacity: 0;
+  transition: opacity 0.45s ease; pointer-events: none;
+}
+.fx-beam.is-active { opacity: 1; }
+.fx-beam__fill {
+  position: absolute; left: 0; top: 0; width: 100%; height: var(--p, 0%);
+  background: linear-gradient(var(--teal), var(--teal-deep));
+}
+.fx-beam__dot {
+  position: absolute; left: 50%; top: var(--p, 0%);
+  transform: translate(-50%, -50%);
+  width: 7px; height: 7px; border-radius: 50%; background: var(--teal);
+  box-shadow: 0 0 9px rgba(46, 196, 167, 0.7);
+}
+@media (max-width: 980px) { .fx-beam { display: none; } }
+/* the 01–04 indices brighten as the beam reaches their section */
+.eyebrow .idx { transition: text-shadow 0.4s ease; }
+.fx-lit .eyebrow .idx { text-shadow: 0 0 16px rgba(46, 196, 167, 0.55); }
+
+/* ---- 5. Device micro-tilt ----------------------------------------- */
+.fx-tilt { transition: transform 0.12s ease-out; will-change: transform; transform-style: preserve-3d; }
+.fx-tilt.is-resetting { transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ---- 6. Magnetic CTAs --------------------------------------------- */
+.fx-magnetic { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.fx-magnetic.is-pulling { transition: transform 0.08s ease-out; }
+
+/* ---- 7. Animated nav-link underline ------------------------------- */
+.nav__links a { position: relative; }
+.nav__links a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px;
+  background: var(--teal); transform: scaleX(0); transform-origin: left;
+  transition: transform 0.28s ease;
+}
+.nav__links a:hover::after { transform: scaleX(1); }
+
+/* ---- Reduced motion: everything static, nothing hidden ------------ */
+@media (prefers-reduced-motion: reduce) {
+  .fx-cascade .fx-line,
+  .fx-words .fx-w { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .fx-cascade .accent { border-bottom-color: var(--teal) !important; }
+  .fx-cascade .accent::after { display: none; }
+  .annot { opacity: 1 !important; transform: none !important; animation: none !important; }
+  .fx-beam { display: none; }
+  .fx-tilt, .fx-magnetic { transition: none; }
+  .nav__links a::after { transition: none; }
+}
