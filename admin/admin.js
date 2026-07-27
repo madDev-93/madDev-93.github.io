@@ -1,6 +1,4 @@
-// Qwota Admin Dashboard
-
-// Firebase Config
+// Qwota Admin Console
 const firebaseConfig = {
   apiKey: "AIzaSyCG01Gi5u4IA5nvbLYaQjbX5bO3zy2pJ1E",
   authDomain: "qwota-ai-coach.firebaseapp.com",
@@ -9,1280 +7,217 @@ const firebaseConfig = {
   messagingSenderId: "7410395296",
   appId: "1:7410395296:web:d48e66a6005fbff16081c5"
 };
-
 const ADMIN_UID = "DEPKKHJMilcoJmSnKxb3UxFc5Is2";
-const ITEMS_PER_PAGE = 20;
-
-// Escape user-controlled strings before interpolating into innerHTML. Prevents stored XSS:
-// display names, food descriptions, and error/notification messages are all user-influenced
-// and would otherwise execute in this privileged admin session. Safe in both element-content
-// and double-quoted attribute contexts (escapes <, >, &, ", ').
-function escapeHtml(value) {
-  if (value === null || value === undefined) return '';
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-const esc = escapeHtml;
-
-// AI Cost estimates (per request) - Google Gemini 2.0 Flash
-// ~1000 input tokens, ~500 output tokens per request
-// Input: $0.10/1M tokens, Output: $0.40/1M tokens
-const AI_COSTS = {
-  meal_scan: 0.002,     // Vision + text ~$0.002
-  text_analysis: 0.0003, // Text only ~$0.0003
-  coach_insight: 0.0005  // Text (longer output) ~$0.0005
-};
-
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const functions = firebase.functions();
+const fns = firebase.functions();
+const call = (name) => fns.httpsCallable(name);
 
-// State
-let allUsers = [];
-let allActivity = [];
-let allNotificationLogs = [];
-let allErrorLogs = [];
-let allDailyReviewLogs = [];
-let stats = null;
-let currentSection = 'overview';
-let userFilter = 'all';
-let activityFilter = 'all-activity';
-let notifFilter = 'all';
-let errorFilter = 'all';
-let reviewFilter = 'all';
-let userSearch = '';
-let notifSearch = '';
-let errorSearch = '';
-let reviewSearch = '';
-let usersPage = 1;
-let activityPage = 1;
-let notifPage = 1;
-let errorPage = 1;
-let reviewPage = 1;
-let userSortField = 'lastActive';
-let userSortDir = 'desc';
-let activitySearch = '';
-let selectedTimeRange = 7; // Default 7 days
+// Escape all interpolated data (stored-XSS safe).
+function esc(v){ if(v==null) return ''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
-// Chart instances
-let subscriptionChart = null;
-let aiUsageChart = null;
-let aiComparisonChart = null;
-let userGrowthChart = null;
+let DATA = null, TAB = 'cockpit';
+const $ = (id) => document.getElementById(id);
 
-// DOM Elements
-const loadingScreen = document.getElementById('loading-screen');
-const loginScreen = document.getElementById('login-screen');
-const accessDenied = document.getElementById('access-denied');
-const dashboard = document.getElementById('dashboard');
+// ---------- helpers ----------
+function toast(msg, isErr){ const t=$('toast'); t.textContent=msg; t.className='toast'+(isErr?' err':''); t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 3200); }
+function ago(iso){ if(!iso) return '—'; const s=Math.floor((Date.now()-new Date(iso).getTime())/1000); if(s<60)return s+'s ago'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+function money(n){ return '$'+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-// Show screen helper
-function showScreen(screen) {
-  loadingScreen.style.display = 'none';
-  loginScreen.style.display = 'none';
-  accessDenied.style.display = 'none';
-  dashboard.style.display = 'none';
-
-  if (screen === 'loading') loadingScreen.style.display = 'flex';
-  else if (screen === 'login') loginScreen.style.display = 'flex';
-  else if (screen === 'denied') accessDenied.style.display = 'flex';
-  else if (screen === 'dashboard') dashboard.style.display = 'flex';
+// ---------- data ----------
+async function load(){
+  $('main').innerHTML = '<div class="loading">Loading console…</div>';
+  try{
+    const res = await call('adminConsole')();
+    DATA = res.data;
+    $('updated').textContent = 'updated just now';
+    const ok = DATA.reconcile.ok;
+    $('status').className = 'status'+(ok?'':' bad');
+    $('status-text').textContent = ok ? 'All systems normal' : 'Reconcile invariant failed';
+    render();
+  }catch(e){ $('main').innerHTML = '<div class="loading cr">Failed to load: '+esc(e.message)+'</div>'; }
 }
 
-// Check if user is admin
-function isAdmin(user) {
-  return user && user.uid === ADMIN_UID;
+// ---------- render ----------
+function render(){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===TAB));
+  const m = $('main');
+  if(TAB==='cockpit') m.innerHTML = renderCockpit();
+  else if(TAB==='money') m.innerHTML = renderMoney();
+  else if(TAB==='users') m.innerHTML = renderUsers();
+  else if(TAB==='health') m.innerHTML = renderHealth();
+  wire();
 }
 
-// Load dashboard data
-async function loadDashboardData() {
-  try {
-    document.getElementById('refresh-btn').parentElement.classList.add('refreshing');
-
-    const getAdminStats = functions.httpsCallable('getAdminStats');
-    const result = await getAdminStats();
-    stats = result.data;
-
-    allUsers = stats.users || [];
-    allActivity = stats.recentActivity || [];
-    allNotificationLogs = stats.notificationLogs || [];
-    allErrorLogs = stats.errorLogs || [];
-    allDailyReviewLogs = stats.dailyReviewLogs || [];
-
-    updateOverview();
-    updateRetention();
-    updateGrowthChart();
-    updateChurnRisk();
-    renderUsersTable();
-    renderActivityTable();
-    renderNotificationTable();
-    renderErrorTable();
-    renderReviewTable();
-    updateHeatmap();
-    updateCharts();
-    updateBilling();
-    renderAIUsage();
-    renderReverseTrial();
-
-    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
-
-  } catch (error) {
-    console.error('Error loading dashboard data:', error);
-    alert('Failed to load dashboard data: ' + error.message);
-  } finally {
-    document.getElementById('refresh-btn').parentElement.classList.remove('refreshing');
-  }
-}
-
-// Update overview metrics
-function updateOverview() {
-  if (!stats) return;
-
-  const totalUsers = stats.totalUsers || 0;
-  const proUsers = stats.proSubscribers || 0;
-  const conversionRate = totalUsers > 0 ? ((proUsers / totalUsers) * 100).toFixed(1) : 0;
-
-  const aiRequestsWeek = (stats.mealScansWeek || 0) + (stats.textFoodWeek || 0) + (stats.coachInsightsWeek || 0);
-  const aiRequestsToday = (stats.mealScansToday || 0) + (stats.textFoodToday || 0) + (stats.coachInsightsToday || 0);
-
-  // Estimate costs
-  const estCost = (
-    (stats.mealScansWeek || 0) * AI_COSTS.meal_scan +
-    (stats.textFoodWeek || 0) * AI_COSTS.text_analysis +
-    (stats.coachInsightsWeek || 0) * AI_COSTS.coach_insight
-  );
-  // Active users (users with lastActive in last 7 days)
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const activeUsers = allUsers.filter(u => u.lastActive && new Date(u.lastActive) > weekAgo).length;
-
-  // Update DOM
-  document.getElementById('total-users').textContent = totalUsers;
-  document.getElementById('pro-users').textContent = proUsers;
-  document.getElementById('conversion-rate').textContent = `${conversionRate}% conversion`;
-
-  document.getElementById('ai-requests-week').textContent = aiRequestsWeek;
-  document.getElementById('ai-requests-today').textContent = `${aiRequestsToday} today`;
-
-  // Prefer real telemetry (aiCostTotals) over the per-request estimate when available.
-  const realCost = (stats.aiUsage && typeof stats.aiUsage.totalCostUsd === 'number') ? stats.aiUsage.totalCostUsd : estCost;
-  const realCostPerUser = totalUsers > 0 ? realCost / totalUsers : 0;
-  document.getElementById('est-cost').textContent = `$${realCost.toFixed(2)}`;
-  document.getElementById('cost-per-user').textContent = `$${realCostPerUser.toFixed(3)}/user`;
-
-  document.getElementById('notifications-enabled').textContent = stats.notificationsEnabled || 0;
-  document.getElementById('daily-notifs-sent').textContent = stats.dailyNotifsSentToday || 0;
-  document.getElementById('weekly-notifs-sent').textContent = stats.weeklyNotifsSentThisWeek || 0;
-  document.getElementById('active-users').textContent = activeUsers;
-
-  // Server-side refresh stats (4 AM deep context)
-  document.getElementById('user-data-synced').textContent = stats.userDataSynced || 0;
-  document.getElementById('server-refreshes-today').textContent = stats.serverRefreshesToday || 0;
-  document.getElementById('server-refreshes-week').textContent = stats.serverRefreshesWeek || 0;
-
-  // Activity section stats
-  document.getElementById('meal-scans-today').textContent = stats.mealScansToday || 0;
-  document.getElementById('meal-scans-week').textContent = `${stats.mealScansWeek || 0} this week`;
-  document.getElementById('text-food-today').textContent = stats.textFoodToday || 0;
-  document.getElementById('text-food-week').textContent = `${stats.textFoodWeek || 0} this week`;
-  document.getElementById('coach-insights-today').textContent = stats.coachInsightsToday || 0;
-  document.getElementById('coach-insights-week').textContent = `${stats.coachInsightsWeek || 0} this week`;
-}
-
-// Update retention metrics
-function updateRetention() {
-  if (!stats || !stats.retention) return;
-
-  const r = stats.retention;
-  document.getElementById('retention-dau').textContent = r.dau;
-  document.getElementById('retention-wau').textContent = r.wau;
-  document.getElementById('retention-mau').textContent = r.mau;
-  document.getElementById('retention-stickiness').textContent = `${r.dauWauRatio}%`;
-}
-
-// Update user growth chart
-function updateGrowthChart() {
-  if (!stats || !stats.signupsByDate) return;
-
-  const ctx = document.getElementById('userGrowthChart').getContext('2d');
-  if (userGrowthChart) userGrowthChart.destroy();
-
-  const signups = stats.signupsByDate;
-  const totalNew = signups.reduce((sum, d) => sum + d.count, 0);
-  document.getElementById('growth-total').textContent = `${totalNew} new users`;
-
-  const labels = signups.map(d => {
-    const date = new Date(d.date);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  });
-  const data = signups.map(d => d.count);
-
-  userGrowthChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'New Users',
-        data,
-        borderColor: '#14b8a6',
-        backgroundColor: 'rgba(20, 184, 166, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 2,
-        pointHoverRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
-        },
-        y: {
-          grid: { color: 'rgba(148,163,184,0.1)' },
-          ticks: { color: '#64748b', stepSize: 1 },
-          beginAtZero: true
-        }
-      }
-    }
-  });
-}
-
-// Update churn risk section
-function updateChurnRisk() {
-  if (!stats) return;
-
-  const churnUsers = stats.churnRiskUsers || [];
-  document.getElementById('churn-count').textContent = `${churnUsers.length} users at risk`;
-
-  const container = document.getElementById('churn-list');
-
-  if (churnUsers.length === 0) {
-    container.innerHTML = '<p class="churn-empty">No users at risk of churning</p>';
-    return;
-  }
-
-  container.innerHTML = churnUsers.slice(0, 10).map(user => `
-    <div class="churn-item">
-      <div class="churn-user">
-        <span class="churn-user-name">${esc(user.displayName) || 'Unknown'}</span>
-        <span class="churn-user-email">${esc(user.email) || '-'}</span>
-      </div>
-      <span class="churn-days ${user.daysInactive < 14 ? 'warning' : ''}">${user.daysInactive}d inactive</span>
+function renderCockpit(){
+  const d=DATA, u=d.users, ns=d.northStar, mo=d.money;
+  const activationPct = u.registered>0 ? Math.round((ns.activatedUsers/u.registered)*100) : 0;
+  const maxF = Math.max(...d.funnel.map(f=>f.count),1);
+  return `
+  <div class="grid3">
+    <div class="card">
+      <div class="qlabel"><span class="tick" style="background:var(--info)"></span> Users</div>
+      <div class="big">${u.registered}<span style="font-size:15px;color:var(--mut);font-weight:600"> registered</span></div>
+      <div class="qsub">${u.guests} guests · ${u.appUsers} app users <span class="d">(${u.authTotal} auth)</span></div>
     </div>
-  `).join('');
-}
+    <div class="card">
+      <div class="qlabel"><span class="tick" style="background:var(--teal)"></span> North Star · activation</div>
+      <div class="big ${activationPct<25?'cr':'ok'}">${activationPct}%</div>
+      <div class="qsub">${ns.activatedUsers}/${u.registered} logged a workout · ${ns.totalWorkoutsAll} total · ${ns.avgWorkoutsPerWeek}/wk avg</div>
+    </div>
+    <div class="card">
+      <div class="qlabel"><span class="tick" style="background:var(--warn)"></span> Money</div>
+      <div class="big">${money(mo.mrrEstimate)}<span style="font-size:15px;color:var(--mut);font-weight:600"> MRR</span></div>
+      <div class="qsub"><b class="ok" style="color:var(--tx)">${mo.payingCount} paying</b> · ${mo.entitledCount} entitled · ${mo.onReverseTrial} on trial</div>
+    </div>
+  </div>
 
-// Show user modal
-function showUserModal(userId) {
-  const user = allUsers.find(u => u.id === userId);
-  if (!user) return;
+  <div class="section-t">Activation funnel · % of registered</div>
+  <div class="card"><div class="funnel">
+    ${d.funnel.map(f=>`<div class="fstage"><span class="nm">${esc(f.stage)}</span>
+      <div class="ftrack"><div class="ffill" style="width:${Math.max((f.count/maxF)*100,2)}%"></div></div>
+      <span class="v"><b>${f.count}</b> · ${f.pct}%</span></div>`).join('')}
+  </div></div>
 
-  const modal = document.getElementById('user-modal');
-  modal.style.display = 'flex';
+  ${d.needsAttention.length?`<div class="section-t">Needs attention</div><div class="feed">
+    ${d.needsAttention.map(n=>`<div class="row"><span class="sev ${esc(n.severity)}"></span><div><div class="t">${esc(n.title)}</div><div class="d">${esc(n.detail)}</div></div></div>`).join('')}
+  </div>`:''}
 
-  document.getElementById('modal-user-name').textContent = user.displayName || 'Unknown User';
-  document.getElementById('modal-email').textContent = user.email || '-';
-  document.getElementById('modal-status').innerHTML = `<span class="badge ${user.isPro ? 'badge-pro' : 'badge-free'}">${user.isPro ? 'Pro' : 'Free'}</span>`;
-  document.getElementById('modal-signup').textContent = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-';
-  document.getElementById('modal-last-active').textContent = user.lastActive ? formatDate(user.lastActive) : 'Never';
-  document.getElementById('modal-notifs').innerHTML = `<span class="badge ${user.notificationsEnabled ? 'badge-on' : 'badge-off'}">${user.notificationsEnabled ? 'Enabled' : 'Disabled'}</span>`;
-  document.getElementById('modal-timezone').textContent = user.timezone || '-';
+  <div class="section-t">Operator actions</div>
+  <div class="qa">
+    <button class="btn" data-act="findUser"><span class="i">◎</span> Find a user</button>
+    <button class="btn" data-act="extendTrial"><span class="i">＋</span> Comp / extend trial</button>
+    <button class="btn" data-act="forceRefresh"><span class="i">↻</span> Force AI refresh</button>
+    <button class="btn" data-act="sendPush"><span class="i">✉</span> Send push</button>
+    <button class="btn" data-act="flag"><span class="i">⚑</span> Feature flags</button>
+  </div>
 
-  document.getElementById('modal-meals').textContent = user.mealScans || 0;
-  document.getElementById('modal-text').textContent = user.textAnalysis || 0;
-  document.getElementById('modal-coach').textContent = user.coachInsights || 0;
-  document.getElementById('modal-total').textContent = (user.mealScans || 0) + (user.textAnalysis || 0) + (user.coachInsights || 0);
-
-  // Show user's recent activity
-  const userActivity = allActivity.filter(a => a.userId === userId).slice(0, 5);
-  const activityContainer = document.getElementById('modal-activity');
-
-  if (userActivity.length === 0) {
-    activityContainer.innerHTML = '<p class="no-activity">No recent activity</p>';
-  } else {
-    activityContainer.innerHTML = userActivity.map(a => {
-      const typeInfo = getActivityTypeInfo(a.type);
-      return `
-        <div class="user-activity-item">
-          <div class="user-activity-info">
-            <span class="badge ${typeInfo.badgeClass}">${typeInfo.label}</span>
-            <span class="user-activity-time">${formatTime(a.timestamp)}</span>
-          </div>
-          <span class="badge ${a.success ? 'badge-success' : 'badge-failed'}">${a.success ? 'OK' : 'Fail'}</span>
-        </div>
-      `;
-    }).join('');
-  }
-}
-
-// Close user modal
-function closeUserModal() {
-  document.getElementById('user-modal').style.display = 'none';
-}
-
-// Update daily activity display
-function updateHeatmap() {
-  const container = document.getElementById('daily-activity-list');
-  if (!container) return;
-
-  // Get activity data grouped by date
-  const activityByDate = {};
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-
-  // Calculate start date based on selected range
-  const startDate = new Date(now);
-  startDate.setDate(startDate.getDate() - selectedTimeRange + 1);
-  startDate.setHours(0, 0, 0, 0);
-
-  // Initialize all days in range
-  for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
-    const key = d.toISOString().split('T')[0];
-    activityByDate[key] = { total: 0, meals: 0, text: 0, coach: 0 };
-  }
-
-  // Count activity per day by type
-  allActivity.forEach(a => {
-    if (!a.timestamp) return;
-    const date = new Date(a.timestamp).toISOString().split('T')[0];
-    if (activityByDate.hasOwnProperty(date)) {
-      activityByDate[date].total++;
-      if (a.type === 'meal_scan') activityByDate[date].meals++;
-      else if (a.type === 'text_analysis') activityByDate[date].text++;
-      else if (a.type === 'coach_insight') activityByDate[date].coach++;
-    }
-  });
-
-  // Calculate stats
-  const values = Object.values(activityByDate).map(d => d.total);
-  const total = values.reduce((a, b) => a + b, 0);
-  const avg = values.length > 0 ? (total / values.length).toFixed(1) : 0;
-  const maxVal = Math.max(...values, 1);
-
-  // Update summary
-  document.getElementById('activity-total').textContent = total;
-  document.getElementById('activity-avg').textContent = avg;
-
-  // Build list (most recent first)
-  const sortedDates = Object.keys(activityByDate).sort().reverse();
-
-  let html = '';
-  sortedDates.forEach(date => {
-    const data = activityByDate[date];
-    const d = new Date(date + 'T12:00:00');
-    const isToday = date === todayStr;
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const barWidth = maxVal > 0 ? (data.total / maxVal) * 100 : 0;
-
-    html += `
-      <div class="activity-day ${isToday ? 'today' : ''}">
-        <div class="activity-day-date">
-          ${dateStr}
-          <small>${dayName}${isToday ? ' (Today)' : ''}</small>
-        </div>
-        <div class="activity-bar-container">
-          <div class="activity-bar ${data.total === 0 ? 'zero' : ''}" style="width: ${barWidth}%"></div>
-        </div>
-        <div class="activity-count ${data.total === 0 ? 'zero' : ''}">${data.total} req</div>
+  <div class="grid2" style="margin-top:22px">
+    <div class="card">
+      <div class="qlabel">AI usage · ${d.ai.totalCalls} calls · ${money(d.ai.totalCostUsd)}</div>
+      <div class="bars">${aiBars(d.ai.bySurface)}</div>
+    </div>
+    <div class="card">
+      <div class="qlabel">Reverse trial</div>
+      <div class="kpis" style="margin-top:12px">
+        <div class="kpi"><div class="l">24h</div><div class="n">${mo.reverseTrial.grantsDay}</div></div>
+        <div class="kpi"><div class="l">7 days</div><div class="n">${mo.reverseTrial.grantsWeek}</div></div>
+        <div class="kpi"><div class="l">active now</div><div class="n">${mo.reverseTrial.activeNow}</div></div>
       </div>
-    `;
-  });
-
-  container.innerHTML = html || '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No activity data</p>';
+      <div class="note">Active: ${esc(d.active.method)} — DAU ${d.active.dau}, WAU ${d.active.wau}</div>
+    </div>
+  </div>`;
 }
 
-// Update charts
-function updateCharts() {
-  if (!stats) return;
+function aiBars(rows){
+  if(!rows||!rows.length) return '<div class="qsub d">No AI usage recorded</div>';
+  const max=Math.max(...rows.map(r=>r.calls||0),1);
+  return rows.map(r=>`<div class="brow"><span>${esc(r.surface)}</span><div class="track"><div class="fill" style="width:${Math.round((r.calls/max)*100)}%"></div></div><span class="v">${r.calls} · ${money(r.costUsd)}</span></div>`).join('');
+}
 
-  const chartColors = {
-    teal: '#14b8a6',
-    tealDark: '#0d9488',
-    gray: '#64748b',
-    purple: '#a855f7',
-    orange: '#f97316',
-    cyan: '#22d3ee'
+function renderMoney(){
+  const mo=DATA.money;
+  return `
+  <div class="grid3">
+    <div class="card"><div class="qlabel">Paying (verified)</div><div class="big ok">${mo.payingCount}</div><div class="qsub">production transactions</div></div>
+    <div class="card"><div class="qlabel">MRR estimate</div><div class="big">${money(mo.mrrEstimate)}</div><div class="qsub">monthly + yearly/12 · lifetime one-time excluded</div></div>
+    <div class="card"><div class="qlabel">Entitled (isPro)</div><div class="big">${mo.entitledCount}${mo.unverifiedEntitledCount?`<span class="flag">${mo.unverifiedEntitledCount} unverified</span>`:''}</div><div class="qsub">${mo.unverifiedEntitledCount} have no production purchase (likely TestFlight/test)</div></div>
+  </div>
+  <div class="section-t">By product · production only</div>
+  <div class="card"><table><thead><tr><th>Product</th><th class="text-center">Payers</th><th class="text-center">Price</th></tr></thead><tbody>
+    ${Object.keys(mo.prices).map(p=>`<tr><td class="mono">${esc(p)}</td><td class="text-center">${mo.byProduct[p]||0}</td><td class="text-center">${money(mo.prices[p])}</td></tr>`).join('')}
+  </tbody></table>${mo.sandboxTx?`<div class="note">${mo.sandboxTx} Sandbox transaction(s) excluded from revenue.</div>`:''}</div>
+  <div class="section-t">Access breakdown</div>
+  <div class="card"><div class="kpis">
+    <div class="kpi"><div class="l">Paid</div><div class="n ok">${mo.payingCount}</div></div>
+    <div class="kpi"><div class="l">On reverse trial</div><div class="n">${mo.onReverseTrial}</div></div>
+    <div class="kpi"><div class="l">Entitled (incl. test)</div><div class="n">${mo.entitledCount}</div></div>
+  </div><div class="note">"Paying" and "entitled" are never summed — entitlement includes test/TestFlight and trials.</div></div>`;
+}
+
+function renderHealth(){
+  const h=DATA.health;
+  return `
+  <div class="grid3">
+    <div class="card"><div class="qlabel">AI failures · 24h</div><div class="big ${h.aiFailures24h?'cr':'ok'}">${h.aiFailures24h}</div></div>
+    <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
+    <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
+  </div>
+  <div class="section-t">Recent errors</div>
+  <div class="card">${h.recentErrors.length?`<table><thead><tr><th>When</th><th>Type</th><th>User</th><th>Error</th></tr></thead><tbody>
+    ${h.recentErrors.map(e=>`<tr><td>${ago(e.at)}</td><td><span class="badge">${esc(e.type)}</span></td><td class="mono">${esc((e.userId||'—').slice(0,10))}</td><td>${esc(e.error||'—')}</td></tr>`).join('')}
+  </tbody></table>`:'<div class="qsub ok">No errors in the last 24h 🎉</div>'}</div>
+  <div class="section-t">Self-check invariants</div>
+  <div class="card"><table><tbody>${DATA.reconcile.invariants.map(i=>`<tr><td>${esc(i.name)}</td><td class="text-center">${i.pass?'<span class="ok">✓</span>':'<span class="cr">✗</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderUsers(){
+  return `
+  <div class="card">
+    <div class="qlabel">Look up a user</div>
+    <div class="field" style="margin-top:12px"><label>Firebase UID</label><input id="lookup-uid" placeholder="paste a UID"/></div>
+    <button class="btn-primary" id="lookup-go">Look up</button>
+    <div id="lookup-result"></div>
+  </div>
+  <div class="note">A browsable user list is coming next; for now this is the support/action tool — paste a UID to see everything about a user and act on them.</div>`;
+}
+
+// ---------- actions / wiring ----------
+function wire(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>openAction(b.dataset.act));
+  const go=$('lookup-go'); if(go) go.onclick=doLookup;
+}
+
+function openModal(title, bodyHtml){ $('modal-title').textContent=title; $('modal-body').innerHTML=bodyHtml; $('modal').hidden=false; }
+function closeModal(){ $('modal').hidden=true; }
+
+function openAction(act){
+  if(act==='findUser'){ TAB='users'; render(); return; }
+  const forms={
+    extendTrial:{title:'Comp / extend reverse trial', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Days</label><input id="a-days" type="number" value="30"></div>`, run:async()=>{const r=await call('adminExtendReverseTrial')({uid:$('a-uid').value.trim(),days:+$('a-days').value}); return 'Extended to '+r.data.expiresAt;}},
+    forceRefresh:{title:'Force AI deep-context refresh', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div>`, run:async()=>{await call('adminForceRefresh')({uid:$('a-uid').value.trim()}); return 'Refresh complete.';}},
+    sendPush:{title:'Send a push to one user', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Title</label><input id="a-title"></div><div class="field"><label>Body</label><textarea id="a-body"></textarea></div>`, run:async()=>{await call('adminSendUserPush')({uid:$('a-uid').value.trim(),title:$('a-title').value,body:$('a-body').value}); return 'Push sent.';}},
+    flag:{title:'Set a feature flag', fields:`<div class="field"><label>Key</label><input id="a-key" value="reverseTrialEnabled"></div><div class="field"><label>Value</label><select id="a-val"><option value="true">true</option><option value="false">false</option></select></div>`, run:async()=>{const r=await call('adminSetFeatureFlag')({key:$('a-key').value.trim(),value:$('a-val').value==='true'}); return 'Set '+r.data.key+' = '+r.data.value;}},
   };
-
-  // Subscription Chart
-  const subCtx = document.getElementById('subscriptionChart').getContext('2d');
-  if (subscriptionChart) subscriptionChart.destroy();
-
-  subscriptionChart = new Chart(subCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Free', 'Pro'],
-      datasets: [{
-        data: [stats.freeUsers || 0, stats.proSubscribers || 0],
-        backgroundColor: [chartColors.gray, chartColors.teal],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '70%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#94a3b8', padding: 12, font: { family: 'Inter', size: 11 } }
-        }
-      }
-    }
-  });
-
-  // AI Usage Chart
-  const aiCtx = document.getElementById('aiUsageChart').getContext('2d');
-  if (aiUsageChart) aiUsageChart.destroy();
-
-  aiUsageChart = new Chart(aiCtx, {
-    type: 'bar',
-    data: {
-      labels: ['Meals', 'Text', 'Coach'],
-      datasets: [{
-        data: [stats.mealScansWeek || 0, stats.textFoodWeek || 0, stats.coachInsightsWeek || 0],
-        backgroundColor: [chartColors.orange, chartColors.cyan, chartColors.purple],
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter' } } },
-        y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#64748b', font: { family: 'Inter' } }, beginAtZero: true }
-      }
-    }
-  });
-
-  // Comparison Chart
-  const compCtx = document.getElementById('aiComparisonChart').getContext('2d');
-  if (aiComparisonChart) aiComparisonChart.destroy();
-
-  const avgMeals = Math.round((stats.mealScansWeek || 0) / 7);
-  const avgText = Math.round((stats.textFoodWeek || 0) / 7);
-  const avgCoach = Math.round((stats.coachInsightsWeek || 0) / 7);
-
-  aiComparisonChart = new Chart(compCtx, {
-    type: 'bar',
-    data: {
-      labels: ['Meals', 'Text', 'Coach'],
-      datasets: [
-        {
-          label: 'Today',
-          data: [stats.mealScansToday || 0, stats.textFoodToday || 0, stats.coachInsightsToday || 0],
-          backgroundColor: chartColors.teal,
-          borderRadius: 4
-        },
-        {
-          label: 'Daily Avg',
-          data: [avgMeals, avgText, avgCoach],
-          backgroundColor: chartColors.tealDark,
-          borderRadius: 4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: { color: '#94a3b8', padding: 12, font: { family: 'Inter', size: 11 } }
-        }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter' } } },
-        y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#64748b', font: { family: 'Inter' } }, beginAtZero: true }
-      }
-    }
-  });
+  const f=forms[act]; if(!f) return;
+  openModal(f.title, f.fields+`<button class="btn-primary" id="a-run" style="margin-top:6px">Run</button><div class="result" id="a-result"></div>`);
+  $('a-run').onclick=async()=>{ const btn=$('a-run'); btn.disabled=true; btn.textContent='Running…'; try{ const msg=await f.run(); $('a-result').innerHTML='<span class="ok">'+esc(msg)+'</span>'; toast(msg); load(); }catch(e){ $('a-result').innerHTML='<span class="cr">'+esc(e.message)+'</span>'; } finally{ btn.disabled=false; btn.textContent='Run'; } };
 }
 
-// Update billing section
-function updateBilling() {
-  if (!stats) return;
-
-  const mealScans = stats.mealScansWeek || 0;
-  const textAnalysis = stats.textFoodWeek || 0;
-  const coachInsights = stats.coachInsightsWeek || 0;
-
-  const mealCost = mealScans * AI_COSTS.meal_scan;
-  const textCost = textAnalysis * AI_COSTS.text_analysis;
-  const coachCost = coachInsights * AI_COSTS.coach_insight;
-  const totalCost = mealCost + textCost + coachCost;
-
-  // Calculate active users
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const activeUsers = allUsers.filter(u => u.lastActive && new Date(u.lastActive) > weekAgo).length;
-  const costPerUser = activeUsers > 0 ? totalCost / activeUsers : 0;
-
-  // Project monthly (weekly * 4.33)
-  const monthlyProjected = totalCost * 4.33;
-
-  // Update summary cards
-  document.getElementById('billing-total').textContent = `$${totalCost.toFixed(4)}`;
-  document.getElementById('billing-per-user').textContent = `$${costPerUser.toFixed(4)}`;
-  document.getElementById('billing-monthly').textContent = `$${monthlyProjected.toFixed(2)}`;
-
-  // Update breakdown
-  document.getElementById('billing-meal-requests').textContent = `${mealScans} requests`;
-  document.getElementById('billing-meal-cost').textContent = `$${mealCost.toFixed(4)}`;
-
-  document.getElementById('billing-text-requests').textContent = `${textAnalysis} requests`;
-  document.getElementById('billing-text-cost').textContent = `$${textCost.toFixed(4)}`;
-
-  document.getElementById('billing-coach-requests').textContent = `${coachInsights} requests`;
-  document.getElementById('billing-coach-cost').textContent = `$${coachCost.toFixed(4)}`;
+async function doLookup(){
+  const uid=$('lookup-uid').value.trim(); if(!uid) return;
+  const res=$('lookup-result'); res.innerHTML='<div class="qsub">Looking up…</div>';
+  try{
+    const r=(await call('adminLookupUser')({uid})).data;
+    const a=r.auth;
+    res.innerHTML = `<div style="margin-top:18px">
+      <div class="kpis">
+        <div class="kpi"><div class="l">Email</div><div style="font-size:14px">${esc(a?a.email||'—':'no auth (orphan)')}</div></div>
+        <div class="kpi"><div class="l">Name</div><div style="font-size:14px">${esc(a?a.displayName||'—':'—')}</div></div>
+        <div class="kpi"><div class="l">Providers</div><div style="font-size:14px">${esc(a?(a.providers.join(',')||'anon'):'—')}</div></div>
+        <div class="kpi"><div class="l">Created</div><div style="font-size:14px">${a&&a.createdAt?ago(a.createdAt):'—'}</div></div>
+      </div>
+      <div class="section-t">Documents</div>
+      <table><tbody>${Object.entries(r.docs).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="text-center">${v?(Array.isArray(v)?v.length+' record(s)':'<span class="ok">present</span>'):'<span class="d">—</span>'}</td></tr>`).join('')}</tbody></table>
+      <div class="qa" style="margin-top:16px">
+        <button class="btn" onclick="quickAct('extendTrial','${esc(uid)}')"><span class="i">＋</span> Extend trial</button>
+        <button class="btn" onclick="quickAct('forceRefresh','${esc(uid)}')"><span class="i">↻</span> Force refresh</button>
+        <button class="btn" onclick="quickAct('sendPush','${esc(uid)}')"><span class="i">✉</span> Send push</button>
+      </div></div>`;
+  }catch(e){ res.innerHTML='<div class="cr">'+esc(e.message)+'</div>'; }
 }
-
-// Format date
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-// Format time
-function formatTime(dateStr) {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMins = Math.floor((now - date) / (1000 * 60));
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-  return formatDate(dateStr);
-}
-
-// Render users table
-function renderUsersTable() {
-  const tbody = document.getElementById('users-table-body');
-
-  // Filter and search
-  let filtered = allUsers.filter(u => {
-    if (userFilter === 'pro' && !u.isPro) return false;
-    if (userFilter === 'free' && u.isPro) return false;
-    if (userSearch) {
-      const search = userSearch.toLowerCase();
-      const name = (u.displayName || '').toLowerCase();
-      const email = (u.email || '').toLowerCase();
-      if (!name.includes(search) && !email.includes(search)) return false;
-    }
-    return true;
-  });
-
-  // Sort
-  filtered.sort((a, b) => {
-    let valA, valB;
-
-    switch (userSortField) {
-      case 'name':
-        valA = (a.displayName || a.email || '').toLowerCase();
-        valB = (b.displayName || b.email || '').toLowerCase();
-        break;
-      case 'status':
-        valA = a.isPro ? 1 : 0;
-        valB = b.isPro ? 1 : 0;
-        break;
-      case 'notifications':
-        valA = a.notificationsEnabled ? 1 : 0;
-        valB = b.notificationsEnabled ? 1 : 0;
-        break;
-      case 'meals':
-        valA = a.mealScans || 0;
-        valB = b.mealScans || 0;
-        break;
-      case 'text':
-        valA = a.textAnalysis || 0;
-        valB = b.textAnalysis || 0;
-        break;
-      case 'coach':
-        valA = a.coachInsights || 0;
-        valB = b.coachInsights || 0;
-        break;
-      case 'signedUp':
-        valA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        valB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        break;
-      case 'lastActive':
-      default:
-        valA = a.lastActive ? new Date(a.lastActive).getTime() : 0;
-        valB = b.lastActive ? new Date(b.lastActive).getTime() : 0;
-        break;
-    }
-
-    if (valA < valB) return userSortDir === 'asc' ? -1 : 1;
-    if (valA > valB) return userSortDir === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  // Update sort indicators
-  document.querySelectorAll('#users-table th.sortable').forEach(th => {
-    th.classList.remove('asc', 'desc');
-    if (th.dataset.sort === userSortField) {
-      th.classList.add(userSortDir);
-    }
-  });
-
-  // Pagination
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
-  const start = (usersPage - 1) * ITEMS_PER_PAGE;
-  const pageUsers = filtered.slice(start, start + ITEMS_PER_PAGE);
-
-  // Update info
-  document.getElementById('users-showing').textContent = pageUsers.length;
-  document.getElementById('users-total').textContent = total;
-
-  // Render table
-  if (pageUsers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="loading-cell">No users found</td></tr>';
-  } else {
-    tbody.innerHTML = pageUsers.map(user => `
-      <tr class="clickable" data-user-id="${user.id}">
-        <td>
-          <div class="user-cell">
-            <span class="user-name">${esc(user.displayName) || '-'}</span>
-            <span class="user-email">${esc(user.email) || '-'}</span>
-          </div>
-        </td>
-        <td><span class="badge ${user.isPro ? 'badge-pro' : 'badge-free'}">${user.isPro ? 'Pro' : 'Free'}</span></td>
-        <td><span class="badge ${user.notificationsEnabled ? 'badge-on' : 'badge-off'}">${user.notificationsEnabled ? 'On' : 'Off'}</span></td>
-        <td class="text-center usage-cell ${user.mealScans > 0 ? 'has-usage' : ''}">${user.mealScans || 0}</td>
-        <td class="text-center usage-cell ${user.textAnalysis > 0 ? 'has-usage' : ''}">${user.textAnalysis || 0}</td>
-        <td class="text-center usage-cell ${user.coachInsights > 0 ? 'has-usage' : ''}">${user.coachInsights || 0}</td>
-        <td class="date-cell">${formatDate(user.createdAt)}</td>
-        <td class="date-cell">${formatDate(user.lastActive)}</td>
-      </tr>
-    `).join('');
-
-    // Add click handlers for rows
-    tbody.querySelectorAll('tr.clickable').forEach(row => {
-      row.addEventListener('click', () => showUserModal(row.dataset.userId));
-    });
-  }
-
-  // Render pagination
-  renderPagination('users-pagination', usersPage, totalPages, (page) => {
-    usersPage = page;
-    renderUsersTable();
-  });
-}
-
-// Render activity table
-function renderActivityTable() {
-  const tbody = document.getElementById('activity-table-body');
-
-  // Filter by type
-  let filtered = allActivity;
-  if (activityFilter !== 'all-activity') {
-    filtered = filtered.filter(a => a.type === activityFilter);
-  }
-
-  // Filter by search
-  if (activitySearch) {
-    const search = activitySearch.toLowerCase();
-    filtered = filtered.filter(a => {
-      const userName = (a.userName || '').toLowerCase();
-      const userEmail = (a.userEmail || '').toLowerCase();
-      const description = (a.description || '').toLowerCase();
-      const insightType = (a.insightType || '').toLowerCase();
-      return userName.includes(search) || userEmail.includes(search) ||
-             description.includes(search) || insightType.includes(search);
-    });
-  }
-
-  // Pagination
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
-  const start = (activityPage - 1) * ITEMS_PER_PAGE;
-  const pageActivity = filtered.slice(start, start + ITEMS_PER_PAGE);
-
-  // Update info
-  document.getElementById('activity-showing').textContent = pageActivity.length;
-  document.getElementById('activity-total').textContent = total;
-
-  // Render table
-  if (pageActivity.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No activity found</td></tr>';
-  } else {
-    tbody.innerHTML = pageActivity.map(activity => {
-      const typeInfo = getActivityTypeInfo(activity.type);
-      const details = getActivityDetails(activity);
-      const userName = activity.userName || activity.userEmail || 'Unknown';
-
-      return `
-        <tr>
-          <td class="date-cell">${formatTime(activity.timestamp)}</td>
-          <td class="user-name">${esc(userName)}</td>
-          <td><span class="badge ${typeInfo.badgeClass}">${typeInfo.label}</span></td>
-          <td class="activity-details" title="${esc(details)}">${esc(details)}</td>
-          <td><span class="badge ${activity.success ? 'badge-success' : 'badge-failed'}">${activity.success ? 'Success' : 'Failed'}</span></td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  // Render pagination
-  renderPagination('activity-pagination', activityPage, totalPages, (page) => {
-    activityPage = page;
-    renderActivityTable();
-  });
-}
-
-// Get activity type info
-function getActivityTypeInfo(type) {
-  switch (type) {
-    case 'meal_scan': return { label: 'Meal Scan', badgeClass: 'badge-meal' };
-    case 'text_analysis': return { label: 'Text', badgeClass: 'badge-text' };
-    case 'coach_insight': return { label: 'Coach', badgeClass: 'badge-coach' };
-    default: return { label: type, badgeClass: '' };
-  }
-}
-
-// Get activity details
-function getActivityDetails(activity) {
-  if (activity.type === 'meal_scan') {
-    return `${activity.foodsDetected || 0} foods • ${activity.confidence || '-'}`;
-  } else if (activity.type === 'text_analysis') {
-    return activity.description || `${activity.foodsDetected || 0} foods`;
-  } else if (activity.type === 'coach_insight') {
-    return `${activity.insightType || 'insight'}${activity.coachingStyle ? ' • ' + activity.coachingStyle : ''}`;
-  }
-  return '-';
-}
-
-// Render pagination
-function renderPagination(containerId, currentPage, totalPages, onPageChange) {
-  const container = document.getElementById(containerId);
-
-  if (totalPages <= 1) {
-    container.innerHTML = '';
-    return;
-  }
-
-  let html = '';
-
-  // Previous
-  html += `<button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">Prev</button>`;
-
-  // Page numbers
-  const maxVisible = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-  if (endPage - startPage < maxVisible - 1) {
-    startPage = Math.max(1, endPage - maxVisible + 1);
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-  }
-
-  // Next
-  html += `<button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Next</button>`;
-
-  container.innerHTML = html;
-
-  // Add click handlers
-  container.querySelectorAll('.page-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const page = parseInt(btn.dataset.page);
-      if (page >= 1 && page <= totalPages) {
-        onPageChange(page);
-      }
-    });
-  });
-}
-
-// Render notification logs table
-function renderNotificationTable() {
-  const tbody = document.getElementById('notif-table-body');
-  if (!tbody) return;
-
-  // Filter by type
-  let filtered = allNotificationLogs;
-  if (notifFilter === 'daily') {
-    filtered = filtered.filter(n => n.type === 'daily');
-  } else if (notifFilter === 'weekly') {
-    filtered = filtered.filter(n => n.type === 'weekly');
-  } else if (notifFilter === 'failed') {
-    filtered = filtered.filter(n => n.status === 'failed');
-  }
-
-  // Filter by search
-  if (notifSearch) {
-    const search = notifSearch.toLowerCase();
-    filtered = filtered.filter(n => {
-      const userName = (n.userName || '').toLowerCase();
-      const userEmail = (n.userEmail || '').toLowerCase();
-      return userName.includes(search) || userEmail.includes(search);
-    });
-  }
-
-  // Pagination
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
-  const start = (notifPage - 1) * ITEMS_PER_PAGE;
-  const pageNotifs = filtered.slice(start, start + ITEMS_PER_PAGE);
-
-  // Update info
-  document.getElementById('notif-showing').textContent = pageNotifs.length;
-  document.getElementById('notif-total').textContent = total;
-
-  // Render table
-  if (pageNotifs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No notifications found</td></tr>';
-  } else {
-    tbody.innerHTML = pageNotifs.map(notif => {
-      const userName = notif.userName || notif.userEmail || 'Unknown';
-      return `
-        <tr>
-          <td class="user-name">${esc(userName)}</td>
-          <td><span class="type-badge ${notif.type}">${notif.type}</span></td>
-          <td><span class="status-badge ${notif.status}">${notif.status}</span></td>
-          <td class="date-cell">${formatTime(notif.timestamp)}</td>
-          <td class="message-cell" title="${esc(notif.error || notif.message || '-')}">${esc(notif.error || notif.message || '-')}</td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  // Render pagination
-  renderPagination('notif-pagination', notifPage, totalPages, (page) => {
-    notifPage = page;
-    renderNotificationTable();
-  });
-}
-
-// Render error logs table
-function renderErrorTable() {
-  const tbody = document.getElementById('error-table-body');
-  const noErrorsMessage = document.getElementById('no-errors-message');
-  const errorTable = document.getElementById('error-table');
-  if (!tbody) return;
-
-  // Filter by type
-  let filtered = allErrorLogs;
-  if (errorFilter !== 'all') {
-    filtered = filtered.filter(e => e.type === errorFilter);
-  }
-
-  // Filter by search
-  if (errorSearch) {
-    const search = errorSearch.toLowerCase();
-    filtered = filtered.filter(e => {
-      const userName = (e.userName || '').toLowerCase();
-      const userEmail = (e.userEmail || '').toLowerCase();
-      const error = (e.error || '').toLowerCase();
-      return userName.includes(search) || userEmail.includes(search) || error.includes(search);
-    });
-  }
-
-  // Show/hide no errors message
-  if (allErrorLogs.length === 0) {
-    if (noErrorsMessage) noErrorsMessage.style.display = 'flex';
-    if (errorTable) errorTable.parentElement.style.display = 'none';
-    return;
-  } else {
-    if (noErrorsMessage) noErrorsMessage.style.display = 'none';
-    if (errorTable) errorTable.parentElement.style.display = 'block';
-  }
-
-  // Pagination
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
-  const start = (errorPage - 1) * ITEMS_PER_PAGE;
-  const pageErrors = filtered.slice(start, start + ITEMS_PER_PAGE);
-
-  // Update info
-  document.getElementById('error-showing').textContent = pageErrors.length;
-  document.getElementById('error-total').textContent = total;
-
-  // Render table
-  if (pageErrors.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="loading-cell">No errors found</td></tr>';
-  } else {
-    tbody.innerHTML = pageErrors.map(err => {
-      const userName = err.userName || err.userEmail || 'Unknown';
-      const typeLabel = err.type.replace('_', ' ');
-      return `
-        <tr>
-          <td class="user-name">${esc(userName)}</td>
-          <td><span class="type-badge ${err.type}">${typeLabel}</span></td>
-          <td class="date-cell">${formatTime(err.timestamp)}</td>
-          <td class="error-cell" title="${esc(err.error)}">${esc(err.error)}</td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  // Render pagination
-  renderPagination('error-pagination', errorPage, totalPages, (page) => {
-    errorPage = page;
-    renderErrorTable();
-  });
-}
-
-// Render Daily Review logs table
-function renderReviewTable() {
-  const tbody = document.getElementById('review-table-body');
-  if (!tbody) return;
-
-  // Filter by status
-  let filtered = allDailyReviewLogs;
-  if (reviewFilter === 'success') {
-    filtered = filtered.filter(r => r.success === true);
-  } else if (reviewFilter === 'failed') {
-    filtered = filtered.filter(r => r.success === false);
-  }
-
-  // Filter by search
-  if (reviewSearch) {
-    const search = reviewSearch.toLowerCase();
-    filtered = filtered.filter(r => {
-      const userName = (r.userName || '').toLowerCase();
-      const userEmail = (r.userEmail || '').toLowerCase();
-      return userName.includes(search) || userEmail.includes(search);
-    });
-  }
-
-  // Pagination
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
-  const start = (reviewPage - 1) * ITEMS_PER_PAGE;
-  const pageReviews = filtered.slice(start, start + ITEMS_PER_PAGE);
-
-  // Update info
-  document.getElementById('review-showing').textContent = pageReviews.length;
-  document.getElementById('review-total').textContent = total;
-
-  // Helper to get grade class
-  function getGradeClass(grade) {
-    if (!grade) return '';
-    const letter = grade.charAt(0).toUpperCase();
-    if (letter === 'A') return 'grade-a';
-    if (letter === 'B') return 'grade-b';
-    if (letter === 'C') return 'grade-c';
-    if (letter === 'D') return 'grade-d';
-    if (letter === 'F') return 'grade-f';
-    return '';
-  }
-
-  // Render table
-  if (pageReviews.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">No daily reviews found</td></tr>';
-  } else {
-    tbody.innerHTML = pageReviews.map(review => {
-      const userName = review.userName || review.userEmail || 'Unknown';
-      const gradeClass = getGradeClass(review.grade);
-      return `
-        <tr>
-          <td class="user-name">${esc(userName)}</td>
-          <td><span class="status-badge ${review.success ? 'sent' : 'failed'}">${review.success ? 'Success' : 'Failed'}</span></td>
-          <td>${review.grade ? `<span class="grade-badge ${gradeClass}">${esc(review.grade)}</span>` : '-'}</td>
-          <td class="date-cell">${formatTime(review.timestamp)}</td>
-          <td class="error-cell" title="${esc(review.error || '-')}">${esc(review.error || '-')}</td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  // Render pagination
-  renderPagination('review-pagination', reviewPage, totalPages, (page) => {
-    reviewPage = page;
-    renderReviewTable();
-  });
-}
-
-// Switch section
-function switchSection(section) {
-  currentSection = section;
-
-  // Update nav
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.section === section);
-  });
-
-  // Update content
-  document.querySelectorAll('.content-section').forEach(s => {
-    s.style.display = 'none';
-  });
-  document.getElementById(`section-${section}`).style.display = 'block';
-
-  // Update header
-  const titles = {
-    overview: { title: 'Overview', subtitle: 'Key metrics and insights' },
-    users: { title: 'Users', subtitle: 'Manage and view user data' },
-    activity: { title: 'AI Activity', subtitle: 'Monitor AI usage and performance' },
-    billing: { title: 'Billing', subtitle: 'Cost estimates and usage breakdown' },
-    logs: { title: 'Logs', subtitle: 'Notifications and error tracking' }
-  };
-
-  document.getElementById('page-title').textContent = titles[section].title;
-  document.getElementById('page-subtitle').textContent = titles[section].subtitle;
-}
-
-// --- AI usage panel (real telemetry from aiCostTotals) ---
-function renderAIUsage() {
-  const ai = stats && stats.aiUsage;
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  if (!ai) return;
-  set('ai-total-cost', `$${(ai.totalCostUsd || 0).toFixed(4)}`);
-  set('ai-total-calls', (ai.totalCalls || 0).toLocaleString());
-  set('ai-users', `${ai.usersWithUsage || 0} users`);
-  set('ai-active', `${ai.activeUsers24h || 0} / ${ai.activeUsers7d || 0}`);
-  set('ai-tokens', ((ai.totalPromptTokens || 0) + (ai.totalOutputTokens || 0)).toLocaleString());
-
-  const tbody = document.getElementById('ai-surface-body');
-  if (!tbody) return;
-  const rows = ai.bySurface || [];
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="loading-cell">No AI usage recorded</td></tr>';
-    return;
-  }
-  const maxCalls = Math.max(...rows.map((r) => r.calls || 0), 1);
-  tbody.innerHTML = rows.map((r) => {
-    const pct = Math.round(((r.calls || 0) / maxCalls) * 100);
-    return `
-      <tr>
-        <td>${esc(r.surface)}</td>
-        <td class="text-center">${(r.calls || 0).toLocaleString()}</td>
-        <td class="text-center">$${(r.costUsd || 0).toFixed(4)}</td>
-        <td><div style="background:#2a2a2e;border-radius:4px;height:8px;overflow:hidden;min-width:60px"><div style="background:#4a9eff;height:100%;width:${pct}%"></div></div></td>
-      </tr>`;
-  }).join('');
-}
-
-// --- Reverse-trial panel ---
-function renderReverseTrial() {
-  const rt = stats && stats.reverseTrial;
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  if (!rt) return;
-  const badge = document.getElementById('rt-status');
-  if (badge) {
-    badge.textContent = rt.enabled ? 'Enabled' : 'Disabled';
-    badge.className = 'badge ' + (rt.enabled ? 'badge-on' : 'badge-off');
-  }
-  set('rt-hour', rt.grantsLastHour || 0);
-  set('rt-day', rt.grantsLast24h || 0);
-  set('rt-week', rt.grantsLast7d || 0);
-  set('rt-cumulative', rt.cumulativeRealGrants || 0);
-}
-
-// Auth state listener
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    if (isAdmin(user)) {
-      document.getElementById('admin-email').textContent = user.email;
-      showScreen('dashboard');
-      loadDashboardData();
-    } else {
-      showScreen('denied');
-    }
-  } else {
-    showScreen('login');
-  }
-});
-
-// Event listeners
-document.getElementById('google-signin').addEventListener('click', async () => {
-  try {
-    document.getElementById('login-error').textContent = '';
-    const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(provider);
-  } catch (error) {
-    document.getElementById('login-error').textContent = error.message;
-  }
-});
-
-document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
-document.getElementById('logout-btn-denied').addEventListener('click', () => auth.signOut());
-document.getElementById('refresh-btn').addEventListener('click', loadDashboardData);
-
-// Navigation
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', (e) => {
-    e.preventDefault();
-    switchSection(item.dataset.section);
-  });
-});
-
-// User filters
-document.querySelectorAll('[data-filter="all"], [data-filter="pro"], [data-filter="free"]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    userFilter = btn.dataset.filter;
-    usersPage = 1;
-    renderUsersTable();
-  });
-});
-
-// Activity filters
-document.querySelectorAll('[data-filter="all-activity"], [data-filter="meal_scan"], [data-filter="text_analysis"], [data-filter="coach_insight"]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activityFilter = btn.dataset.filter;
-    activityPage = 1;
-    renderActivityTable();
-  });
-});
-
-// Search
-document.getElementById('user-search').addEventListener('input', (e) => {
-  userSearch = e.target.value;
-  usersPage = 1;
-  renderUsersTable();
-});
-
-// Column sorting
-document.querySelectorAll('#users-table th.sortable').forEach(th => {
-  th.addEventListener('click', () => {
-    const field = th.dataset.sort;
-    if (userSortField === field) {
-      userSortDir = userSortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      userSortField = field;
-      userSortDir = 'desc';
-    }
-    usersPage = 1;
-    renderUsersTable();
-  });
-});
-
-// Activity search
-document.getElementById('activity-search').addEventListener('input', (e) => {
-  activitySearch = e.target.value;
-  activityPage = 1;
-  renderActivityTable();
-});
-
-// Notification filters
-document.querySelectorAll('[data-notif-filter]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    notifFilter = btn.dataset.notifFilter;
-    notifPage = 1;
-    renderNotificationTable();
-  });
-});
-
-// Notification search
-const notifSearchEl = document.getElementById('notif-search');
-if (notifSearchEl) {
-  notifSearchEl.addEventListener('input', (e) => {
-    notifSearch = e.target.value;
-    notifPage = 1;
-    renderNotificationTable();
-  });
-}
-
-// Error filters
-document.querySelectorAll('[data-error-filter]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    errorFilter = btn.dataset.errorFilter;
-    errorPage = 1;
-    renderErrorTable();
-  });
-});
-
-// Error search
-const errorSearchEl = document.getElementById('error-search');
-if (errorSearchEl) {
-  errorSearchEl.addEventListener('input', (e) => {
-    errorSearch = e.target.value;
-    errorPage = 1;
-    renderErrorTable();
-  });
-}
-
-// Time range selector
-document.querySelectorAll('.time-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedTimeRange = parseInt(btn.dataset.range);
-    updateHeatmap();
-    // Could also reload data with new range here if backend supports it
-  });
-});
-
-// Daily Review filters
-document.querySelectorAll('[data-review-filter]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    reviewFilter = btn.dataset.reviewFilter;
-    reviewPage = 1;
-    renderReviewTable();
-  });
-});
-
-// Daily Review search
-const reviewSearchEl = document.getElementById('review-search');
-if (reviewSearchEl) {
-  reviewSearchEl.addEventListener('input', (e) => {
-    reviewSearch = e.target.value;
-    reviewPage = 1;
-    renderReviewTable();
-  });
-}
-
-// Modal close handlers
-document.getElementById('modal-close').addEventListener('click', closeUserModal);
-document.querySelector('.modal-backdrop').addEventListener('click', closeUserModal);
-
-// Close modal with Escape key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeUserModal();
-});
-
-// Mobile menu toggle
-const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-const sidebar = document.getElementById('sidebar');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-function openMobileMenu() {
-  sidebar.classList.add('open');
-  sidebarOverlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeMobileMenu() {
-  sidebar.classList.remove('open');
-  sidebarOverlay.classList.remove('active');
-  document.body.style.overflow = '';
-}
-
-mobileMenuBtn.addEventListener('click', openMobileMenu);
-sidebarOverlay.addEventListener('click', closeMobileMenu);
-
-// Close mobile menu when nav item is clicked
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', closeMobileMenu);
+window.quickAct=(act,uid)=>{ openAction(act); const el=$('a-uid'); if(el) el.value=uid; };
+
+// ---------- boot ----------
+$('signin-btn').onclick=async()=>{ $('signin-error').textContent=''; try{ await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }catch(e){ $('signin-error').textContent=e.message; } };
+$('signout').onclick=()=>auth.signOut();
+$('refresh').onclick=load;
+$('modal-close').onclick=closeModal;
+$('modal').onclick=(e)=>{ if(e.target===$('modal')) closeModal(); };
+document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{ TAB=b.dataset.tab; render(); });
+
+auth.onAuthStateChanged((user)=>{
+  if(user && user.uid===ADMIN_UID){ $('signin').hidden=true; $('shell').hidden=false; load(); }
+  else if(user){ $('signin-error').textContent='This account is not an admin.'; auth.signOut(); }
+  else { $('signin').hidden=false; $('shell').hidden=true; }
 });
