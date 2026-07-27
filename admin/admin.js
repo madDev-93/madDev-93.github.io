@@ -2,12 +2,12 @@
 
 // Firebase Config
 const firebaseConfig = {
-  apiKey: "AIzaSyArp2sE2b3x8QlG1ZwIcIsarMKKy105Mh4",
+  apiKey: "AIzaSyCG01Gi5u4IA5nvbLYaQjbX5bO3zy2pJ1E",
   authDomain: "qwota-ai-coach.firebaseapp.com",
   projectId: "qwota-ai-coach",
   storageBucket: "qwota-ai-coach.firebasestorage.app",
   messagingSenderId: "7410395296",
-  appId: "1:7410395296:ios:c1f8226448e674a06081c5"
+  appId: "1:7410395296:web:d48e66a6005fbff16081c5"
 };
 
 const ADMIN_UID = "DEPKKHJMilcoJmSnKxb3UxFc5Is2";
