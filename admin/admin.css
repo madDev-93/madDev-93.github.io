@@ -64,7 +64,8 @@ button{font:inherit;cursor:pointer}
 
 /* bars (surfaces) */
 .bars{display:flex;flex-direction:column;gap:9px;margin-top:6px}
-.brow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;font-size:12.5px}
+.brow{display:grid;grid-template-columns:minmax(96px,140px) 1fr auto;gap:10px;align-items:center;font-size:12.5px}
+.brow>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .track{height:8px;background:#0e1219;border-radius:5px;overflow:hidden}
 .fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--teal-dim));border-radius:5px}
 .brow .v{color:var(--mut);font-size:12px;white-space:nowrap}
