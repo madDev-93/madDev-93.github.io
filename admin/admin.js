@@ -17,6 +17,9 @@ const call = (name) => fns.httpsCallable(name);
 function esc(v){ if(v==null) return ''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 let DATA = null, TAB = 'cockpit';
+let INCLUDE_INTERNAL = false;   // exclude internal/test accounts by default
+let USERS = null;               // cached adminUsers list
+let USER_VIEW = { uid: null, q: '', type: 'all' };
 const $ = (id) => document.getElementById(id);
 
 // ---------- helpers ----------
@@ -27,8 +30,9 @@ function money(n){ return '$'+(Number(n)||0).toLocaleString(undefined,{minimumFr
 // ---------- data ----------
 async function load(){
   $('main').innerHTML = '<div class="loading">Loading console…</div>';
+  USERS = null; // internal-toggle may have changed; refetch on demand
   try{
-    const res = await call('adminConsole')();
+    const res = await call('adminConsole')({ includeInternal: INCLUDE_INTERNAL });
     DATA = res.data;
     $('updated').textContent = 'updated just now';
     const ok = DATA.reconcile.ok;
@@ -42,11 +46,10 @@ async function load(){
 function render(){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===TAB));
   const m = $('main');
-  if(TAB==='cockpit') m.innerHTML = renderCockpit();
-  else if(TAB==='money') m.innerHTML = renderMoney();
-  else if(TAB==='users') m.innerHTML = renderUsers();
-  else if(TAB==='health') m.innerHTML = renderHealth();
-  wire();
+  if(TAB==='cockpit'){ m.innerHTML = renderCockpit(); wire(); }
+  else if(TAB==='money'){ m.innerHTML = renderMoney(); wire(); }
+  else if(TAB==='health'){ m.innerHTML = renderHealth(); wire(); }
+  else if(TAB==='users'){ renderUsersTab(); }
 }
 
 function renderCockpit(){
@@ -58,7 +61,7 @@ function renderCockpit(){
     <div class="card">
       <div class="qlabel"><span class="tick" style="background:var(--info)"></span> Users</div>
       <div class="big">${u.registered}<span style="font-size:15px;color:var(--mut);font-weight:600"> registered</span></div>
-      <div class="qsub">${u.guests} guests · ${u.appUsers} app users <span class="d">(${u.authTotal} auth)</span></div>
+      <div class="qsub">${u.guests} guests · ${u.appUsers} app users${u.internalExcluded?` · <span class="d">${u.internalExcluded} internal hidden</span>`:''}</div>
     </div>
     <div class="card">
       <div class="qlabel"><span class="tick" style="background:var(--teal)"></span> North Star · activation</div>
@@ -151,21 +154,102 @@ function renderHealth(){
   <div class="card"><table><tbody>${DATA.reconcile.invariants.map(i=>`<tr><td>${esc(i.name)}</td><td class="text-center">${i.pass?'<span class="ok">✓</span>':'<span class="cr">✗</span>'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
-function renderUsers(){
-  return `
-  <div class="card">
-    <div class="qlabel">Look up a user</div>
-    <div class="field" style="margin-top:12px"><label>Firebase UID</label><input id="lookup-uid" placeholder="paste a UID"/></div>
-    <button class="btn-primary" id="lookup-go">Look up</button>
-    <div id="lookup-result"></div>
+async function renderUsersTab(){
+  const m = $('main');
+  if(USER_VIEW.uid){ return renderUserDetail(USER_VIEW.uid); }
+  if(!USERS){
+    m.innerHTML = '<div class="loading">Loading users…</div>';
+    try{ USERS = (await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data.users; }
+    catch(e){ m.innerHTML = '<div class="loading cr">'+esc(e.message)+'</div>'; return; }
+  }
+  m.innerHTML = renderUserList();
+  wireUsers();
+}
+
+function renderUserList(){
+  const q = USER_VIEW.q.toLowerCase(), tf = USER_VIEW.type;
+  const rows = USERS.filter(u=>{
+    if(tf==='registered' && u.type!=='registered') return false;
+    if(tf==='guest' && u.type!=='guest') return false;
+    if(tf==='paid' && u.access!=='paid') return false;
+    if(tf==='flagged' && !u.flags.length) return false;
+    if(q){ if(!(((u.email||'')+' '+(u.name||'')+' '+u.uid).toLowerCase().includes(q))) return false; }
+    return true;
+  });
+  return `<div class="utoolbar">
+    <input id="u-search" placeholder="Search name / email / UID" value="${esc(USER_VIEW.q)}">
+    <select id="u-type">
+      <option value="all">All types</option><option value="registered">Registered</option><option value="guest">Guests</option><option value="paid">Paying</option><option value="flagged">Flagged</option>
+    </select>
+    <span class="qsub">${rows.length} shown${INCLUDE_INTERNAL?'':' · internal hidden'}</span>
   </div>
-  <div class="note">A browsable user list is coming next; for now this is the support/action tool — paste a UID to see everything about a user and act on them.</div>`;
+  <div class="card" style="padding:0;overflow-x:auto"><table class="utable"><thead><tr>
+    <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">AI</th><th>Joined</th><th>Last active</th><th>Signals</th>
+  </tr></thead><tbody>
+    ${rows.map(u=>`<tr class="clickable ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
+      <td><div class="uname">${esc(u.name||'—')}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
+      <td>${esc(u.type)}${u.internal?' <span class="chip-s internal">internal</span>':''}</td>
+      <td><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>${u.paidProduct?'<div class="uemail mono">'+esc(u.paidProduct.replace('com.qwota.pro.',''))+'</div>':''}</td>
+      <td class="text-center ${u.workouts>0?'':'d'}">${u.workouts}</td>
+      <td class="text-center">${u.aiCalls}</td>
+      <td>${u.createdAt?ago(u.createdAt):'—'}</td>
+      <td>${u.lastActive?ago(u.lastActive):'—'}</td>
+      <td>${u.flags.map(f=>`<span class="chip-s ${(f==='entitled-no-purchase')?'risk':(f==='guest'?'guest':'')}">${esc(f)}</span>`).join('')||'—'}</td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+function wireUsers(){
+  const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; $('main').innerHTML=renderUserList(); wireUsers(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
+  const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; $('main').innerHTML=renderUserList(); wireUsers(); }; }
+  document.querySelectorAll('.utable tr.clickable').forEach(r=>r.onclick=()=>{ USER_VIEW.uid=r.dataset.uid; renderUsersTab(); });
+}
+
+async function renderUserDetail(uid){
+  const m=$('main');
+  const row = (USERS||[]).find(u=>u.uid===uid) || {};
+  m.innerHTML='<div class="loading">Loading user…</div>';
+  let r; try{ r=(await call('adminLookupUser')({uid})).data; }catch(e){ m.innerHTML='<div class="loading cr">'+esc(e.message)+'</div>'; return; }
+  const a=r.auth;
+  m.innerHTML=`
+    <span class="back-link" id="u-back">← All users</span>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div><div class="big sm">${esc(a?.displayName||row.name||'Unknown')}</div><div class="qsub mono">${esc(a?.email||uid)}</div></div>
+        <div>${row.internal?'<span class="chip-s internal">internal</span>':''}<span class="chip-s ${esc(row.access||'free')}">${esc(row.access||'free')}</span></div>
+      </div>
+      <div class="detail-grid" style="margin-top:18px">
+        <div><div class="l">Type</div><div class="v">${esc(row.type||(a?a.providers.join(','):'—'))}</div></div>
+        <div><div class="l">Workouts</div><div class="v ${row.workouts>0?'':'d'}">${row.workouts??'—'}</div></div>
+        <div><div class="l">Days on plan</div><div class="v">${row.daysOnPlan??'—'}</div></div>
+        <div><div class="l">AI usage</div><div class="v">${row.aiCalls??0} calls · ${money(row.aiCost||0)}</div></div>
+        <div><div class="l">Joined</div><div class="v">${a?.createdAt?ago(a.createdAt):'—'}</div></div>
+        <div><div class="l">Last active</div><div class="v">${row.lastActive?ago(row.lastActive):'—'}</div></div>
+        <div><div class="l">Last sign-in</div><div class="v">${a?.lastSignIn?ago(a.lastSignIn):'—'}</div></div>
+        <div><div class="l">Paid product</div><div class="v mono">${esc((row.paidProduct||'—').replace('com.qwota.pro.',''))}</div></div>
+      </div>
+      ${row.flags&&row.flags.length?`<div style="margin-top:14px"><div class="l" style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Signals</div>${row.flags.map(f=>`<span class="chip-s ${(f==='entitled-no-purchase')?'risk':(f==='guest'?'guest':'')}">${esc(f)}</span>`).join('')}</div>`:''}
+    </div>
+    <div class="section-t">Data records</div>
+    <div class="card"><table><tbody>${Object.entries(r.docs).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="text-center">${v?(Array.isArray(v)?v.length+' record(s)':'<span class="ok">present</span>'):'<span class="d">—</span>'}</td></tr>`).join('')}</tbody></table></div>
+    <div class="section-t">Actions</div>
+    <div class="qa">
+      <button class="btn" data-ua="internal"><span class="i">${row.internal?'✓':'⊘'}</span> ${row.internal?'Unmark internal':'Mark internal / test'}</button>
+      <button class="btn" data-ua="extendTrial"><span class="i">＋</span> Extend trial</button>
+      <button class="btn" data-ua="forceRefresh"><span class="i">↻</span> Force refresh</button>
+      <button class="btn" data-ua="sendPush"><span class="i">✉</span> Send push</button>
+    </div>`;
+  $('u-back').onclick=()=>{ USER_VIEW.uid=null; renderUsersTab(); };
+  document.querySelectorAll('[data-ua]').forEach(b=>b.onclick=async()=>{
+    const act=b.dataset.ua;
+    if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); USERS=null; USER_VIEW.uid=null; render(); load(); }catch(e){ toast(e.message,true); } return; }
+    openAction(act); const el=$('a-uid'); if(el) el.value=uid;
+  });
 }
 
 // ---------- actions / wiring ----------
 function wire(){
   document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>openAction(b.dataset.act));
-  const go=$('lookup-go'); if(go) go.onclick=doLookup;
 }
 
 function openModal(title, bodyHtml){ $('modal-title').textContent=title; $('modal-body').innerHTML=bodyHtml; $('modal').hidden=false; }
@@ -184,34 +268,18 @@ function openAction(act){
   $('a-run').onclick=async()=>{ const btn=$('a-run'); btn.disabled=true; btn.textContent='Running…'; try{ const msg=await f.run(); $('a-result').innerHTML='<span class="ok">'+esc(msg)+'</span>'; toast(msg); load(); }catch(e){ $('a-result').innerHTML='<span class="cr">'+esc(e.message)+'</span>'; } finally{ btn.disabled=false; btn.textContent='Run'; } };
 }
 
-async function doLookup(){
-  const uid=$('lookup-uid').value.trim(); if(!uid) return;
-  const res=$('lookup-result'); res.innerHTML='<div class="qsub">Looking up…</div>';
-  try{
-    const r=(await call('adminLookupUser')({uid})).data;
-    const a=r.auth;
-    res.innerHTML = `<div style="margin-top:18px">
-      <div class="kpis">
-        <div class="kpi"><div class="l">Email</div><div style="font-size:14px">${esc(a?a.email||'—':'no auth (orphan)')}</div></div>
-        <div class="kpi"><div class="l">Name</div><div style="font-size:14px">${esc(a?a.displayName||'—':'—')}</div></div>
-        <div class="kpi"><div class="l">Providers</div><div style="font-size:14px">${esc(a?(a.providers.join(',')||'anon'):'—')}</div></div>
-        <div class="kpi"><div class="l">Created</div><div style="font-size:14px">${a&&a.createdAt?ago(a.createdAt):'—'}</div></div>
-      </div>
-      <div class="section-t">Documents</div>
-      <table><tbody>${Object.entries(r.docs).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="text-center">${v?(Array.isArray(v)?v.length+' record(s)':'<span class="ok">present</span>'):'<span class="d">—</span>'}</td></tr>`).join('')}</tbody></table>
-      <div class="qa" style="margin-top:16px">
-        <button class="btn" onclick="quickAct('extendTrial','${esc(uid)}')"><span class="i">＋</span> Extend trial</button>
-        <button class="btn" onclick="quickAct('forceRefresh','${esc(uid)}')"><span class="i">↻</span> Force refresh</button>
-        <button class="btn" onclick="quickAct('sendPush','${esc(uid)}')"><span class="i">✉</span> Send push</button>
-      </div></div>`;
-  }catch(e){ res.innerHTML='<div class="cr">'+esc(e.message)+'</div>'; }
-}
-window.quickAct=(act,uid)=>{ openAction(act); const el=$('a-uid'); if(el) el.value=uid; };
-
 // ---------- boot ----------
 $('signin-btn').onclick=async()=>{ $('signin-error').textContent=''; try{ await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }catch(e){ $('signin-error').textContent=e.message; } };
 $('signout').onclick=()=>auth.signOut();
 $('refresh').onclick=load;
+$('internal-toggle').onclick=()=>{
+  INCLUDE_INTERNAL=!INCLUDE_INTERNAL;
+  const btn=$('internal-toggle');
+  btn.textContent=INCLUDE_INTERNAL?'Incl. internal':'Real users only';
+  btn.classList.toggle('on',INCLUDE_INTERNAL);
+  USERS=null; USER_VIEW.uid=null;
+  load();
+};
 $('modal-close').onclick=closeModal;
 $('modal').onclick=(e)=>{ if(e.target===$('modal')) closeModal(); };
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{ TAB=b.dataset.tab; render(); });

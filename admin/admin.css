@@ -27,6 +27,9 @@ button{font:inherit;cursor:pointer}
 .brand-name{font-weight:700;font-size:15px}
 .brand-sub{font-size:11.5px;color:var(--mut)}
 .topbar-right{display:flex;align-items:center;gap:10px}
+.pill{font-size:12px;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+.pill:hover{border-color:var(--line2);color:var(--tx)}
+.pill.on{color:var(--teal);border-color:rgba(45,212,167,.4);background:rgba(45,212,167,.08)}
 .status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);border:1px solid var(--line);padding:5px 11px;border-radius:999px}
 .status.bad{color:var(--crit);border-color:rgba(255,92,108,.4)}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--teal)}
@@ -100,6 +103,27 @@ td{padding:10px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:none}
 .text-center{text-align:center}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--mut)}
+
+/* user table */
+.utable tr.clickable{cursor:pointer}
+.utable tr.clickable:hover td{background:var(--raised)}
+.utable .uname{font-weight:600}
+.utable .uemail{font-size:11.5px;color:var(--mut)}
+.utable .internal-row td{opacity:.55}
+.chip-s{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--raised);color:var(--mut);margin-right:4px}
+.chip-s.paid{background:rgba(45,212,167,.14);color:var(--teal)}
+.chip-s.trial{background:rgba(74,158,255,.14);color:var(--info)}
+.chip-s.entitled{background:rgba(245,166,35,.14);color:var(--warn)}
+.chip-s.guest{background:rgba(140,148,166,.14)}
+.chip-s.risk{background:rgba(255,92,108,.14);color:var(--crit)}
+.chip-s.internal{background:rgba(140,148,166,.2);color:var(--dim)}
+.utoolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.utoolbar input{flex:1;min-width:180px;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--tx);padding:9px 12px;font:inherit;font-size:13.5px}
+.utoolbar select{background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--tx);padding:9px 12px;font:inherit;font-size:13px}
+.back-link{color:var(--teal);font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;margin-bottom:14px}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px}
+.detail-grid .l{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.detail-grid .v{font-size:15px;margin-top:2px}
 
 /* forms / modal */
 .modal{position:fixed;inset:0;background:rgba(4,6,10,.7);display:grid;place-items:center;padding:24px;z-index:50}
