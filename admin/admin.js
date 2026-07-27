@@ -13,6 +13,21 @@ const firebaseConfig = {
 const ADMIN_UID = "DEPKKHJMilcoJmSnKxb3UxFc5Is2";
 const ITEMS_PER_PAGE = 20;
 
+// Escape user-controlled strings before interpolating into innerHTML. Prevents stored XSS:
+// display names, food descriptions, and error/notification messages are all user-influenced
+// and would otherwise execute in this privileged admin session. Safe in both element-content
+// and double-quoted attribute contexts (escapes <, >, &, ", ').
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+const esc = escapeHtml;
+
 // AI Cost estimates (per request) - Google Gemini 2.0 Flash
 // ~1000 input tokens, ~500 output tokens per request
 // Input: $0.10/1M tokens, Output: $0.40/1M tokens
@@ -111,6 +126,8 @@ async function loadDashboardData() {
     updateHeatmap();
     updateCharts();
     updateBilling();
+    renderAIUsage();
+    renderReverseTrial();
 
     document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
 
@@ -139,8 +156,6 @@ function updateOverview() {
     (stats.textFoodWeek || 0) * AI_COSTS.text_analysis +
     (stats.coachInsightsWeek || 0) * AI_COSTS.coach_insight
   );
-  const costPerUser = totalUsers > 0 ? (estCost / totalUsers) : 0;
-
   // Active users (users with lastActive in last 7 days)
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const activeUsers = allUsers.filter(u => u.lastActive && new Date(u.lastActive) > weekAgo).length;
@@ -153,8 +168,11 @@ function updateOverview() {
   document.getElementById('ai-requests-week').textContent = aiRequestsWeek;
   document.getElementById('ai-requests-today').textContent = `${aiRequestsToday} today`;
 
-  document.getElementById('est-cost').textContent = `$${estCost.toFixed(2)}`;
-  document.getElementById('cost-per-user').textContent = `$${costPerUser.toFixed(3)}/user`;
+  // Prefer real telemetry (aiCostTotals) over the per-request estimate when available.
+  const realCost = (stats.aiUsage && typeof stats.aiUsage.totalCostUsd === 'number') ? stats.aiUsage.totalCostUsd : estCost;
+  const realCostPerUser = totalUsers > 0 ? realCost / totalUsers : 0;
+  document.getElementById('est-cost').textContent = `$${realCost.toFixed(2)}`;
+  document.getElementById('cost-per-user').textContent = `$${realCostPerUser.toFixed(3)}/user`;
 
   document.getElementById('notifications-enabled').textContent = stats.notificationsEnabled || 0;
   document.getElementById('daily-notifs-sent').textContent = stats.dailyNotifsSentToday || 0;
@@ -256,8 +274,8 @@ function updateChurnRisk() {
   container.innerHTML = churnUsers.slice(0, 10).map(user => `
     <div class="churn-item">
       <div class="churn-user">
-        <span class="churn-user-name">${user.displayName || 'Unknown'}</span>
-        <span class="churn-user-email">${user.email || '-'}</span>
+        <span class="churn-user-name">${esc(user.displayName) || 'Unknown'}</span>
+        <span class="churn-user-email">${esc(user.email) || '-'}</span>
       </div>
       <span class="churn-days ${user.daysInactive < 14 ? 'warning' : ''}">${user.daysInactive}d inactive</span>
     </div>
@@ -644,8 +662,8 @@ function renderUsersTable() {
       <tr class="clickable" data-user-id="${user.id}">
         <td>
           <div class="user-cell">
-            <span class="user-name">${user.displayName || '-'}</span>
-            <span class="user-email">${user.email || '-'}</span>
+            <span class="user-name">${esc(user.displayName) || '-'}</span>
+            <span class="user-email">${esc(user.email) || '-'}</span>
           </div>
         </td>
         <td><span class="badge ${user.isPro ? 'badge-pro' : 'badge-free'}">${user.isPro ? 'Pro' : 'Free'}</span></td>
@@ -716,9 +734,9 @@ function renderActivityTable() {
       return `
         <tr>
           <td class="date-cell">${formatTime(activity.timestamp)}</td>
-          <td class="user-name">${userName}</td>
+          <td class="user-name">${esc(userName)}</td>
           <td><span class="badge ${typeInfo.badgeClass}">${typeInfo.label}</span></td>
-          <td class="activity-details" title="${details}">${details}</td>
+          <td class="activity-details" title="${esc(details)}">${esc(details)}</td>
           <td><span class="badge ${activity.success ? 'badge-success' : 'badge-failed'}">${activity.success ? 'Success' : 'Failed'}</span></td>
         </tr>
       `;
@@ -840,11 +858,11 @@ function renderNotificationTable() {
       const userName = notif.userName || notif.userEmail || 'Unknown';
       return `
         <tr>
-          <td class="user-name">${userName}</td>
+          <td class="user-name">${esc(userName)}</td>
           <td><span class="type-badge ${notif.type}">${notif.type}</span></td>
           <td><span class="status-badge ${notif.status}">${notif.status}</span></td>
           <td class="date-cell">${formatTime(notif.timestamp)}</td>
-          <td class="message-cell" title="${notif.error || notif.message || '-'}">${notif.error || notif.message || '-'}</td>
+          <td class="message-cell" title="${esc(notif.error || notif.message || '-')}">${esc(notif.error || notif.message || '-')}</td>
         </tr>
       `;
     }).join('');
@@ -910,10 +928,10 @@ function renderErrorTable() {
       const typeLabel = err.type.replace('_', ' ');
       return `
         <tr>
-          <td class="user-name">${userName}</td>
+          <td class="user-name">${esc(userName)}</td>
           <td><span class="type-badge ${err.type}">${typeLabel}</span></td>
           <td class="date-cell">${formatTime(err.timestamp)}</td>
-          <td class="error-cell" title="${err.error}">${err.error}</td>
+          <td class="error-cell" title="${esc(err.error)}">${esc(err.error)}</td>
         </tr>
       `;
     }).join('');
@@ -980,11 +998,11 @@ function renderReviewTable() {
       const gradeClass = getGradeClass(review.grade);
       return `
         <tr>
-          <td class="user-name">${userName}</td>
+          <td class="user-name">${esc(userName)}</td>
           <td><span class="status-badge ${review.success ? 'sent' : 'failed'}">${review.success ? 'Success' : 'Failed'}</span></td>
-          <td>${review.grade ? `<span class="grade-badge ${gradeClass}">${review.grade}</span>` : '-'}</td>
+          <td>${review.grade ? `<span class="grade-badge ${gradeClass}">${esc(review.grade)}</span>` : '-'}</td>
           <td class="date-cell">${formatTime(review.timestamp)}</td>
-          <td class="error-cell" title="${review.error || '-'}">${review.error || '-'}</td>
+          <td class="error-cell" title="${esc(review.error || '-')}">${esc(review.error || '-')}</td>
         </tr>
       `;
     }).join('');
@@ -1023,6 +1041,53 @@ function switchSection(section) {
 
   document.getElementById('page-title').textContent = titles[section].title;
   document.getElementById('page-subtitle').textContent = titles[section].subtitle;
+}
+
+// --- AI usage panel (real telemetry from aiCostTotals) ---
+function renderAIUsage() {
+  const ai = stats && stats.aiUsage;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  if (!ai) return;
+  set('ai-total-cost', `$${(ai.totalCostUsd || 0).toFixed(4)}`);
+  set('ai-total-calls', (ai.totalCalls || 0).toLocaleString());
+  set('ai-users', `${ai.usersWithUsage || 0} users`);
+  set('ai-active', `${ai.activeUsers24h || 0} / ${ai.activeUsers7d || 0}`);
+  set('ai-tokens', ((ai.totalPromptTokens || 0) + (ai.totalOutputTokens || 0)).toLocaleString());
+
+  const tbody = document.getElementById('ai-surface-body');
+  if (!tbody) return;
+  const rows = ai.bySurface || [];
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading-cell">No AI usage recorded</td></tr>';
+    return;
+  }
+  const maxCalls = Math.max(...rows.map((r) => r.calls || 0), 1);
+  tbody.innerHTML = rows.map((r) => {
+    const pct = Math.round(((r.calls || 0) / maxCalls) * 100);
+    return `
+      <tr>
+        <td>${esc(r.surface)}</td>
+        <td class="text-center">${(r.calls || 0).toLocaleString()}</td>
+        <td class="text-center">$${(r.costUsd || 0).toFixed(4)}</td>
+        <td><div style="background:#2a2a2e;border-radius:4px;height:8px;overflow:hidden;min-width:60px"><div style="background:#4a9eff;height:100%;width:${pct}%"></div></div></td>
+      </tr>`;
+  }).join('');
+}
+
+// --- Reverse-trial panel ---
+function renderReverseTrial() {
+  const rt = stats && stats.reverseTrial;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  if (!rt) return;
+  const badge = document.getElementById('rt-status');
+  if (badge) {
+    badge.textContent = rt.enabled ? 'Enabled' : 'Disabled';
+    badge.className = 'badge ' + (rt.enabled ? 'badge-on' : 'badge-off');
+  }
+  set('rt-hour', rt.grantsLastHour || 0);
+  set('rt-day', rt.grantsLast24h || 0);
+  set('rt-week', rt.grantsLast7d || 0);
+  set('rt-cumulative', rt.cumulativeRealGrants || 0);
 }
 
 // Auth state listener

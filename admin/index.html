@@ -599,6 +599,46 @@
           </div>
         </div>
 
+        <!-- Real AI Usage (live telemetry from aiCostTotals) -->
+        <div class="billing-breakdown" style="margin-top:20px">
+          <div class="breakdown-header">
+            <h3>Real AI Usage — live telemetry</h3>
+          </div>
+          <div class="breakdown-content">
+            <div style="display:flex;flex-wrap:wrap;gap:24px;padding:6px 4px 18px">
+              <div><div style="font-size:12px;opacity:.6">Total cost</div><div style="font-size:22px;font-weight:700" id="ai-total-cost">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Calls</div><div style="font-size:22px;font-weight:700" id="ai-total-calls">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Tokens</div><div style="font-size:22px;font-weight:700" id="ai-tokens">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Users</div><div style="font-size:22px;font-weight:700" id="ai-users">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Active 24h/7d</div><div style="font-size:22px;font-weight:700" id="ai-active">--</div></div>
+            </div>
+            <table style="width:100%;border-collapse:collapse">
+              <thead><tr style="opacity:.6;font-size:12px;text-align:left">
+                <th style="padding:6px 8px">Surface</th>
+                <th style="padding:6px 8px;text-align:center">Calls</th>
+                <th style="padding:6px 8px;text-align:center">Cost</th>
+                <th style="padding:6px 8px;width:35%">Share</th>
+              </tr></thead>
+              <tbody id="ai-surface-body"><tr><td colspan="4" class="loading-cell">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Reverse Trial -->
+        <div class="billing-breakdown" style="margin-top:20px">
+          <div class="breakdown-header">
+            <h3>Reverse Trial <span class="badge" id="rt-status" style="margin-left:8px">--</span></h3>
+          </div>
+          <div class="breakdown-content">
+            <div style="display:flex;flex-wrap:wrap;gap:24px;padding:6px 4px 12px">
+              <div><div style="font-size:12px;opacity:.6">Grants · last hour</div><div style="font-size:22px;font-weight:700" id="rt-hour">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Grants · 24h</div><div style="font-size:22px;font-weight:700" id="rt-day">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Grants · 7d</div><div style="font-size:22px;font-weight:700" id="rt-week">--</div></div>
+              <div><div style="font-size:12px;opacity:.6">Cumulative (real)</div><div style="font-size:22px;font-weight:700" id="rt-cumulative">--</div></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Billing Note -->
         <div class="billing-note">
           <div class="billing-note-icon">
