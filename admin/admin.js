@@ -15,40 +15,73 @@ const call = (name) => fns.httpsCallable(name);
 
 // Escape all interpolated data (stored-XSS safe).
 function esc(v){ if(v==null) return ''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+// Numeric fields are NOT trustworthy just because they're "supposed to be" numbers:
+// userData is a client-supplied sync payload, so a hostile client could park markup in
+// totalWorkouts/daysOnPlan and land it in this console's innerHTML. Coerce, never interpolate raw.
+function num(v, fallback){ const n = Number(v); return Number.isFinite(n) ? n : (fallback===undefined ? 0 : fallback); }
 
 let DATA = null, TAB = 'cockpit';
+let STALE = false;              // DATA is a last-good snapshot, not a fresh read
 let INCLUDE_INTERNAL = false;   // exclude internal/test accounts by default
 let USERS = null;               // cached adminUsers list
+let USERS_HIDDEN = 0;           // internal accounts the server filtered out of that list
 let USER_VIEW = { uid: null, q: '', type: 'all' };
 const $ = (id) => document.getElementById(id);
 
 // ---------- helpers ----------
 function toast(msg, isErr){ const t=$('toast'); t.textContent=msg; t.className='toast'+(isErr?' err':''); t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 3200); }
-function ago(iso){ if(!iso) return '—'; const s=Math.floor((Date.now()-new Date(iso).getTime())/1000); if(s<60)return s+'s ago'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+function ago(iso){
+  if(!iso) return '—';
+  const t=new Date(iso).getTime(); if(!Number.isFinite(t)) return '—';
+  const s=Math.floor((Date.now()-t)/1000);
+  if(s<0){ // future timestamp (trial expiry, scheduled event) — "-5s ago" is nonsense
+    const f=-s; if(f<60)return 'in '+f+'s'; if(f<3600)return 'in '+Math.floor(f/60)+'m'; if(f<86400)return 'in '+Math.floor(f/3600)+'h'; return 'in '+Math.floor(f/86400)+'d';
+  }
+  if(s<60)return s+'s ago'; if(s<3600)return Math.floor(s/60)+'m ago'; if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago';
+}
 function money(n){ return '$'+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 // ---------- data ----------
 async function load(){
   $('main').innerHTML = '<div class="loading">Loading console…</div>';
-  USERS = null; // internal-toggle may have changed; refetch on demand
+  USERS = null;   // internal-toggle may have changed; refetch on demand
+  PENDING = null; // the reconcile queue is live data — Refresh must actually refresh it
   try{
     const res = await call('adminConsole')({ includeInternal: INCLUDE_INTERNAL });
     DATA = res.data;
+    STALE = false;
     $('updated').textContent = 'updated just now';
     const ok = DATA.reconcile.ok;
     $('status').className = 'status'+(ok?'':' bad');
     $('status-text').textContent = ok ? 'All systems normal' : 'Reconcile invariant failed';
     render();
-  }catch(e){ $('main').innerHTML = '<div class="loading cr">Failed to load: '+esc(e.message)+'</div>'; }
+  }catch(e){
+    // DATA deliberately keeps the last good snapshot — wiping the dashboard on a transient
+    // failure is worse than showing it. But it must never masquerade as fresh: label it
+    // stale, and let render()'s null-guard cover the never-loaded-at-all case.
+    STALE = !!DATA;
+    $('updated').textContent = STALE ? 'stale — last refresh failed' : 'no data';
+    $('status').className = 'status bad';
+    $('status-text').textContent = 'Refresh failed';
+    $('main').innerHTML = '<div class="loading cr">Failed to load: '+esc(e.message)+(STALE?' <span class="d">— showing the last good snapshot on other tabs.</span>':'')+'</div>';
+  }
 }
 
 // ---------- render ----------
 function render(){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.tab===TAB));
   const m = $('main');
-  if(TAB==='cockpit'){ m.innerHTML = renderCockpit(); wire(); }
-  else if(TAB==='money'){ m.innerHTML = renderMoney(); wire(); }
-  else if(TAB==='health'){ m.innerHTML = renderHealth(); wire(); }
+  // Every tab except Users reads DATA. After a failed load it's null, and switching tabs
+  // used to throw mid-render, leaving the nav highlighted on a tab that never drew.
+  if(!DATA && TAB!=='users'){
+    m.innerHTML = '<div class="loading cr">No console data — the last load failed. Hit ↻ to retry.</div>';
+    return;
+  }
+  // Numbers from a snapshot that failed to refresh must say so, not read as live.
+  const banner = (DATA && STALE) ? '<div class="card" style="border-color:rgba(245,166,35,.45);margin-bottom:16px"><div class="qsub"><b style="color:var(--warn)">Stale snapshot</b> — the last refresh failed, these numbers are from the previous successful load. Hit ↻ to retry.</div></div>' : '';
+  if(TAB==='cockpit'){ m.innerHTML = banner + renderCockpit(); wire(); }
+  else if(TAB==='money'){ m.innerHTML = banner + renderMoney(); wire(); }
+  else if(TAB==='health'){ m.innerHTML = banner + renderHealth(); wire(); }
   else if(TAB==='users'){ renderUsersTab(); }
 }
 
@@ -66,7 +99,7 @@ function renderCockpit(){
     <div class="card">
       <div class="qlabel"><span class="tick" style="background:var(--teal)"></span> North Star · activation</div>
       <div class="big ${activationPct<25?'cr':'ok'}">${activationPct}%</div>
-      <div class="qsub">${ns.activatedUsers}/${u.registered} logged a workout · ${ns.totalWorkoutsAll} total · ${ns.avgWorkoutsPerWeek}/wk avg</div>
+      <div class="qsub">${num(ns.activatedUsers)}/${num(u.registered)} logged a workout · ${num(ns.totalWorkoutsAll)} total · ${num(ns.avgWorkoutsPerWeek)}/wk avg</div>
     </div>
     <div class="card">
       <div class="qlabel"><span class="tick" style="background:var(--warn)"></span> Money</div>
@@ -115,15 +148,15 @@ function renderCockpit(){
 function aiBars(rows){
   if(!rows||!rows.length) return '<div class="qsub d">No AI usage recorded</div>';
   const max=Math.max(...rows.map(r=>r.calls||0),1);
-  return rows.map(r=>`<div class="brow"><span>${esc(r.surface)}</span><div class="track"><div class="fill" style="width:${Math.round((r.calls/max)*100)}%"></div></div><span class="v">${r.calls} · ${money(r.costUsd)}</span></div>`).join('');
+  return rows.map(r=>`<div class="brow"><span>${esc(r.surface)}</span><div class="track"><div class="fill" style="width:${Math.round((num(r.calls)/max)*100)}%"></div></div><span class="v">${num(r.calls)} · ${money(r.costUsd)}</span></div>`).join('');
 }
 
 function renderMoney(){
   const mo=DATA.money;
   return `
   <div class="grid3">
-    <div class="card"><div class="qlabel">Paying (verified)</div><div class="big ok">${mo.payingCount}</div><div class="qsub">production transactions</div></div>
-    <div class="card"><div class="qlabel">MRR estimate</div><div class="big">${money(mo.mrrEstimate)}</div><div class="qsub">monthly + yearly/12 · lifetime one-time excluded</div></div>
+    <div class="card"><div class="qlabel">Paying (verified)</div><div class="big ok">${num(mo.payingCount)}</div><div class="qsub">active production purchases${num(mo.churnedCount)?` · <span class="d">${num(mo.churnedCount)} churned</span>`:''}</div></div>
+    <div class="card"><div class="qlabel">MRR estimate</div><div class="big">${money(mo.mrrEstimate)}</div><div class="qsub">monthly + yearly/12 · lifetime one-time excluded · churn removed</div></div>
     <div class="card"><div class="qlabel">Entitled (isPro)</div><div class="big">${mo.entitledCount}${mo.unverifiedEntitledCount?`<span class="flag">${mo.unverifiedEntitledCount} unverified</span>`:''}</div><div class="qsub">${mo.unverifiedEntitledCount} have no production purchase (likely TestFlight/test)</div></div>
   </div>
   <div class="section-t">By product · production only</div>
@@ -132,10 +165,12 @@ function renderMoney(){
   </tbody></table>${mo.sandboxTx?`<div class="note">${mo.sandboxTx} Sandbox transaction(s) excluded from revenue.</div>`:''}</div>
   <div class="section-t">Access breakdown</div>
   <div class="card"><div class="kpis">
-    <div class="kpi"><div class="l">Paid</div><div class="n ok">${mo.payingCount}</div></div>
-    <div class="kpi"><div class="l">On reverse trial</div><div class="n">${mo.onReverseTrial}</div></div>
-    <div class="kpi"><div class="l">Entitled (incl. test)</div><div class="n">${mo.entitledCount}</div></div>
-  </div><div class="note">"Paying" and "entitled" are never summed — entitlement includes test/TestFlight and trials.</div></div>`;
+    <div class="kpi"><div class="l">Paid</div><div class="n ok">${num(mo.payingCount)}</div></div>
+    <div class="kpi"><div class="l">Churned</div><div class="n">${num(mo.churnedCount)}</div></div>
+    <div class="kpi"><div class="l">Ever paid</div><div class="n">${num(mo.lifetimePayerCount)}</div></div>
+    <div class="kpi"><div class="l">On reverse trial</div><div class="n">${num(mo.onReverseTrial)}</div></div>
+    <div class="kpi"><div class="l">Entitled (incl. test)</div><div class="n">${num(mo.entitledCount)}</div></div>
+  </div><div class="note">"Paying" and "entitled" are never summed — entitlement includes test/TestFlight and trials. A transaction only counts as revenue while the buyer is still entitled: refund/expire moves them to Churned and out of MRR.</div></div>`;
 }
 
 function pipeCell(label, p, note){
@@ -180,11 +215,20 @@ async function renderUsersTab(){
   if(USER_VIEW.uid){ return renderUserDetail(USER_VIEW.uid); }
   if(!USERS){
     m.innerHTML = '<div class="loading">Loading users…</div>';
-    try{ USERS = (await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data.users; }
+    try{ const r=(await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data; USERS=r.users; USERS_HIDDEN=num(r.internalHidden); }
     catch(e){ m.innerHTML = '<div class="loading cr">'+esc(e.message)+'</div>'; return; }
   }
   if(PENDING===null){ try{ PENDING = (await call('adminListPendingPurchases')({})).data.items; }catch{ PENDING = []; } }
-  m.innerHTML = renderPending() + renderUserList();
+  // The pending-purchase banner lives OUTSIDE #u-list so filtering never destroys it.
+  m.innerHTML = renderPending() + '<div id="u-list">' + renderUserList() + '</div>';
+  wireUsers();
+}
+
+// Redraw only the list+toolbar. Typing in the search box used to replace all of #main,
+// which silently deleted the "N unattributed purchases" card above it.
+function redrawUserList(){
+  const host = $('u-list'); if(!host) return renderUsersTab();
+  host.innerHTML = renderUserList();
   wireUsers();
 }
 
@@ -203,6 +247,8 @@ function renderPending(){
   </div>`;
 }
 
+function flagClass(f){ return f==='entitled-no-purchase' ? 'risk' : f==='churned' ? 'churned' : f==='guest' ? 'guest' : ''; }
+
 function renderUserList(){
   const q = USER_VIEW.q.toLowerCase(), tf = USER_VIEW.type;
   const rows = USERS.filter(u=>{
@@ -218,7 +264,7 @@ function renderUserList(){
     <select id="u-type">
       <option value="all">All types</option><option value="registered">Registered</option><option value="guest">Guests</option><option value="paid">Paying</option><option value="flagged">Flagged</option>
     </select>
-    <span class="qsub">${rows.length} shown${INCLUDE_INTERNAL?'':' · internal hidden'}</span>
+    <span class="qsub">${rows.length} shown${(!INCLUDE_INTERNAL&&USERS_HIDDEN)?` · ${USERS_HIDDEN} internal hidden`:''}</span>
   </div>
   <div class="card" style="padding:0;overflow-x:auto"><table class="utable"><thead><tr>
     <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">AI</th><th>Joined</th><th>Last active</th><th>Signals</th>
@@ -227,18 +273,18 @@ function renderUserList(){
       <td><div class="uname">${esc(u.name||'—')}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
       <td>${esc(u.type)}${u.internal?' <span class="chip-s internal">internal</span>':''}</td>
       <td><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>${u.paidProduct?'<div class="uemail mono">'+esc(u.paidProduct.replace('com.qwota.pro.',''))+'</div>':''}</td>
-      <td class="text-center ${u.workouts>0?'':'d'}">${u.workouts}</td>
-      <td class="text-center">${u.aiCalls}</td>
+      <td class="text-center ${num(u.workouts)>0?'':'d'}">${num(u.workouts)}</td>
+      <td class="text-center">${num(u.aiCalls)}</td>
       <td>${u.createdAt?ago(u.createdAt):'—'}</td>
       <td>${u.lastActive?ago(u.lastActive):'—'}</td>
-      <td>${u.flags.map(f=>`<span class="chip-s ${(f==='entitled-no-purchase')?'risk':(f==='guest'?'guest':'')}">${esc(f)}</span>`).join('')||'—'}</td>
+      <td>${u.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')||'—'}</td>
     </tr>`).join('')}
   </tbody></table></div>`;
 }
 
 function wireUsers(){
-  const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; $('main').innerHTML=renderUserList(); wireUsers(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
-  const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; $('main').innerHTML=renderUserList(); wireUsers(); }; }
+  const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; redrawUserList(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
+  const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; redrawUserList(); }; }
   document.querySelectorAll('.utable tr.clickable').forEach(r=>r.onclick=()=>{ USER_VIEW.uid=r.dataset.uid; renderUsersTab(); });
   document.querySelectorAll('[data-recon]').forEach(b=>b.onclick=()=>openReconcile(b.dataset.recon, b.dataset.prod, b.dataset.exp));
 }
@@ -249,15 +295,16 @@ function openReconcile(tx, prod, exp){
     <div class="field"><label>Product</label><input value="${esc(prod||'')}" id="rc-prod"></div>
     <div class="field"><label>Grant to user (Firebase UID)</label><input id="rc-uid" placeholder="paste the buyer's UID"></div>
     <div class="qsub">Grants Pro, creates the missing transaction mapping (so future renew/refund/expire attribute automatically), and clears the queue item.</div>
+    <label class="qsub" style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="rc-force" style="width:auto"> Force — reassign a transaction that already belongs to another account</label>
     <button class="btn-primary" id="rc-run" style="margin-top:14px">Grant Pro & reconcile</button><div class="result" id="rc-result"></div>`);
   $('rc-run').onclick=async()=>{
     const uid=$('rc-uid').value.trim(); if(!uid){ $('rc-result').textContent='Enter a UID.'; return; }
     $('rc-run').disabled=true; $('rc-result').textContent='Reconciling…';
     try{
-      await call('adminReconcilePurchase')({ originalTransactionId: tx, uid, productId: $('rc-prod').value.trim()||undefined, expiresDate: exp||undefined });
+      await call('adminReconcilePurchase')({ originalTransactionId: tx, uid, productId: $('rc-prod').value.trim()||undefined, expiresDate: exp||undefined, force: $('rc-force').checked });
       $('rc-result').textContent='Done — Pro granted.'; toast('Purchase reconciled');
       PENDING=null; USERS=null; $('modal').hidden=true; renderUsersTab();
-    }catch(e){ $('rc-run').disabled=false; $('rc-result').textContent=esc(e.message); }
+    }catch(e){ $('rc-run').disabled=false; $('rc-result').textContent=e.message; }
   };
 }
 
@@ -325,15 +372,15 @@ async function renderUserDetail(uid){
       </div>
       <div class="detail-grid" style="margin-top:18px">
         <div><div class="l">Type</div><div class="v">${esc(row.type||(a?a.providers.join(','):'—'))}</div></div>
-        <div><div class="l">Workouts</div><div class="v ${row.workouts>0?'':'d'}">${row.workouts??'—'}</div></div>
-        <div><div class="l">Days on plan</div><div class="v">${row.daysOnPlan??'—'}</div></div>
-        <div><div class="l">AI usage</div><div class="v">${row.aiCalls??0} calls · ${money(row.aiCost||0)}</div></div>
+        <div><div class="l">Workouts</div><div class="v ${num(row.workouts)>0?'':'d'}">${row.workouts==null?'—':num(row.workouts)}</div></div>
+        <div><div class="l">Days on plan</div><div class="v">${row.daysOnPlan==null?'—':num(row.daysOnPlan)}</div></div>
+        <div><div class="l">AI usage</div><div class="v">${num(row.aiCalls)} calls · ${money(row.aiCost||0)}</div></div>
         <div><div class="l">Joined</div><div class="v">${a?.createdAt?ago(a.createdAt):'—'}</div></div>
         <div><div class="l">Last active</div><div class="v">${row.lastActive?ago(row.lastActive):'—'}</div></div>
         <div><div class="l">Last sign-in</div><div class="v">${a?.lastSignIn?ago(a.lastSignIn):'—'}</div></div>
         <div><div class="l">Paid product</div><div class="v mono">${esc((row.paidProduct||'—').replace('com.qwota.pro.',''))}</div></div>
       </div>
-      ${row.flags&&row.flags.length?`<div style="margin-top:14px"><div class="l" style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Signals</div>${row.flags.map(f=>`<span class="chip-s ${(f==='entitled-no-purchase')?'risk':(f==='guest'?'guest':'')}">${esc(f)}</span>`).join('')}</div>`:''}
+      ${row.flags&&row.flags.length?`<div style="margin-top:14px"><div class="l" style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Signals</div>${row.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')}</div>`:''}
     </div>
     ${renderUserRich(r.docs)}
     <div class="section-t">Data records</div>
@@ -348,7 +395,9 @@ async function renderUserDetail(uid){
   $('u-back').onclick=()=>{ USER_VIEW.uid=null; renderUsersTab(); };
   document.querySelectorAll('[data-ua]').forEach(b=>b.onclick=async()=>{
     const act=b.dataset.ua;
-    if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); USERS=null; USER_VIEW.uid=null; render(); load(); }catch(e){ toast(e.message,true); } return; }
+    // load() clears USERS/PENDING and re-renders the active tab on its own — calling
+    // render() first as well fired a second concurrent adminUsers scan of every collection.
+    if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); USER_VIEW.uid=null; load(); }catch(e){ toast(e.message,true); } return; }
     openAction(act); const el=$('a-uid'); if(el) el.value=uid;
   });
 }
@@ -364,7 +413,7 @@ function closeModal(){ $('modal').hidden=true; }
 function openAction(act){
   if(act==='findUser'){ TAB='users'; render(); return; }
   const forms={
-    extendTrial:{title:'Comp / extend reverse trial', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Days</label><input id="a-days" type="number" value="30"></div>`, run:async()=>{const r=await call('adminExtendReverseTrial')({uid:$('a-uid').value.trim(),days:+$('a-days').value}); return 'Extended to '+r.data.expiresAt;}},
+    extendTrial:{title:'Comp / extend reverse trial', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Days to add</label><input id="a-days" type="number" value="30"></div><div class="qsub">Added on top of any time the user has left — never shortens an existing comp.</div>`, run:async()=>{const r=await call('adminExtendReverseTrial')({uid:$('a-uid').value.trim(),days:+$('a-days').value}); return (r.data.extendedFromExisting?'Added to existing trial — now expires ':'Trial set to expire ')+String(r.data.expiresAt).slice(0,10);}},
     forceRefresh:{title:'Force AI deep-context refresh', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div>`, run:async()=>{await call('adminForceRefresh')({uid:$('a-uid').value.trim()}); return 'Refresh complete.';}},
     sendPush:{title:'Send a push to one user', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Title</label><input id="a-title"></div><div class="field"><label>Body</label><textarea id="a-body"></textarea></div>`, run:async()=>{await call('adminSendUserPush')({uid:$('a-uid').value.trim(),title:$('a-title').value,body:$('a-body').value}); return 'Push sent.';}},
     flag:{title:'Set a feature flag', fields:`<div class="field"><label>Key</label><input id="a-key" value="reverseTrialEnabled"></div><div class="field"><label>Value</label><select id="a-val"><option value="true">true</option><option value="false">false</option></select></div>`, run:async()=>{const r=await call('adminSetFeatureFlag')({key:$('a-key').value.trim(),value:$('a-val').value==='true'}); return 'Set '+r.data.key+' = '+r.data.value;}},

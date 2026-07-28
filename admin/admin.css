@@ -117,6 +117,7 @@ tr:last-child td{border-bottom:none}
 .chip-s.entitled{background:rgba(245,166,35,.14);color:var(--warn)}
 .chip-s.guest{background:rgba(140,148,166,.14)}
 .chip-s.risk{background:rgba(255,92,108,.14);color:var(--crit)}
+.chip-s.churned{background:rgba(255,92,108,.1);color:#ff8e98}
 .chip-s.internal{background:rgba(140,148,166,.2);color:var(--dim)}
 .utoolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .utoolbar input{flex:1;min-width:180px;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--tx);padding:9px 12px;font:inherit;font-size:13.5px}
