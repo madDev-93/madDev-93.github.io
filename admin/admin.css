@@ -396,8 +396,11 @@ details.card[open] summary::before{content:'▾ '}
 .hbars{display:flex;flex-direction:column;gap:11px}
 .hbar{display:grid;grid-template-columns:minmax(74px,116px) 1fr auto;gap:11px;align-items:center;font-size:12.5px}
 .hbar .hl{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hbar .ht{height:9px;background:var(--raised);border-radius:5px;overflow:hidden}
-.hbar .hf{height:100%;border-radius:5px;min-width:3px;transition:filter .15s}
+/* display:block is load-bearing. These are spans, and width/height do not apply to
+   inline elements — without it every fill measured 0px wide while looking "styled". */
+.hbar .ht{display:block;height:9px;background:var(--raised);border-radius:5px;overflow:hidden}
+.hbar .hf{display:block;height:100%;border-radius:5px;min-width:3px;transition:filter .15s}
+.segbar > span{display:block}
 .hbar:hover .hf{filter:brightness(1.2)}
 .hbar .hv{color:var(--tx);font-weight:650;white-space:nowrap;font-size:12px}
 
