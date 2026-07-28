@@ -267,12 +267,51 @@ function aiBars(rows){
 
 function renderMoney(){
   const mo=DATA.money;
+  const cutPct=Math.round(num(mo.commissionRate)*100);
+  const cut=num(mo.mrrEstimate)-num(mo.netMrrEstimate);
+  const tr=mo.trial||{granted:0,converted:0,cohorts:{}};
+  const convPct=num(tr.granted)>0?Math.round((num(tr.converted)/num(tr.granted))*100):0;
+
   return `
   <div class="pulsegrid">
-    <div class="pcard"><div class="pl">Paying</div><div class="pn ok">${num(mo.payingCount)}</div><div class="pd">${num(mo.churnedCount)} churned</div></div>
-    <div class="pcard"><div class="pl">MRR</div><div class="pn">${money(mo.mrrEstimate)}</div><div class="pd">churn removed</div></div>
-    <div class="pcard"><div class="pl">Entitled</div><div class="pn">${num(mo.entitledCount)}</div><div class="pd">${num(mo.unverifiedEntitledCount)} unverified</div></div>
+    <div class="pcard"><div class="pl">MRR after Apple</div><div class="pn ok">${money(mo.netMrrEstimate)}</div><div class="pd">${money(mo.mrrEstimate)} gross</div></div>
+    <div class="pcard"><div class="pl">Paying</div><div class="pn">${num(mo.payingCount)}</div><div class="pd">${num(mo.churnedCount)} churned</div></div>
+    <div class="pcard"><div class="pl">Conversion</div><div class="pn ${num(mo.conversionPct)<5?'cr':''}">${num(mo.conversionPct)}%</div><div class="pd">of registered</div></div>
   </div>
+
+  <div class="section-t">What you actually keep</div>
+  <div class="card">
+    ${segbar([
+      {k:`You keep`, v:num(mo.netMrrEstimate), c:'var(--c1)'},
+      {k:`Apple's ${cutPct}%`, v:+cut.toFixed(2), c:'var(--c0)'},
+    ])}
+    <div class="detail-grid" style="margin-top:16px">
+      <div><div class="l">Gross MRR</div><div class="v">${money(mo.mrrEstimate)}</div></div>
+      <div><div class="l">Net MRR</div><div class="v ok">${money(mo.netMrrEstimate)}</div></div>
+      <div><div class="l">Booked at purchase</div><div class="v">${money(mo.grossBooked)}</div></div>
+      <div><div class="l">ARPU · paying</div><div class="v">${money(mo.arpuPaying)}/mo</div></div>
+    </div>
+    ${num(mo.sbpUpsidePerMonth)>0?`<div class="warnline" style="margin-top:14px"><b>Apple is taking ${cutPct}%.</b>
+      The Small Business Program drops that to 15% for under $1M/year — worth ${money(mo.sbpUpsidePerMonth)}/month at today's MRR, and it scales with every sale. Enrolment is a form in App Store Connect.</div>`:''}
+    <div class="note">"Booked at purchase" sums each account's first transaction — renewals aren't recorded individually, so it's bookings, not cash collected.</div>
+  </div>
+
+  <div class="section-t">Reverse trial · does it convert?</div>
+  <div class="card">
+    <div class="funnel">
+      <div class="fstage"><span class="nm">Trials granted</span><span class="v"><b>${num(tr.granted)}</b></span>
+        <div class="ftrack"><div class="ffill" style="width:100%"></div></div></div>
+      <div class="fstage"><span class="nm">Went on to pay</span><span class="v"><b>${num(tr.converted)}</b> · ${convPct}%</span>
+        <div class="ftrack">${num(tr.converted)>0?`<div class="ffill" style="width:${Math.max(convPct,2)}%"></div>`:''}</div>
+        ${num(tr.converted)===0&&num(tr.granted)>0?`<span class="drop worst">↓ 100% drop — no trial has ever converted</span>`:''}</div>
+    </div>
+    ${Object.keys(tr.cohorts||{}).length?`<div style="margin-top:18px">
+      <div class="qlabel">By cohort</div>
+      <div style="margin-top:10px">${hbars(Object.entries(tr.cohorts).map(([k,v])=>({k, v:num(v), label:num(v)+' granted'})),{seq:true})}</div>
+    </div>`:''}
+    <div class="note">Derived: an account that was granted a trial and now holds a production purchase. Nothing writes a conversion flag, so this counts the outcome rather than trusting a field.</div>
+  </div>
+
   <div class="section-t">Where the money comes from</div>
   <div class="card">
     ${segbar(Object.keys(mo.prices).map((p,i)=>({k:p.replace('com.qwota.pro.',''), v:num(mo.byProduct[p]), c:CAT[i%CAT.length]})))}
@@ -282,7 +321,19 @@ function renderMoney(){
                     : p.endsWith('yearly')  ? payers*num(mo.prices[p])/12 : 0;
       return { k:p.replace('com.qwota.pro.',''), v:contrib, label: contrib?money(contrib)+'/mo':'one-time' };
     }), {seq:true, empty:'No production purchases yet.'})}</div>
-    <div class="note">Bar one: how many people are on each plan. Bar two: what each plan contributes to MRR — lifetime is a one-time charge, so it contributes nothing recurring.${mo.sandboxTx?` ${num(mo.sandboxTx)} Sandbox transaction(s) excluded.`:''}</div>
+    <div class="note">Bar one: how many people are on each plan. Bar two: what each contributes to MRR — lifetime is a one-time charge, so it contributes nothing recurring.${mo.sandboxTx?` ${num(mo.sandboxTx)} Sandbox transaction(s) excluded.`:''}</div>
+  </div>
+
+  <div class="section-t">Every purchase</div>
+  <div class="card" style="padding:0;overflow-x:auto">
+    ${(mo.purchaseLog||[]).length?`<table><thead><tr><th>When</th><th>Plan</th><th class="text-center">Price</th><th>Source</th></tr></thead><tbody>
+      ${mo.purchaseLog.map(x=>`<tr>
+        <td>${esc((x.purchaseDate||'—').slice(0,10))}</td>
+        <td class="mono">${esc(String(x.productId||'—').replace('com.qwota.pro.',''))}</td>
+        <td class="text-center">${x.price!=null?money(x.price):'—'}</td>
+        <td class="d">${esc(x.source||'app')}${x.attributed?'':' <span class="cr">unattributed</span>'}</td>
+      </tr>`).join('')}
+    </tbody></table>`:'<div style="padding:16px"><div class="qsub d">No production purchases recorded.</div></div>'}
   </div>
 
   <div class="section-t">Who has access, and why</div>
