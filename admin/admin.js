@@ -154,7 +154,7 @@ function hbars(rows, opts){
     const colour = r.c || (opts&&opts.seq ? seq[Math.min(seq.length-1, Math.floor((num(r.v)/max)*(seq.length-1)))] : CAT[i%CAT.length]);
     return `<div class="hbar" data-tip="${esc(r.k)}|${esc(r.label||String(num(r.v)))}">
       <span class="hl">${esc(r.k)}</span>
-      <span class="ht"><span class="hf" style="width:${Math.max((num(r.v)/max)*100,2)}%;background:${colour}"></span></span>
+      <span class="ht">${num(r.v)>0?`<span class="hf" style="width:${Math.max((num(r.v)/max)*100,2)}%;background:${colour}"></span>`:''}</span>
       <span class="hv">${esc(r.label||String(num(r.v)))}</span></div>`;
   }).join('')}</div>`;
 }
