@@ -263,3 +263,38 @@ tr:last-child td{border-bottom:none}
 /* Tab badge for pending triage items */
 .nav-item .nbadge{display:inline-block;min-width:16px;padding:0 5px;margin-left:5px;border-radius:8px;
   background:var(--crit);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;vertical-align:1px}
+
+/* ============================================================================
+   Control sizing. Measured audit found the touch targets undersized on phone:
+   icon buttons 34x34, nav tabs 37px tall, filter pills ~30px — all under Apple's
+   44px HIG minimum. Primary controls (nav, icon buttons, actions, rows) now meet
+   44; secondary chips sit at 40, which is the smallest that still reads as a
+   deliberate target rather than a slip.
+   ========================================================================= */
+.icon-btn{width:40px;height:40px}
+.ab{min-height:40px;display:inline-flex;align-items:center}
+.qa .btn{min-height:44px}
+.fpill{min-height:40px;display:inline-flex;align-items:center}
+.loadmore{min-height:48px}
+.utoolbar input,.utoolbar select{min-height:44px}
+.tri-h{min-height:48px}
+.pcard{min-height:44px}
+
+/* Small type: nothing below 11px. 10px badge/label text was measurably too small. */
+.nav-item .nbadge{font-size:11px;line-height:17px;min-width:17px}
+.pcard .pl{font-size:11px}
+
+@media(max-width:760px){
+  .icon-btn{width:44px;height:44px;font-size:16px}
+  .nav-item{min-height:44px;display:flex;align-items:center;justify-content:center}
+  .nav{padding:6px 8px calc(8px + env(safe-area-inset-bottom))}
+  .main{padding-bottom:96px}      /* clears the taller bottom bar */
+  .qa{gap:10px}
+  .qa .btn{flex:1 1 calc(50% - 5px);justify-content:center}  /* even two-up grid, no orphan row */
+  .section-t{margin:24px 0 10px}
+  .card{padding:15px}
+  .kpis{gap:22px}
+}
+
+/* Consistent vertical rhythm between the stacked blocks on every tab. */
+.tri+.section-t,.card+.section-t,.pulsegrid+.section-t,.qa+.section-t{margin-top:26px}
