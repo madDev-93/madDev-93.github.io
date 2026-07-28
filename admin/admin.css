@@ -341,14 +341,14 @@ tr:last-child td{border-bottom:none}
   border:1px solid rgba(245,166,35,.3);font-size:12.5px;color:#ffcd7a;line-height:1.55}
 .warnline b{color:#ffdda6}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:13px 16px}
-.detail-grid .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700}
+.detail-grid .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700}
 .detail-grid .v{font-size:13px;margin-top:2px;overflow-wrap:anywhere}
 .prlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px 16px}
 .prlist>div{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut);
   border-bottom:1px solid var(--line);padding-bottom:7px}
 .prlist b{color:var(--tx)}
 .airow+.airow{margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
-.airow .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin-bottom:4px}
+.airow .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin-bottom:4px}
 details.card summary{list-style:none;font-size:12.5px;color:var(--mut);min-height:26px;display:flex;align-items:center}
 details.card summary::-webkit-details-marker{display:none}
 details.card summary::before{content:'▸ ';margin-right:6px}
