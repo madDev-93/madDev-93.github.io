@@ -445,6 +445,24 @@ function renderHealth(){
     <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
     <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
   </div>
+  ${(()=>{
+    const gb=DATA.guestBursts;
+    if(!gb) return '';
+    const live=num(gb.last7d)>0;
+    return `<div class="section-t">Duplicate guest accounts</div>
+    <div class="card"${live?' style="border-color:rgba(255,92,108,.4)"':''}>
+      <div class="qlabel"><span class="tick" style="background:${live?'var(--crit)':'var(--dim)'}"></span>
+        ${live?'Still happening':'Historic only'}</div>
+      <div class="big sm" style="margin:8px 0 2px">${num(gb.duplicates)} duplicate account${num(gb.duplicates)===1?'':'s'}</div>
+      <div class="qsub">${num(gb.clusters)} burst${num(gb.clusters)===1?'':'s'} · ${num(gb.last7d)} in the last 7 days · ${num(gb.last30d)} in 30${gb.mostRecentAt?` · most recent ${ago(gb.mostRecentAt)}`:''}</div>
+      ${(gb.recent||[]).length?`<div style="margin-top:14px">${hbars((gb.recent||[]).map(c=>({
+        k:String(c.firstAt).slice(0,10), v:num(c.size), label:num(c.size)+' accounts'
+      })),{seq:true})}</div>`:''}
+      <div class="note">The guest→Apple sign-in loop mints a fresh anonymous account on every failed retry, so each burst is one person hitting a broken sign-in — not new users. A fix is on dev (7fad999); store builds ≤498 still carry it.
+      <b>Caveat:</b> internal and simulator-identified accounts are excluded, but a local E2E run on a machine that doesn't report a device fingerprint can still land here. Cross-check the timestamps against your own testing before treating a burst as a real user.</div>
+    </div>`;
+  })()}
+
   <div class="section-t">Feature flags · live values</div>
   <div class="card" id="flagbox">${renderFlags(CONFIG)}</div>
 
