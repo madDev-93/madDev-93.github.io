@@ -154,6 +154,7 @@ function renderHealth(){
   <div class="card"><table><tbody>${DATA.reconcile.invariants.map(i=>`<tr><td>${esc(i.name)}</td><td class="text-center">${i.pass?'<span class="ok">✓</span>':'<span class="cr">✗</span>'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
+let PENDING = null;
 async function renderUsersTab(){
   const m = $('main');
   if(USER_VIEW.uid){ return renderUserDetail(USER_VIEW.uid); }
@@ -162,8 +163,24 @@ async function renderUsersTab(){
     try{ USERS = (await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data.users; }
     catch(e){ m.innerHTML = '<div class="loading cr">'+esc(e.message)+'</div>'; return; }
   }
-  m.innerHTML = renderUserList();
+  if(PENDING===null){ try{ PENDING = (await call('adminListPendingPurchases')({})).data.items; }catch{ PENDING = []; } }
+  m.innerHTML = renderPending() + renderUserList();
   wireUsers();
+}
+
+function renderPending(){
+  if(!PENDING || !PENDING.length) return '';
+  return `<div class="card" style="border-color:rgba(255,92,108,.4);margin-bottom:16px">
+    <div class="qlabel" style="color:var(--crit)"><span class="tick" style="background:var(--crit)"></span>Purchase-sync gap — ${PENDING.length} unattributed purchase${PENDING.length>1?'s':''}</div>
+    <div class="qsub" style="margin:8px 0 12px">Apple reported these paid/redeemed transactions but no account claimed them — Pro was never granted. Find the buyer (RevenueCat/ASC by transaction ID) and reconcile so they get access.</div>
+    <div class="feed">${PENDING.map(p=>`<div class="row"><div class="sev crit"></div>
+      <div style="flex:1">
+        <div class="t">${esc((p.productId||'').replace('com.qwota.pro.','')||'purchase')} · ${esc(p.notificationType||'')}</div>
+        <div class="d mono">tx ${esc(p.originalTransactionId)}${p.purchaseDate?' · '+esc(p.purchaseDate.slice(0,10)):''}${p.appAccountToken?' · aat '+esc(p.appAccountToken.slice(0,8)):''}</div>
+      </div>
+      <button class="btn" data-recon="${esc(p.originalTransactionId)}" data-prod="${esc(p.productId||'')}" data-exp="${esc(p.expiresDate||'')}" style="font-size:12.5px;font-weight:600;color:var(--tx);background:var(--raised);border:1px solid var(--line);padding:8px 12px;border-radius:9px">Reconcile</button>
+    </div>`).join('')}</div>
+  </div>`;
 }
 
 function renderUserList(){
@@ -203,6 +220,25 @@ function wireUsers(){
   const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; $('main').innerHTML=renderUserList(); wireUsers(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
   const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; $('main').innerHTML=renderUserList(); wireUsers(); }; }
   document.querySelectorAll('.utable tr.clickable').forEach(r=>r.onclick=()=>{ USER_VIEW.uid=r.dataset.uid; renderUsersTab(); });
+  document.querySelectorAll('[data-recon]').forEach(b=>b.onclick=()=>openReconcile(b.dataset.recon, b.dataset.prod, b.dataset.exp));
+}
+
+function openReconcile(tx, prod, exp){
+  openModal('Reconcile purchase', `
+    <div class="field"><label>Transaction ID</label><input value="${esc(tx)}" disabled></div>
+    <div class="field"><label>Product</label><input value="${esc(prod||'')}" id="rc-prod"></div>
+    <div class="field"><label>Grant to user (Firebase UID)</label><input id="rc-uid" placeholder="paste the buyer's UID"></div>
+    <div class="qsub">Grants Pro, creates the missing transaction mapping (so future renew/refund/expire attribute automatically), and clears the queue item.</div>
+    <button class="btn-primary" id="rc-run" style="margin-top:14px">Grant Pro & reconcile</button><div class="result" id="rc-result"></div>`);
+  $('rc-run').onclick=async()=>{
+    const uid=$('rc-uid').value.trim(); if(!uid){ $('rc-result').textContent='Enter a UID.'; return; }
+    $('rc-run').disabled=true; $('rc-result').textContent='Reconciling…';
+    try{
+      await call('adminReconcilePurchase')({ originalTransactionId: tx, uid, productId: $('rc-prod').value.trim()||undefined, expiresDate: exp||undefined });
+      $('rc-result').textContent='Done — Pro granted.'; toast('Purchase reconciled');
+      PENDING=null; USERS=null; $('modal').hidden=true; renderUsersTab();
+    }catch(e){ $('rc-run').disabled=false; $('rc-result').textContent=esc(e.message); }
+  };
 }
 
 async function renderUserDetail(uid){
