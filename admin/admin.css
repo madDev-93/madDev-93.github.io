@@ -247,6 +247,16 @@ tr:last-child td{border-bottom:none}
   .utable{display:none}
   .ucards{display:block}
   .utoolbar{flex-wrap:wrap}
+  .utoolbar select{display:none}   /* the filter pills below already do this job */
+
+  /* A 150px label column left the funnel track ~40px wide. Stack instead: name and
+     value on one line, the bar full width beneath it. */
+  .fstage{grid-template-columns:1fr auto;gap:2px 10px}
+  .fstage .nm{font-size:12.5px}
+  .fstage .v{font-size:12.5px}
+  .fstage .ftrack{grid-column:1/-1;height:8px;margin-top:5px}
+  .fstage .drop{margin:5px 0 2px;padding-left:1px}
+  .funnel{gap:15px}
   .section-t{margin-top:20px}
 }
 
