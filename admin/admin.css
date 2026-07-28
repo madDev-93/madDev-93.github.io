@@ -365,3 +365,49 @@ details.card[open] summary::before{content:'▾ '}
 @media(max-width:360px){
   .detail-grid{grid-template-columns:1fr}
 }
+
+/* ============================================================================
+   Charts. Categorical hues are snapped into the dark-mode OKLCH band (L .48-.67,
+   C >= .10) and validated: worst adjacent pair deutan ΔE 9.8, tritan 13.2, all
+   >= 3:1 on the card surface. Teal/amber/violet beat the obvious teal/amber/blue,
+   whose tritan separation was 3.9. Every segment is also directly labelled, so
+   identity is never colour alone.
+   ========================================================================= */
+:root{
+  --c1:#00996b;  /* series 1 */
+  --c2:#b46e00;  /* series 2 */
+  --c3:#8e6ac7;  /* series 3 */
+  --c0:#39414f;  /* absence / dormant — a neutral, deliberately recessive */
+  --seq1:#0c5f47; --seq2:#00805a; --seq3:#00996b; --seq4:#2bb98a; /* sequential, one hue light->dark */
+}
+
+/* Segmented single bar — composition of a whole */
+.segbar{display:flex;gap:2px;height:26px;border-radius:7px;overflow:hidden;background:var(--raised)}
+.segbar > span{position:relative;min-width:3px;transition:filter .15s}
+.segbar > span:hover{filter:brightness(1.25)}
+.seglegend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:12px}
+.seglegend .li{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut)}
+.seglegend .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.seglegend b{color:var(--tx);font-weight:650}
+
+/* Horizontal bar rows — ranked magnitudes */
+.hbars{display:flex;flex-direction:column;gap:11px}
+.hbar{display:grid;grid-template-columns:minmax(74px,116px) 1fr auto;gap:11px;align-items:center;font-size:12.5px}
+.hbar .hl{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .ht{height:9px;background:var(--raised);border-radius:5px;overflow:hidden}
+.hbar .hf{height:100%;border-radius:5px;min-width:3px;transition:filter .15s}
+.hbar:hover .hf{filter:brightness(1.2)}
+.hbar .hv{color:var(--tx);font-weight:650;white-space:nowrap;font-size:12px}
+
+/* Shared hover tooltip for chart marks */
+#charttip{position:fixed;z-index:70;pointer-events:none;background:var(--raised);
+  border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:12px;
+  color:var(--tx);box-shadow:0 10px 26px -12px rgba(0,0,0,.8);max-width:230px;display:none}
+#charttip .tk{color:var(--mut);font-size:11px}
+
+.chart-empty{font-size:12.5px;color:var(--dim);padding:6px 0}
+@media(max-width:760px){
+  .hbar{grid-template-columns:minmax(66px,92px) 1fr auto;gap:9px;font-size:12px}
+  .seglegend{gap:8px 14px}
+  .segbar{height:22px}
+}

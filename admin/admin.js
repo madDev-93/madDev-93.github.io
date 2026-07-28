@@ -126,6 +126,60 @@ function pcard(label, value, key, color, provKey, fmt){
     ${sparkline(series(key), color)}</button>`;
 }
 
+// ---------- chart primitives ----------
+// Colours are validated categorical steps (see admin.css). Direct labels always
+// accompany them, so a segment is never identified by colour alone.
+const CAT = ['var(--c1)','var(--c2)','var(--c3)','var(--c0)'];
+
+/** Composition of a whole, as one segmented bar + a labelled legend. */
+function segbar(parts){
+  const rows = parts.filter(p=>num(p.v) > 0);
+  const total = rows.reduce((t,p)=>t+num(p.v),0);
+  if(!total) return '<div class="chart-empty">Nothing to show yet.</div>';
+  return `<div class="segbar">${rows.map(p=>{
+      const pct = (num(p.v)/total)*100;
+      return `<span style="flex:${num(p.v)};background:${p.c}" data-tip="${esc(p.k)}|${num(p.v)} · ${pct.toFixed(0)}% of ${total}"></span>`;
+    }).join('')}</div>
+    <div class="seglegend">${rows.map(p=>`<span class="li"><span class="sw" style="background:${p.c}"></span>
+      ${esc(p.k)} <b>${num(p.v)}</b></span>`).join('')}</div>`;
+}
+
+/** Ranked magnitudes. `seq` uses one hue light→dark for ordered bands. */
+function hbars(rows, opts){
+  const list = rows.filter(r=>r.v!=null);
+  if(!list.length) return `<div class="chart-empty">${esc((opts&&opts.empty)||'No data yet.')}</div>`;
+  const max = Math.max(...list.map(r=>num(r.v)), 1);
+  const seq = ['var(--seq1)','var(--seq2)','var(--seq3)','var(--seq4)'];
+  return `<div class="hbars">${list.map((r,i)=>{
+    const colour = r.c || (opts&&opts.seq ? seq[Math.min(seq.length-1, Math.floor((num(r.v)/max)*(seq.length-1)))] : CAT[i%CAT.length]);
+    return `<div class="hbar" data-tip="${esc(r.k)}|${esc(r.label||String(num(r.v)))}">
+      <span class="hl">${esc(r.k)}</span>
+      <span class="ht"><span class="hf" style="width:${Math.max((num(r.v)/max)*100,2)}%;background:${colour}"></span></span>
+      <span class="hv">${esc(r.label||String(num(r.v)))}</span></div>`;
+  }).join('')}</div>`;
+}
+
+// One shared tooltip for every chart mark.
+function wireCharts(){
+  let tip=$('charttip');
+  if(!tip){ tip=document.createElement('div'); tip.id='charttip'; document.body.appendChild(tip); }
+  const show=(e)=>{
+    const el=e.currentTarget, raw=el.dataset.tip||''; const [k,v]=raw.split('|');
+    tip.innerHTML=`<div class="tk">${esc(k)}</div><div>${esc(v||'')}</div>`;
+    tip.style.display='block';
+    const r=el.getBoundingClientRect();
+    const x=Math.min(Math.max(8,r.left+r.width/2-tip.offsetWidth/2), innerWidth-tip.offsetWidth-8);
+    const top=r.top-tip.offsetHeight-8;
+    tip.style.left=x+'px';
+    tip.style.top=(top<8 ? r.bottom+8 : top)+'px';
+  };
+  const hide=()=>{ tip.style.display='none'; };
+  document.querySelectorAll('[data-tip]').forEach(el=>{
+    el.onmouseenter=show; el.onmouseleave=hide; el.onblur=hide;
+    el.onclick=(e)=>{ show(e); setTimeout(hide,2200); };  // touch devices get a tap-to-reveal
+  });
+}
+
 function renderCockpit(){
   const d=DATA, u=d.users, ns=d.northStar, mo=d.money;
   const activationPct = u.registered>0 ? Math.round((ns.activatedUsers/u.registered)*100) : 0;
@@ -219,10 +273,28 @@ function renderMoney(){
     <div class="card"><div class="qlabel">MRR estimate</div><div class="big">${money(mo.mrrEstimate)}</div><div class="qsub">monthly + yearly/12 · lifetime one-time excluded · churn removed</div></div>
     <div class="card"><div class="qlabel">Entitled (isPro)</div><div class="big">${mo.entitledCount}${mo.unverifiedEntitledCount?`<span class="flag">${mo.unverifiedEntitledCount} unverified</span>`:''}</div><div class="qsub">${mo.unverifiedEntitledCount} have no production purchase (likely TestFlight/test)</div></div>
   </div>
-  <div class="section-t">By product · production only</div>
-  <div class="card"><table><thead><tr><th>Product</th><th class="text-center">Payers</th><th class="text-center">Price</th></tr></thead><tbody>
-    ${Object.keys(mo.prices).map(p=>`<tr><td class="mono">${esc(p)}</td><td class="text-center">${mo.byProduct[p]||0}</td><td class="text-center">${money(mo.prices[p])}</td></tr>`).join('')}
-  </tbody></table>${mo.sandboxTx?`<div class="note">${mo.sandboxTx} Sandbox transaction(s) excluded from revenue.</div>`:''}</div>
+  <div class="section-t">Where the money comes from</div>
+  <div class="card">
+    ${segbar(Object.keys(mo.prices).map((p,i)=>({k:p.replace('com.qwota.pro.',''), v:num(mo.byProduct[p]), c:CAT[i%CAT.length]})))}
+    <div style="margin-top:18px">${hbars(Object.keys(mo.prices).map(p=>{
+      const payers=num(mo.byProduct[p]);
+      const contrib = p.endsWith('monthly') ? payers*num(mo.prices[p])
+                    : p.endsWith('yearly')  ? payers*num(mo.prices[p])/12 : 0;
+      return { k:p.replace('com.qwota.pro.',''), v:contrib, label: contrib?money(contrib)+'/mo':'one-time' };
+    }), {seq:true, empty:'No production purchases yet.'})}</div>
+    <div class="note">Bar one: how many people are on each plan. Bar two: what each plan contributes to MRR — lifetime is a one-time charge, so it contributes nothing recurring.${mo.sandboxTx?` ${num(mo.sandboxTx)} Sandbox transaction(s) excluded.`:''}</div>
+  </div>
+
+  <div class="section-t">Who has access, and why</div>
+  <div class="card">
+    ${segbar([
+      {k:'Paying', v:num(mo.payingCount), c:'var(--c1)'},
+      {k:'On trial', v:num(mo.onReverseTrial), c:'var(--c3)'},
+      {k:'Entitled, unverified', v:num(mo.unverifiedEntitledCount), c:'var(--c2)'},
+      {k:'Churned', v:num(mo.churnedCount), c:'var(--c0)'},
+    ])}
+    <div class="note">Never summed into one "Pro" number — entitlement includes TestFlight and trials, and churned accounts have paid before but don't now.</div>
+  </div>
   <div class="section-t">Access breakdown</div>
   <div class="card"><div class="kpis">
     <div class="kpi"><div class="l">Paid</div><div class="n ok">${num(mo.payingCount)}</div></div>
@@ -261,6 +333,14 @@ function renderHealth(){
     <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
     <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
   </div>
+  <div class="section-t">App versions in the field</div>
+  <div class="card">${(()=>{
+    const cv=DATA.clientVersions||{versions:[],known:0,unknown:0};
+    if(!cv.versions.length) return `<div class="chart-empty">No version has been reported yet. The foreground heartbeat started sending build info in the next release — until users are on it, this stays empty.</div>`;
+    return hbars(cv.versions.map(v=>({k:v.version, v:num(v.count), label:num(v.count)+' user'+(num(v.count)===1?'':'s')})), {seq:true})
+      + `<div class="note">${num(cv.known)} of ${num(cv.known)+num(cv.unknown)} accounts have reported a version. The rest haven't opened a build that sends it.</div>`;
+  })()}</div>
+
   <div class="section-t">Recent errors</div>
   <div class="card">${h.recentErrors.length?`<table><thead><tr><th>When</th><th>Type</th><th>User</th><th>Error</th></tr></thead><tbody>
     ${h.recentErrors.map(e=>`<tr><td>${ago(e.at)}</td><td><span class="badge">${esc(e.type)}</span></td><td class="mono">${esc((e.userId||'—').slice(0,10))}</td><td>${esc(e.error||'—')}</td></tr>`).join('')}
@@ -337,6 +417,34 @@ function rowSignal(u){
   return bits.join(' · ');
 }
 
+// Two questions the list can't answer by scrolling: where does the whole population
+// sit, and how deep does engagement actually go.
+function renderUserCharts(){
+  if(!USERS || !USERS.length) return '';
+  const active   = USERS.filter(u=>u.type!=='guest' && num(u.workouts)>0).length;
+  const atRisk   = USERS.filter(u=>u.atRisk).length;
+  const silent   = USERS.filter(u=>u.type!=='guest' && !num(u.workouts)).length;
+  const dormant  = USERS.filter(u=>u.type==='guest' && !num(u.workouts)).length;
+  const buckets = [
+    {k:'none',    v:USERS.filter(u=>num(u.workouts)===0).length},
+    {k:'1–4',     v:USERS.filter(u=>num(u.workouts)>=1 && num(u.workouts)<5).length},
+    {k:'5–19',    v:USERS.filter(u=>num(u.workouts)>=5 && num(u.workouts)<20).length},
+    {k:'20–49',   v:USERS.filter(u=>num(u.workouts)>=20 && num(u.workouts)<50).length},
+    {k:'50+',     v:USERS.filter(u=>num(u.workouts)>=50).length},
+  ];
+  return `<div class="card" style="margin-bottom:14px">
+    <div class="qlabel">Population · ${USERS.length} accounts</div>
+    <div style="margin-top:12px">${segbar([
+      {k:'Training', v:active,  c:'var(--c1)'},
+      {k:'At risk',  v:atRisk,  c:'var(--c2)'},
+      {k:'Never trained', v:silent, c:'var(--c3)'},
+      {k:'Dormant guests', v:dormant, c:'var(--c0)'},
+    ])}</div>
+    <div class="qlabel" style="margin-top:20px">Workouts logged · per account</div>
+    <div style="margin-top:12px">${hbars(buckets.map(b=>({k:b.k, v:b.v, label:b.v+' user'+(b.v===1?'':'s')})), {seq:true})}</div>
+  </div>`;
+}
+
 function renderUserList(){
   const q = USER_VIEW.q.toLowerCase();
   const seg = USER_VIEW.seg;
@@ -356,7 +464,7 @@ function renderUserList(){
     ${SEGMENTS.map(sg=>`<button class="fpill${seg===sg.k?' on':''}" data-seg="${esc(sg.k)}">${esc(sg.label)} <span class="pc">${cnt(sg.k)}</span></button>`).join('')}
     <button class="fpill${INCLUDE_INTERNAL?' on':''}" id="u-internal">Internal${USERS_HIDDEN&&!INCLUDE_INTERNAL?' '+USERS_HIDDEN:''}</button>
   </div>
-  ${q?`<div class="qsub d" style="margin:0 2px 10px">Searching all ${USERS.length} accounts · ${rows.length} match${rows.length===1?'':'es'}</div>`:''}
+  ${q?`<div class="qsub d" style="margin:0 2px 10px">Searching all ${USERS.length} accounts · ${rows.length} match${rows.length===1?'':'es'}</div>`:renderUserCharts()}
 
   <div class="ucards">
     ${shown.length?shown.map(u=>`<button class="urow ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
@@ -369,7 +477,7 @@ function renderUserList(){
   </div>
 
   <div class="card" style="padding:0;overflow-x:auto"><table class="utable"><thead><tr>
-    <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">Adh.</th><th class="text-center">AI</th><th>Last active</th><th>Signals</th>
+    <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">Adh.</th><th class="text-center">AI</th><th>Last active</th><th>Version</th><th>Signals</th>
   </tr></thead><tbody>
     ${shown.map(u=>`<tr class="clickable ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
       <td><div class="uname">${esc(u.name||(u.type==='guest'?'Anonymous':'—'))}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
@@ -379,6 +487,7 @@ function renderUserList(){
       <td class="text-center ${num(u.adherence)?'':'d'}">${num(u.adherence)?num(u.adherence)+'%':'—'}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
       <td>${u.lastActive?ago(u.lastActive):'—'}</td>
+      <td class="mono">${u.appVersion?esc(u.appVersion):'—'}</td>
       <td>${u.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')||'—'}</td>
     </tr>`).join('')}
   </tbody></table></div>
@@ -392,6 +501,7 @@ function renderUserList(){
 }
 
 function wireUsers(){
+  wireCharts();
   const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; USER_VIEW.limit=25; redrawUserList(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
   document.querySelectorAll('.fpill[data-seg]').forEach(b=>b.onclick=()=>{ USER_VIEW.seg=b.dataset.seg; USER_VIEW.limit=25; USER_VIEW.showDormant=false; redrawUserList(); });
   const ib=$('u-internal'); if(ib) ib.onclick=()=>toggleInternal();
@@ -572,6 +682,8 @@ async function renderUserDetail(uid){
         <div><div class="l">Last active</div><div class="v">${row.lastActive?ago(row.lastActive):'—'}</div></div>
         <div><div class="l">Last synced</div><div class="v">${sup.lastSyncedAt?ago(sup.lastSyncedAt):'—'}</div></div>
         <div><div class="l">Push</div><div class="v ${pushOff?'wn':''}">${pushOff?'No token':'Reachable'}</div></div>
+        <div><div class="l">App version</div><div class="v">${sup.appVersion?esc(sup.appVersion)+(sup.buildNumber?' <span class="d">('+esc(sup.buildNumber)+')</span>':''):'<span class="d">not reported</span>'}</div></div>
+        <div><div class="l">Device</div><div class="v">${esc(sup.deviceModel||'—')}${sup.iosVersion?' <span class="d">· iOS '+esc(sup.iosVersion)+'</span>':''}</div></div>
         <div><div class="l">Language</div><div class="v">${esc(sup.language||'—')}</div></div>
         <div><div class="l">Timezone</div><div class="v">${esc(sup.timezone||'—')}</div></div>
         <div><div class="l">AI spend</div><div class="v">${money(row.aiCost||0)} · ${num(row.aiCalls)} calls</div></div>
@@ -616,6 +728,7 @@ async function renderUserDetail(uid){
 
 // ---------- actions / wiring ----------
 function wire(){
+  wireCharts();
   document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>openAction(b.dataset.act));
   document.querySelectorAll('[data-tri]').forEach(el=>{
     const h=el.querySelector('.tri-h'); if(h) h.onclick=()=>el.classList.toggle('open');
