@@ -362,9 +362,9 @@ function renderUserList(){
     ${shown.length?shown.map(u=>`<button class="urow ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
       <span class="uav ${u.atRisk?'risk':(num(u.workouts)>0?'hot':'')}">${esc(initials(u))}</span>
       <span class="umid"><span class="un">${esc(u.name||(u.type==='guest'?'Anonymous':'No name'))}</span>
-        <span class="us">${esc(u.email||u.uid.slice(0,14)+'…')}</span></span>
-      <span class="uend"><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>
+        <span class="us">${esc(u.email||u.uid.slice(0,14)+'…')}</span>
         <span class="uw">${esc(rowSignal(u))}</span></span>
+      <span class="uend"><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span></span>
     </button>`).join(''):'<div class="card"><div class="qsub d">No users match.</div></div>'}
   </div>
 
@@ -388,7 +388,7 @@ function renderUserList(){
     ${USER_VIEW.showDormant?`<div class="ucards" style="margin-top:7px">${dormant.slice(0,50).map(u=>`
       <button class="urow" data-uid="${esc(u.uid)}"><span class="uav">—</span>
       <span class="umid"><span class="un">Anonymous</span><span class="us">${esc(u.uid.slice(0,14))}…</span></span>
-      <span class="uend"><span class="chip-s free">free</span><span class="uw">no activity</span></span></button>`).join('')}</div>`:''}`:''}`;
+      <span class="uend"><span class="chip-s free">free</span></span></button>`).join('')}</div>`:''}`:''}`;
 }
 
 function wireUsers(){

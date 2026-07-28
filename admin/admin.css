@@ -316,8 +316,12 @@ tr:last-child td{border-bottom:none}
    ========================================================================= */
 .urow .umid{display:block;min-width:0;overflow:hidden}
 .urow .un,.urow .us{display:block;max-width:100%}
-.urow .uend{max-width:42%}
-.urow .uw{white-space:normal;line-height:1.35}
+/* Signal now lives under the name; the chip column holds only the chip. Everything in
+   the row is display:block so ellipsis actually applies (inline spans ignore it). */
+.urow .uend{flex:none;display:flex;align-items:center}
+.urow .uw{display:block;font-size:11px;color:var(--dim);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.urow .chip-s{margin-right:0}
 .uav.hot{background:rgba(45,212,167,.15);color:var(--teal)}
 .uav.risk{background:rgba(245,166,35,.15);color:var(--warn)}
 .uav.lg{width:46px;height:46px;border-radius:12px;font-size:15px}
@@ -354,12 +358,10 @@ details.card[open] summary::before{content:'▾ '}
 .btn[disabled]{opacity:.45;pointer-events:none}
 
 @media(max-width:760px){
-  .urow .uend{max-width:38%}
   .idtop{gap:11px}
   .detail-grid{grid-template-columns:1fr 1fr;gap:12px 12px}
   .prlist{grid-template-columns:1fr}
 }
 @media(max-width:360px){
   .detail-grid{grid-template-columns:1fr}
-  .urow .uend{max-width:34%}
 }
