@@ -298,3 +298,11 @@ tr:last-child td{border-bottom:none}
 
 /* Consistent vertical rhythm between the stacked blocks on every tab. */
 .tri+.section-t,.card+.section-t,.pulsegrid+.section-t,.qa+.section-t{margin-top:26px}
+
+/* Header row: pill, status and icon buttons shared a row at three different
+   heights (32 / 30 / 40). One height so the row reads as a single band. */
+@media(min-width:761px){
+  .topbar .pill,.topbar .status,.topbar .icon-btn{height:38px}
+  .topbar .pill,.topbar .status{display:inline-flex;align-items:center;padding-top:0;padding-bottom:0}
+  .topbar .icon-btn{width:38px}
+}
