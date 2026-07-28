@@ -268,10 +268,10 @@ function aiBars(rows){
 function renderMoney(){
   const mo=DATA.money;
   return `
-  <div class="grid3">
-    <div class="card"><div class="qlabel">Paying (verified)</div><div class="big ok">${num(mo.payingCount)}</div><div class="qsub">active production purchases${num(mo.churnedCount)?` · <span class="d">${num(mo.churnedCount)} churned</span>`:''}</div></div>
-    <div class="card"><div class="qlabel">MRR estimate</div><div class="big">${money(mo.mrrEstimate)}</div><div class="qsub">monthly + yearly/12 · lifetime one-time excluded · churn removed</div></div>
-    <div class="card"><div class="qlabel">Entitled (isPro)</div><div class="big">${mo.entitledCount}${mo.unverifiedEntitledCount?`<span class="flag">${mo.unverifiedEntitledCount} unverified</span>`:''}</div><div class="qsub">${mo.unverifiedEntitledCount} have no production purchase (likely TestFlight/test)</div></div>
+  <div class="pulsegrid">
+    <div class="pcard"><div class="pl">Paying</div><div class="pn ok">${num(mo.payingCount)}</div><div class="pd">${num(mo.churnedCount)} churned</div></div>
+    <div class="pcard"><div class="pl">MRR</div><div class="pn">${money(mo.mrrEstimate)}</div><div class="pd">churn removed</div></div>
+    <div class="pcard"><div class="pl">Entitled</div><div class="pn">${num(mo.entitledCount)}</div><div class="pd">${num(mo.unverifiedEntitledCount)} unverified</div></div>
   </div>
   <div class="section-t">Where the money comes from</div>
   <div class="card">
@@ -293,16 +293,8 @@ function renderMoney(){
       {k:'Entitled, unverified', v:num(mo.unverifiedEntitledCount), c:'var(--c2)'},
       {k:'Churned', v:num(mo.churnedCount), c:'var(--c0)'},
     ])}
-    <div class="note">Never summed into one "Pro" number — entitlement includes TestFlight and trials, and churned accounts have paid before but don't now.</div>
-  </div>
-  <div class="section-t">Access breakdown</div>
-  <div class="card"><div class="kpis">
-    <div class="kpi"><div class="l">Paid</div><div class="n ok">${num(mo.payingCount)}</div></div>
-    <div class="kpi"><div class="l">Churned</div><div class="n">${num(mo.churnedCount)}</div></div>
-    <div class="kpi"><div class="l">Ever paid</div><div class="n">${num(mo.lifetimePayerCount)}</div></div>
-    <div class="kpi"><div class="l">On reverse trial</div><div class="n">${num(mo.onReverseTrial)}</div></div>
-    <div class="kpi"><div class="l">Entitled (incl. test)</div><div class="n">${num(mo.entitledCount)}</div></div>
-  </div><div class="note">"Paying" and "entitled" are never summed — entitlement includes test/TestFlight and trials. A transaction only counts as revenue while the buyer is still entitled: refund/expire moves them to Churned and out of MRR.</div></div>`;
+    <div class="note">${num(mo.lifetimePayerCount)} account(s) have ever paid. Never summed into one "Pro" number — entitlement includes TestFlight and trials, and a transaction counts as revenue only while its buyer is still entitled.</div>
+  </div>`;
 }
 
 function pipeCell(label, p, note){
