@@ -378,7 +378,9 @@ details.card[open] summary::before{content:'▾ '}
   --c2:#b46e00;  /* series 2 */
   --c3:#8e6ac7;  /* series 3 */
   --c0:#39414f;  /* absence / dormant — a neutral, deliberately recessive */
-  --seq1:#0c5f47; --seq2:#00805a; --seq3:#00996b; --seq4:#2bb98a; /* sequential, one hue light->dark */
+  /* Sequential ramp, one hue. Validated against the BAR TRACK (#1c222d), not the
+     card: the previous darkest step was 2.08:1 there and the bars read as empty. */
+  --seq1:#00805a; --seq2:#00996b; --seq3:#22b184; --seq4:#4fcba3;
 }
 
 /* Segmented single bar — composition of a whole */
