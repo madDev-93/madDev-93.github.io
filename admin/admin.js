@@ -218,6 +218,14 @@ function renderCockpit(){
   <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users${u.internalExcluded?` · ${num(u.internalExcluded)} internal hidden`:''} · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
 
   <div class="section-t">Activation funnel</div>
+  ${d.coverage?`<div class="card" style="margin-bottom:10px;border-color:rgba(74,158,255,.3)">
+    <div class="qsub"><b style="color:var(--info)">What these numbers can see:</b>
+    ${num(d.coverage.engagementReporting)} of ${num(u.appUsers)} accounts report workout activity.
+    ${num(d.coverage.engagementUnknown)} haven't yet — workout counts only reach the server via the
+    heartbeat, and the full profile sync is gated on AI Coach access, so
+    <span class="mono">userData</span>-derived figures describe entitled accounts only
+    (${num(d.coverage.fullSyncUsers)} synced, ${num(d.coverage.coachedUsers)} with an AI plan).</div>
+  </div>`:''}
   <div class="card"><div class="funnel">
     ${d.funnel.map(f=>`<div class="fstage"><span class="nm">${esc(f.stage)}</span>
       <div class="ftrack"><div class="ffill${f.worst?' worst':''}" style="width:${Math.max(num(f.pct),2)}%"></div></div>
