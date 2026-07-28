@@ -138,10 +138,30 @@ function renderMoney(){
   </div><div class="note">"Paying" and "entitled" are never summed — entitlement includes test/TestFlight and trials.</div></div>`;
 }
 
+function pipeCell(label, p, note){
+  const flowing = p.total>0;
+  return `<div class="card">
+    <div class="qlabel"><span class="tick" style="background:${flowing?'var(--teal)':'var(--warn)'}"></span>${esc(label)}</div>
+    <div class="big sm">${flowing?'flowing':'no events'}</div>
+    <div class="qsub">${p.total} total · ${p.last24h} in 24h${p.lastAt?` · last ${ago(p.lastAt)}`:''}${p.lastType?` <span class="mono">${esc(p.lastType)}</span>`:''}</div>
+    ${note?`<div class="note">${esc(note)}</div>`:''}
+  </div>`;
+}
 function renderHealth(){
   const h=DATA.health;
+  const pp=DATA.pipeline||{revenueCat:{total:0,last24h:0},appStore:{total:0,last24h:0},pendingQueue:0};
   return `
+  <div class="section-t">Purchase pipeline</div>
   <div class="grid3">
+    ${pipeCell('RevenueCat webhook', pp.revenueCat, pp.revenueCat.total===0?'Not yet receiving — configure in RC dashboard.':'')}
+    ${pipeCell('Apple notifications', pp.appStore, '')}
+    <div class="card">
+      <div class="qlabel"><span class="tick" style="background:${pp.pendingQueue?'var(--crit)':'var(--teal)'}"></span>Reconcile queue</div>
+      <div class="big sm ${pp.pendingQueue?'cr':'ok'}">${pp.pendingQueue}</div>
+      <div class="qsub">${pp.pendingQueue?'unattributed — fix in Users':'all purchases attributed'}</div>
+    </div>
+  </div>
+  <div class="grid3" style="margin-top:14px">
     <div class="card"><div class="qlabel">AI failures · 24h</div><div class="big ${h.aiFailures24h?'cr':'ok'}">${h.aiFailures24h}</div></div>
     <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
     <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
