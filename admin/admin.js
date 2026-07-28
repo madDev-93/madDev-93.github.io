@@ -702,8 +702,22 @@ $('modal-close').onclick=closeModal;
 $('modal').onclick=(e)=>{ if(e.target===$('modal')) closeModal(); };
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{ TAB=b.dataset.tab; render(); });
 
+// Deep link: #/user/<uid> should open that person on a cold load, so a UID pasted
+// from a support email works as a URL. Writing the hash without reading it back was
+// only half the feature.
+function routeFromHash(){
+  const m = /^#\/user\/([A-Za-z0-9_-]{6,})$/.exec(location.hash||'');
+  if(m){ TAB='users'; USER_VIEW.uid=m[1]; return true; }
+  return false;
+}
+window.addEventListener('hashchange', ()=>{
+  const wanted = /^#\/user\/([A-Za-z0-9_-]{6,})$/.exec(location.hash||'');
+  const uid = wanted ? wanted[1] : null;
+  if(uid !== USER_VIEW.uid){ USER_VIEW.uid = uid; if(uid) TAB='users'; render(); }
+});
+
 auth.onAuthStateChanged((user)=>{
-  if(user && user.uid===ADMIN_UID){ $('signin').hidden=true; $('shell').hidden=false; load(); }
+  if(user && user.uid===ADMIN_UID){ $('signin').hidden=true; $('shell').hidden=false; routeFromHash(); load(); }
   else if(user){ $('signin-error').textContent='This account is not an admin.'; auth.signOut(); }
   else { $('signin').hidden=false; $('shell').hidden=true; }
 });
