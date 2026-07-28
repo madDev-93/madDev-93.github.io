@@ -46,6 +46,7 @@ async function load(){
   $('main').innerHTML = '<div class="loading">Loading console…</div>';
   USERS = null;   // internal-toggle may have changed; refetch on demand
   PENDING = null; // the reconcile queue is live data — Refresh must actually refresh it
+  AUDIT = null; CONFIG = null; // an action you just took must show up
   try{
     const res = await call('adminConsole')({ includeInternal: INCLUDE_INTERNAL });
     DATA = res.data;
@@ -86,7 +87,7 @@ function render(){
   const banner = (DATA && STALE) ? '<div class="card" style="border-color:rgba(245,166,35,.45);margin-bottom:16px"><div class="qsub"><b style="color:var(--warn)">Stale snapshot</b> — the last refresh failed, these numbers are from the previous successful load. Hit ↻ to retry.</div></div>' : '';
   if(TAB==='cockpit'){ m.innerHTML = banner + renderCockpit(); wire(); }
   else if(TAB==='money'){ m.innerHTML = banner + renderMoney(); wire(); }
-  else if(TAB==='health'){ m.innerHTML = banner + renderHealth(); wire(); }
+  else if(TAB==='health'){ m.innerHTML = banner + renderHealth(); wire(); loadHealthExtras(); }
   else if(TAB==='users'){ renderUsersTab(); }
 }
 
@@ -198,7 +199,13 @@ function renderCockpit(){
       </div></div>`;
   }).join('') : `<div class="card"><div class="qsub ok">Nothing needs you right now.</div></div>`;
 
+  const dg=d.digest;
   return `
+  ${dg?`<div class="card" style="margin-bottom:16px">
+    <div class="qlabel"><span class="tick" style="background:var(--teal)"></span>Since ${esc(dg.comparedTo||'the last snapshot')}</div>
+    <div class="big sm" style="margin:8px 0 4px">${esc(dg.headline||'')}</div>
+    <div class="qsub d">${esc((dg.lines||[]).join(' · '))}</div>
+  </div>`:''}
   <div class="section-t">Needs you${att.length?` · ${att.length}`:''}</div>
   ${triage}
 
@@ -218,6 +225,17 @@ function renderCockpit(){
       ${f.dropPct>0?`<span class="drop${f.worst?' worst':''}">↓ ${num(f.dropPct)}% drop from ${esc(f.from!=null?String(f.from):'')}${f.worst?' — the leak is here':''}</span>`:''}
     </div>`).join('')}
   </div></div>
+
+  ${(()=>{
+    const ob=d.onboarding||{reporting:0,completed:0,steps:[]};
+    if(!ob.reporting) return `<div class="section-t">Where onboarding stalls</div>
+      <div class="card"><div class="chart-empty">No onboarding progress reported yet. The app started recording the furthest step reached in the next release — until users are on it, the 84% drop above can't be located to a screen.</div></div>`;
+    return `<div class="section-t">Where onboarding stalls</div>
+    <div class="card">
+      ${hbars(ob.steps.map(x=>({k:x.step, v:num(x.stalled), label:num(x.stalled)+' stalled of '+num(x.reached)})),{seq:true,empty:'Everyone who started, finished.'})}
+      <div class="note">${num(ob.completed)} of ${num(ob.reporting)} reporting accounts finished onboarding. Each bar is the furthest step reached by someone who never completed — the tallest bar is the screen to fix.</div>
+    </div>`;
+  })()}
 
   <div class="section-t">Do</div>
   <div class="qa">
@@ -357,6 +375,48 @@ function pipeCell(label, p, note){
     ${note?`<div class="note">${esc(note)}</div>`:''}
   </div>`;
 }
+function renderFlags(cfg){
+  if(!cfg) return '<div class="chart-empty">Loading flags…</div>';
+  if(!cfg.flags || !cfg.flags.length) return '<div class="chart-empty">No feature flags set.</div>';
+  return `<table><tbody>${cfg.flags.map(f=>`<tr>
+      <td class="mono">${esc(f.key)}</td>
+      <td class="text-center"><span class="badge ${f.value===true?'on':(f.value===false?'off':'')}">${esc(String(f.value))}</span></td>
+    </tr>`).join('')}</tbody></table>
+    <div class="note">Read straight from <span class="mono">config/featureFlags</span>. Setting a flag was write-only before — you could turn one on without ever seeing it was already on.</div>`;
+}
+
+const AUDIT_LABEL = { comp_trial:'Comped a trial', set_flag:'Changed a flag', force_refresh:'Forced an AI refresh',
+  set_internal:'Marked internal', send_push:'Sent a push', reconcile_purchase:'Reconciled a purchase' };
+function renderAudit(a){
+  if(!a) return '<div class="chart-empty">Loading history…</div>';
+  if(!a.items || !a.items.length) return '<div class="chart-empty">Nothing recorded yet. Actions taken from here are logged from now on.</div>';
+  return `<div class="feed">${a.items.slice(0,25).map(it=>{
+    const d=it.detail||{};
+    const extra=[
+      d.days!=null?d.days+' days':null,
+      d.key!=null?`${d.key} = ${d.value}`:null,
+      d.internal!=null?(d.internal?'on':'off'):null,
+      d.title?`"${d.title}"`:null,
+      d.productId?String(d.productId).replace('com.qwota.pro.',''):null,
+    ].filter(Boolean).join(' · ');
+    return `<div class="row"><span class="sev info"></span>
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(AUDIT_LABEL[it.action]||it.action)}${extra?` <span class="d">${esc(extra)}</span>`:''}</div>
+        ${it.uid?`<div class="d mono">${esc(String(it.uid).slice(0,16))}…</div>`:''}
+      </div>
+      <div class="d" style="white-space:nowrap">${it.at?ago(it.at):'—'}</div></div>`;
+  }).join('')}</div>
+  <div class="note">Every comp, flag change and push you make from this console — the ledger that used to live in a file on your Desktop.</div>`;
+}
+
+// Health-tab extras load after paint; neither blocks the numbers.
+async function loadHealthExtras(){
+  if(!CONFIG){ try{ CONFIG=(await call('adminGetConfig')({})).data; }catch{ CONFIG={flags:[]}; }
+    const b=$('flagbox'); if(b) b.innerHTML=renderFlags(CONFIG); }
+  if(!AUDIT){ try{ AUDIT=(await call('adminAuditTrail')({limit:60})).data; }catch{ AUDIT={items:[]}; }
+    const b=$('auditbox'); if(b) b.innerHTML=renderAudit(AUDIT); }
+}
+
 function renderHealth(){
   const h=DATA.health;
   const pp=DATA.pipeline||{revenueCat:{total:0,last24h:0},appStore:{total:0,last24h:0},pendingQueue:0};
@@ -376,6 +436,12 @@ function renderHealth(){
     <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
     <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
   </div>
+  <div class="section-t">Feature flags · live values</div>
+  <div class="card" id="flagbox">${renderFlags(CONFIG)}</div>
+
+  <div class="section-t">What you've done</div>
+  <div class="card" id="auditbox">${renderAudit(AUDIT)}</div>
+
   <div class="section-t">App versions in the field</div>
   <div class="card">${(()=>{
     const cv=DATA.clientVersions||{versions:[],known:0,unknown:0};
@@ -682,6 +748,7 @@ function renderAIActivity(a){
 }
 
 let AIACT = null;
+let AUDIT = null, CONFIG = null;
 async function renderUserDetail(uid){
   const m=$('main');
   const row = (USERS||[]).find(u=>u.uid===uid) || {};
