@@ -25,7 +25,7 @@ let STALE = false;              // DATA is a last-good snapshot, not a fresh rea
 let INCLUDE_INTERNAL = false;   // exclude internal/test accounts by default
 let USERS = null;               // cached adminUsers list
 let USERS_HIDDEN = 0;           // internal accounts the server filtered out of that list
-let USER_VIEW = { uid: null, q: '', type: 'all', limit: 25 };
+let USER_VIEW = { uid: null, q: '', seg: 'look', limit: 25, showDormant: false };
 const $ = (id) => document.getElementById(id);
 
 // ---------- helpers ----------
@@ -309,82 +309,101 @@ function renderPending(){
 
 function flagClass(f){ return f==='entitled-no-purchase' ? 'risk' : f==='churned' ? 'churned' : f==='guest' ? 'guest' : ''; }
 
-function renderUserList(){
-  const q = USER_VIEW.q.toLowerCase(), tf = USER_VIEW.type;
-  const rows = USERS.filter(u=>{
-    if(tf==='registered' && u.type!=='registered') return false;
-    if(tf==='guest' && u.type!=='guest') return false;
-    if(tf==='paid' && u.access!=='paid' && u.access!=='lifetime') return false;
-    if(tf==='churned' && u.access!=='churned') return false;
-    if(tf==='flagged' && !u.flags.length) return false;
-    if(q){ if(!(((u.email||'')+' '+(u.name||'')+' '+u.uid).toLowerCase().includes(q))) return false; }
-    return true;
-  });
-  // Render a bounded page. 86 rows is survivable; a few thousand is not, and the
-  // old code built every row on every keystroke.
-  const shown = rows.slice(0, USER_VIEW.limit);
-  const count = (t)=>USERS.filter(u=>t(u)).length;
+// Segments answer questions the operator actually asks. The old filters (registered /
+// guest / paid / flagged) were record properties — "flagged" matched 84 of 86 accounts
+// because "guest" and "no-workouts" counted as flags.
+const SEGMENTS = [
+  { k:'look',    label:'Worth a look', test:u=>!(u.type==='guest' && !num(u.workouts)) },
+  { k:'atrisk',  label:'At risk',      test:u=>!!u.atRisk },
+  { k:'paid',    label:'Paying',       test:u=>u.access==='paid'||u.access==='lifetime' },
+  { k:'lapsed',  label:'Lapsed',       test:u=>!!u.lapsed },
+  { k:'silent',  label:'Never trained',test:u=>!!u.silent },
+  { k:'all',     label:'Everyone',     test:()=>true },
+];
+const segTest = (k)=>(SEGMENTS.find(x=>x.k===k)||SEGMENTS[0]).test;
 
-  const initials = (u)=>{
-    const n=(u.name||'').trim();
-    if(!n) return '—';
-    return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-  };
-  const chip = (u)=>`<span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>`;
+function initials(u){
+  const n=(u.name||'').trim();
+  if(!n) return '—';
+  return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+// What this row is worth knowing for, in one line.
+function rowSignal(u){
+  const w=num(u.workouts);
+  if(!w) return u.type==='guest' ? 'no activity' : 'never trained';
+  const bits=[w+' workout'+(w===1?'':'s')];
+  if(num(u.adherence)) bits.push(num(u.adherence)+'% adherence');
+  else if(num(u.streak)) bits.push(num(u.streak)+'-day streak');
+  return bits.join(' · ');
+}
+
+function renderUserList(){
+  const q = USER_VIEW.q.toLowerCase();
+  const seg = USER_VIEW.seg;
+  const matchesQ = (u)=>!q || ((u.email||'')+' '+(u.name||'')+' '+u.uid).toLowerCase().includes(q);
+  // A search should look at everyone, not just the active segment — you're hunting a
+  // specific person, not browsing.
+  const pool = q ? USERS.filter(matchesQ) : USERS.filter(segTest(seg));
+  const rows = pool;
+  const shown = rows.slice(0, USER_VIEW.limit);
+  const dormant = (!q && seg==='look') ? USERS.filter(u=>u.type==='guest' && !num(u.workouts)) : [];
+  const cnt = (k)=>USERS.filter(segTest(k)).length;
 
   return `<div class="utoolbar">
     <input id="u-search" placeholder="Search name / email / UID" value="${esc(USER_VIEW.q)}">
-    <select id="u-type">
-      <option value="all">All types</option><option value="registered">Registered</option><option value="guest">Guests</option><option value="paid">Paying</option><option value="churned">Churned</option><option value="flagged">Flagged</option>
-    </select>
   </div>
   <div class="fbar">
-    <button class="fpill${tf==='all'?' on':''}" data-f="all">All ${USERS.length}</button>
-    <button class="fpill${tf==='paid'?' on':''}" data-f="paid">Paying ${count(u=>u.access==='paid'||u.access==='lifetime')}</button>
-    <button class="fpill${tf==='churned'?' on':''}" data-f="churned">Churned ${count(u=>u.access==='churned')}</button>
-    <button class="fpill${tf==='registered'?' on':''}" data-f="registered">Registered ${count(u=>u.type==='registered')}</button>
-    <button class="fpill${tf==='guest'?' on':''}" data-f="guest">Guests ${count(u=>u.type==='guest')}</button>
-    <button class="fpill${tf==='flagged'?' on':''}" data-f="flagged">Flagged ${count(u=>u.flags.length>0)}</button>
-    <button class="fpill${INCLUDE_INTERNAL?' on':''}" id="u-internal">Internal${USERS_HIDDEN&&!INCLUDE_INTERNAL?' ('+USERS_HIDDEN+' hidden)':''}</button>
+    ${SEGMENTS.map(sg=>`<button class="fpill${seg===sg.k?' on':''}" data-seg="${esc(sg.k)}">${esc(sg.label)} <span class="pc">${cnt(sg.k)}</span></button>`).join('')}
+    <button class="fpill${INCLUDE_INTERNAL?' on':''}" id="u-internal">Internal${USERS_HIDDEN&&!INCLUDE_INTERNAL?' '+USERS_HIDDEN:''}</button>
   </div>
+  ${q?`<div class="qsub d" style="margin:0 2px 10px">Searching all ${USERS.length} accounts · ${rows.length} match${rows.length===1?'':'es'}</div>`:''}
 
   <div class="ucards">
     ${shown.length?shown.map(u=>`<button class="urow ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
-      <span class="uav">${esc(initials(u))}</span>
-      <span class="umid"><span class="un">${esc(u.name||'Guest')}</span>
-        <span class="us">${esc(u.email||u.uid.slice(0,16)+'…')}</span></span>
-      <span class="uend">${chip(u)}<span class="uw">${num(u.workouts)?num(u.workouts)+' workouts':'no workouts'}</span></span>
+      <span class="uav ${u.atRisk?'risk':(num(u.workouts)>0?'hot':'')}">${esc(initials(u))}</span>
+      <span class="umid"><span class="un">${esc(u.name||(u.type==='guest'?'Anonymous':'No name'))}</span>
+        <span class="us">${esc(u.email||u.uid.slice(0,14)+'…')}</span></span>
+      <span class="uend"><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>
+        <span class="uw">${esc(rowSignal(u))}</span></span>
     </button>`).join(''):'<div class="card"><div class="qsub d">No users match.</div></div>'}
   </div>
 
   <div class="card" style="padding:0;overflow-x:auto"><table class="utable"><thead><tr>
-    <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">AI</th><th>Joined</th><th>Last active</th><th>Signals</th>
+    <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">Adh.</th><th class="text-center">AI</th><th>Last active</th><th>Signals</th>
   </tr></thead><tbody>
     ${shown.map(u=>`<tr class="clickable ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
-      <td><div class="uname">${esc(u.name||'—')}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
+      <td><div class="uname">${esc(u.name||(u.type==='guest'?'Anonymous':'—'))}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
       <td>${esc(u.type)}${u.internal?' <span class="chip-s internal">internal</span>':''}</td>
-      <td>${chip(u)}${u.paidProduct?'<div class="uemail mono">'+esc(u.paidProduct.replace('com.qwota.pro.',''))+'</div>':''}</td>
+      <td><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span></td>
       <td class="text-center ${num(u.workouts)>0?'':'d'}">${num(u.workouts)}</td>
+      <td class="text-center ${num(u.adherence)?'':'d'}">${num(u.adherence)?num(u.adherence)+'%':'—'}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
-      <td>${u.createdAt?ago(u.createdAt):'—'}</td>
       <td>${u.lastActive?ago(u.lastActive):'—'}</td>
       <td>${u.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')||'—'}</td>
     </tr>`).join('')}
   </tbody></table></div>
-  ${rows.length>shown.length?`<button class="loadmore" id="u-more">Showing ${shown.length} of ${rows.length} · Load more</button>`
-    :`<div class="qsub d" style="margin-top:10px;text-align:center">${rows.length} shown${(!INCLUDE_INTERNAL&&USERS_HIDDEN)?` · ${USERS_HIDDEN} internal hidden`:''}</div>`}`;
+
+  ${rows.length>shown.length?`<button class="loadmore" id="u-more">Showing ${shown.length} of ${rows.length} · Load more</button>`:''}
+  ${dormant.length?`<button class="fold" id="u-fold">${USER_VIEW.showDormant?'▾':'▸'} <b>${dormant.length} dormant guests</b> — anonymous, no activity</button>
+    ${USER_VIEW.showDormant?`<div class="ucards" style="margin-top:7px">${dormant.slice(0,50).map(u=>`
+      <button class="urow" data-uid="${esc(u.uid)}"><span class="uav">—</span>
+      <span class="umid"><span class="un">Anonymous</span><span class="us">${esc(u.uid.slice(0,14))}…</span></span>
+      <span class="uend"><span class="chip-s free">free</span><span class="uw">no activity</span></span></button>`).join('')}</div>`:''}`:''}`;
 }
 
 function wireUsers(){
   const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; USER_VIEW.limit=25; redrawUserList(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
-  const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; USER_VIEW.limit=25; redrawUserList(); }; }
-  document.querySelectorAll('.fpill[data-f]').forEach(b=>b.onclick=()=>{ USER_VIEW.type=b.dataset.f; USER_VIEW.limit=25; redrawUserList(); });
+  document.querySelectorAll('.fpill[data-seg]').forEach(b=>b.onclick=()=>{ USER_VIEW.seg=b.dataset.seg; USER_VIEW.limit=25; USER_VIEW.showDormant=false; redrawUserList(); });
   const ib=$('u-internal'); if(ib) ib.onclick=()=>toggleInternal();
   const more=$('u-more'); if(more) more.onclick=()=>{ USER_VIEW.limit+=50; redrawUserList(); };
-  // Both renderings are in the DOM; CSS picks one by width. Wire whichever is live.
-  document.querySelectorAll('.utable tr.clickable, .urow').forEach(r=>r.onclick=()=>{ USER_VIEW.uid=r.dataset.uid; renderUsersTab(); });
+  const fold=$('u-fold'); if(fold) fold.onclick=()=>{ USER_VIEW.showDormant=!USER_VIEW.showDormant; redrawUserList(); };
+  document.querySelectorAll('.utable tr.clickable, .urow').forEach(r=>r.onclick=()=>openUser(r.dataset.uid));
   document.querySelectorAll('[data-recon]').forEach(b=>b.onclick=()=>openReconcile(b.dataset.recon, b.dataset.prod, b.dataset.exp));
 }
+
+// Deep-linkable: paste a UID from a support email straight into the address bar.
+function openUser(uid){ USER_VIEW.uid=uid; location.hash='#/user/'+uid; renderUsersTab(); }
+function closeUser(){ USER_VIEW.uid=null; location.hash=''; renderUsersTab(); }
 
 function openReconcile(tx, prod, exp){
   openModal('Reconcile purchase', `
@@ -405,98 +424,185 @@ function openReconcile(tx, prod, exp){
   };
 }
 
-// Rich profile + activity view — renders the synced snapshot the server holds
-// (full per-workout/meal history lives on-device; this is what synced up).
+// ---------- user detail ----------
 function kv(label,val){ if(val==null||val===''||val==='—') return ''; return `<div><div class="l">${esc(label)}</div><div class="v">${esc(val)}</div></div>`; }
 function card(title, inner){ if(!inner||!inner.trim()) return ''; return `<div class="section-t">${esc(title)}</div><div class="card">${inner}</div>`; }
-function renderUserRich(docs){
-  const ud=docs.userData||{}, cc=docs.coachingContexts||{}, up=docs.userProfiles||{};
-  const p=ud.workoutPreferences||{};
-  const streak=ud.habitStreakData||{};
-  const kg=v=>v==null?null:Math.round(v*10)/10+' kg';
-  // Profile
-  const profile=[
-    kv('Name', ud.userName||up.name), kv('Age', ud.age), kv('Sex', ud.biologicalSex),
-    kv('Experience', ud.experienceLevel), kv('Activity level', ud.activityLevel),
-    kv('Primary goal', p.primaryGoal), kv('Goal weight', kg(ud.goalWeightKg)),
-    kv('Coaching style', ud.coachingStyle), kv('Timezone', ud.userTimezone),
-  ].join('');
-  // Training
-  const byType=ud.workoutsByType?Object.entries(ud.workoutsByType).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${esc(t)} ${n}`).join(' · '):'';
-  const trainStats=[
-    kv('Total workouts', ud.totalWorkouts), kv('Days on plan', ud.daysOnPlan),
-    kv('This week', ud.workoutsThisWeek), kv('Workout streak', streak.currentWorkoutStreak),
-    kv('Logging streak', streak.currentLoggingStreak),
-    kv('Split', p.splitType), kv('Days/week', p.daysPerWeek),
-  ].join('');
-  const rw=Array.isArray(ud.recentWorkouts)?ud.recentWorkouts.slice(0,8):[];
-  const rwTable=rw.length?`<div class="l" style="margin:14px 0 6px">Recent workouts</div><table><thead><tr><th>Workout</th><th>Type</th><th class="text-center">Min</th><th class="text-center">When</th></tr></thead><tbody>${rw.map(w=>`<tr><td>${esc(w.workoutName||'—')}</td><td>${esc(w.activityType||'—')}</td><td class="text-center">${esc(w.durationMinutes??'—')}</td><td class="text-center">${w.daysAgo!=null?esc(w.daysAgo)+'d ago':esc((w.date||'').slice(0,10))}</td></tr>`).join('')}</tbody></table>`:'';
-  const prs=Array.isArray(ud.recentPRs)?ud.recentPRs.slice(0,6):[];
-  const prList=prs.length?`<div class="l" style="margin:14px 0 6px">Recent PRs</div><div class="qsub">${prs.map(pr=>`${esc(pr.exerciseName)}: <b style="color:var(--tx)">${esc(pr.value)}</b>`).join(' · ')}</div>`:'';
-  const training=trainStats?`<div class="detail-grid">${trainStats}</div>${byType?`<div class="qsub" style="margin-top:12px">By type: ${byType}</div>`:''}${rwTable}${prList}`:'';
-  // Nutrition
-  const nutrition=[
-    kv('Target calories', ud.targetCalories), kv('Target protein', ud.targetProtein!=null?ud.targetProtein+'g':null),
-    kv('Avg protein', ud.avgDailyProtein!=null?ud.avgDailyProtein+'g':null), kv('Avg carbs', ud.avgDailyCarbs!=null?ud.avgDailyCarbs+'g':null),
-    kv('Days logged food', ud.daysLoggedFood),
-  ].join('');
-  const topFoods=Array.isArray(ud.topFoods)&&ud.topFoods.length?`<div class="qsub" style="margin-top:12px">Top foods: ${ud.topFoods.slice(0,8).map(f=>esc(typeof f==='string'?f:(f.name||f.foodName||''))).filter(Boolean).join(', ')}</div>`:'';
-  // AI coach read
-  const coach=[
-    cc.strengthsAnalysis?`<div class="l" style="margin-bottom:4px">Strengths</div><div class="qsub" style="margin-bottom:12px">${esc(cc.strengthsAnalysis)}</div>`:'',
-    cc.areasToImprove?`<div class="l" style="margin-bottom:4px">Areas to improve</div><div class="qsub" style="margin-bottom:12px">${esc(cc.areasToImprove)}</div>`:'',
-    cc.recommendedFocus?`<div class="l" style="margin-bottom:4px">Recommended focus</div><div class="qsub" style="margin-bottom:12px">${esc(cc.recommendedFocus)}</div>`:'',
-    cc.nutritionConsistency?`<div class="l" style="margin-bottom:4px">Nutrition consistency</div><div class="qsub">${esc(cc.nutritionConsistency)}</div>`:'',
-  ].join('');
-  return card('Profile',`<div class="detail-grid">${profile}</div>`)
-    + card('Training activity', training)
-    + card('Nutrition', nutrition?`<div class="detail-grid">${nutrition}</div>${topFoods}`:'')
-    + card('AI coach read', coach);
+
+// recentPRs carries a `type` (distance / duration / weight) that the old renderer
+// ignored, so a run PR printed as 7.458048477315103.
+function prValue(pr){
+  const v=Number(pr.value); if(!Number.isFinite(v)) return esc(String(pr.value??'—'));
+  switch(String(pr.type||'').toLowerCase()){
+    case 'distance': return v.toFixed(2)+' km';
+    case 'duration': return Math.round(v)+' min';
+    case 'weight':   return (Math.round(v*10)/10)+' kg';
+    case 'reps':     return Math.round(v)+' reps';
+    default:         return String(Math.round(v*100)/100);
+  }
 }
 
+function renderOnboarding(ud,up){
+  const p=ud.workoutPreferences||{};
+  const kg=v=>v==null?null:Math.round(Number(v)*10)/10+' kg';
+  const list=v=>Array.isArray(v)&&v.length?v.join(', '):null;
+  const rows=[
+    kv('Name', ud.userName||up.name), kv('Age', ud.age), kv('Sex', ud.biologicalSex),
+    kv('Experience', ud.experienceLevel), kv('Activity level', ud.activityLevel),
+    kv('Primary goal', p.primaryGoal||ud.fitnessGoal), kv('Goal intensity', ud.goalIntensity),
+    kv('Current weight', kg(ud.currentWeightKg)), kv('Goal weight', kg(ud.goalWeightKg)),
+    kv('Split', p.splitType), kv('Days / week', p.daysPerWeek),
+    kv('Preferred days', list(p.preferredDays)),
+    kv('Diet', ud.dietType), kv('Allergies', list(ud.foodAllergies)),
+    kv('Dietary prefs', list(ud.dietaryPreferences)),
+    kv('Coaching style', ud.coachingStyle),
+  ].join('');
+  return rows?`<div class="detail-grid">${rows}</div>`:'';
+}
+
+// coachingContexts is full of generated content; the old view showed four fields of it.
+function renderAIRead(cc){
+  const blk=(label,val)=>{
+    if(!val) return '';
+    const text=Array.isArray(val)?val.filter(Boolean).join(' · '):String(val);
+    if(!text.trim()) return '';
+    return `<div class="airow"><div class="l">${esc(label)}</div><div class="qsub">${esc(text)}</div></div>`;
+  };
+  return [
+    blk('Strengths', cc.strengthsAnalysis),
+    blk('Areas to improve', cc.areasToImprove),
+    blk('Recommended focus', cc.recommendedFocus),
+    blk('Pattern insights', cc.patternInsights),
+    blk('Wow moments', cc.wowMoments),
+    blk('Predictions', cc.predictions),
+    blk('Strength level', cc.estimatedStrengthLevel),
+    blk('Weekday vs weekend', cc.weekdayVsWeekendPattern),
+    blk('Nutrition consistency', cc.nutritionConsistency),
+    blk('Nutrition insights', cc.nutritionInsights),
+    blk('Motivation', cc.motivationalContext),
+    blk('Last daily message', cc.dailyNotificationMessage),
+  ].join('');
+}
+
+function renderRich(docs){
+  const ud=docs.userData||{}, cc=docs.coachingContexts||{}, up=docs.userProfiles||{};
+  const rw=Array.isArray(ud.recentWorkouts)?ud.recentWorkouts.slice(0,8):[];
+  const rwTable=rw.length?`<table><thead><tr><th>Workout</th><th>Type</th><th class="text-center">Min</th><th class="text-center">When</th></tr></thead><tbody>${rw.map(w=>`<tr><td>${esc(w.workoutName||'—')}</td><td>${esc(w.activityType||'—')}</td><td class="text-center">${num(w.durationMinutes)||'—'}</td><td class="text-center">${w.daysAgo!=null?num(w.daysAgo)+'d':esc((w.date||'').slice(0,10))}</td></tr>`).join('')}</tbody></table>`:'';
+  const prs=Array.isArray(ud.recentPRs)?ud.recentPRs.slice(0,8):[];
+  const prList=prs.length?`<div class="prlist">${prs.map(pr=>`<div><span>${esc(pr.exerciseName||'—')}</span><b>${esc(prValue(pr))}</b></div>`).join('')}</div>`:'';
+  const nutrition=[
+    kv('Target calories', num(ud.targetCalories)||null), kv('Target protein', ud.targetProtein!=null?num(ud.targetProtein)+'g':null),
+    kv('Avg protein', ud.avgDailyProtein!=null?num(ud.avgDailyProtein)+'g':null),
+    kv('Avg carbs', ud.avgDailyCarbs!=null?num(ud.avgDailyCarbs)+'g':null),
+    kv('Avg calories', num(ud.avgDailyCalories)||null),
+    kv('Days logged food', num(ud.daysLoggedFood)||null),
+  ].join('');
+  const topFoods=Array.isArray(ud.topFoods)&&ud.topFoods.length
+    ? `<div class="qsub" style="margin-top:12px">Top foods: ${ud.topFoods.slice(0,8).map(f=>esc(typeof f==='string'?f:(f.name||f.foodName||''))).filter(Boolean).join(', ')}</div>`:'';
+  const aiRead=renderAIRead(cc);
+  return card('Onboarding & profile', renderOnboarding(ud,up))
+    + card('Personal records', prList)
+    + card('Recent workouts', rwTable)
+    + card('Nutrition', nutrition?`<div class="detail-grid">${nutrition}</div>${topFoods}`:'')
+    + (aiRead?`<div class="section-t">What the AI says about them</div><div class="card">${aiRead}</div>`:'');
+}
+
+function renderAIActivity(a){
+  if(!a) return '<div class="card"><div class="qsub d">Loading AI activity…</div></div>';
+  const icon={insight:'✦',meal_photo:'◉',text_food:'✎'};
+  const rows=(a.recent||[]).slice(0,15);
+  const body=rows.length?`<div class="feed">${rows.map(r=>`<div class="row"><span class="sev ${r.success?'':'crit'}"></span>
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(icon[r.kind]||'·')} ${esc(r.detail||r.kind.replace('_',' '))}</div>
+        <div class="d">${esc(r.kind.replace('_',' '))}${r.foodsDetected!=null?` · ${num(r.foodsDetected)} item(s)`:''}${r.confidence!=null?` · ${Math.round(num(r.confidence)*100)}% conf`:''}${r.success?'':' · <span class="cr">failed</span>'}</div>
+      </div><div class="d" style="white-space:nowrap">${r.at?ago(r.at):'—'}</div></div>`).join('')}</div>`
+    : '<div class="qsub d">No AI activity recorded for this user.</div>';
+  const c=a.counts||{};
+  return `<div class="qsub" style="margin-bottom:10px">${num(c.insight)} insights · ${num(c.meal_photo)} photo scans · ${num(c.text_food)} text logs${a.truncated?' <span class="d">(capped)</span>':''}</div>
+    ${body}
+    <div class="note">Not captured anywhere server-side: ${esc((a.notCaptured||[]).join('; '))}.</div>`;
+}
+
+let AIACT = null;
 async function renderUserDetail(uid){
   const m=$('main');
   const row = (USERS||[]).find(u=>u.uid===uid) || {};
   m.innerHTML='<div class="loading">Loading user…</div>';
   let r; try{ r=(await call('adminLookupUser')({uid})).data; }catch(e){ m.innerHTML='<div class="loading cr">'+esc(e.message)+'</div>'; return; }
-  const a=r.auth;
+  const a=r.auth, sup=r.support||{};
+  const isGuest=(row.type||'')==='guest' || (a && a.providers && a.providers.length===0);
+  // Nobody with months of history is "Unknown". Guests have no name by definition —
+  // say what they are and lead with what IS known.
+  const name = a?.displayName || row.name || (isGuest ? 'Anonymous account' : 'No name on file');
+  const pushOff = sup.hasPushToken===false;
+
   m.innerHTML=`
-    <span class="back-link" id="u-back">← All users</span>
+    <button class="back-link" id="u-back">← All users</button>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div><div class="big sm">${esc(a?.displayName||row.name||'Unknown')}</div><div class="qsub mono">${esc(a?.email||uid)}</div></div>
-        <div>${row.internal?'<span class="chip-s internal">internal</span>':''}<span class="chip-s ${esc(row.access||'free')}">${esc(row.access||'free')}</span></div>
+      <div class="idtop">
+        <div class="uav lg ${row.atRisk?'risk':(num(row.workouts)>0?'hot':'')}">${esc(initials(row))}</div>
+        <div style="flex:1;min-width:0">
+          <div class="big sm" style="margin:0">${esc(name)}</div>
+          <div class="qsub mono" style="overflow-wrap:anywhere">${esc(a?.email||uid)}</div>
+          <div class="idchips">
+            ${row.internal?'<span class="chip-s internal">internal</span>':''}
+            <span class="chip-s ${esc(row.access||'free')}">${esc(row.access||'free')}</span>
+            ${(row.flags||[]).map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')}
+          </div>
+        </div>
       </div>
-      <div class="detail-grid" style="margin-top:18px">
-        <div><div class="l">Type</div><div class="v">${esc(row.type||(a?a.providers.join(','):'—'))}</div></div>
-        <div><div class="l">Workouts</div><div class="v ${num(row.workouts)>0?'':'d'}">${row.workouts==null?'—':num(row.workouts)}</div></div>
-        <div><div class="l">Days on plan</div><div class="v">${row.daysOnPlan==null?'—':num(row.daysOnPlan)}</div></div>
-        <div><div class="l">AI usage</div><div class="v">${num(row.aiCalls)} calls · ${money(row.aiCost||0)}</div></div>
+
+      ${row.atRisk?`<div class="warnline"><b>${num(row.workouts)} workouts and ${num(row.daysOnPlan)} days of history on an anonymous account.</b>
+        A reinstall loses all of it — and this is the most convertible kind of account you have.</div>`:''}
+
+      <div class="qa" style="margin-top:14px">
+        <button class="btn" data-ua="extendTrial"><span class="i">＋</span> Comp / extend trial</button>
+        <button class="btn" data-ua="sendPush" ${pushOff?'disabled title="No push token on file — this user cannot be reached"':''}><span class="i">✉</span> ${pushOff?'Send push · unreachable':'Send push'}</button>
+        <button class="btn" data-ua="forceRefresh"><span class="i">↻</span> Force AI refresh</button>
+        <button class="btn" data-ua="internal"><span class="i">${row.internal?'✓':'⊘'}</span> ${row.internal?'Unmark internal':'Mark internal'}</button>
+      </div>
+
+      <div class="detail-grid" style="margin-top:16px">
         <div><div class="l">Joined</div><div class="v">${a?.createdAt?ago(a.createdAt):'—'}</div></div>
         <div><div class="l">Last active</div><div class="v">${row.lastActive?ago(row.lastActive):'—'}</div></div>
-        <div><div class="l">Last sign-in</div><div class="v">${a?.lastSignIn?ago(a.lastSignIn):'—'}</div></div>
+        <div><div class="l">Last synced</div><div class="v">${sup.lastSyncedAt?ago(sup.lastSyncedAt):'—'}</div></div>
+        <div><div class="l">Push</div><div class="v ${pushOff?'wn':''}">${pushOff?'No token':'Reachable'}</div></div>
+        <div><div class="l">Language</div><div class="v">${esc(sup.language||'—')}</div></div>
+        <div><div class="l">Timezone</div><div class="v">${esc(sup.timezone||'—')}</div></div>
+        <div><div class="l">AI spend</div><div class="v">${money(row.aiCost||0)} · ${num(row.aiCalls)} calls</div></div>
         <div><div class="l">Paid product</div><div class="v mono">${esc((row.paidProduct||'—').replace('com.qwota.pro.',''))}</div></div>
       </div>
-      ${row.flags&&row.flags.length?`<div style="margin-top:14px"><div class="l" style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Signals</div>${row.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')}</div>`:''}
     </div>
-    ${renderUserRich(r.docs)}
-    <div class="section-t">Data records</div>
-    <div class="card"><table><tbody>${Object.entries(r.docs).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="text-center">${v?(Array.isArray(v)?v.length+' record(s)':'<span class="ok">present</span>'):'<span class="d">—</span>'}</td></tr>`).join('')}</tbody></table></div>
-    <div class="section-t">Actions</div>
-    <div class="qa">
-      <button class="btn" data-ua="internal"><span class="i">${row.internal?'✓':'⊘'}</span> ${row.internal?'Unmark internal':'Mark internal / test'}</button>
-      <button class="btn" data-ua="extendTrial"><span class="i">＋</span> Extend trial</button>
-      <button class="btn" data-ua="forceRefresh"><span class="i">↻</span> Force refresh</button>
-      <button class="btn" data-ua="sendPush"><span class="i">✉</span> Send push</button>
-    </div>`;
-  $('u-back').onclick=()=>{ USER_VIEW.uid=null; renderUsersTab(); };
+
+    <div class="section-t">Engagement</div>
+    <div class="pulsegrid">
+      <div class="pcard"><div class="pl">Workouts</div><div class="pn">${num(row.workouts)}</div><div class="pd">${num(row.workoutsThisWeek)} this week</div></div>
+      <div class="pcard"><div class="pl">Adherence</div><div class="pn">${num(row.adherence)?num(row.adherence)+'%':'—'}</div><div class="pd">${num(row.streak)}-day streak</div></div>
+      <div class="pcard"><div class="pl">Avg session</div><div class="pn">${num(row.avgSessionMinutes)||'—'}</div><div class="pd">minutes · ${num(row.daysOnPlan)}d on plan</div></div>
+    </div>
+
+    ${renderRich(r.docs)}
+
+    <div class="section-t">AI activity</div>
+    <div id="aiact">${renderAIActivity(AIACT)}</div>
+
+    <div class="section-t">Everything else</div>
+    <details class="card"><summary>Raw records — which Firestore documents exist</summary>
+      <table style="margin-top:10px"><tbody>${Object.entries(r.docs).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="text-center">${v?(Array.isArray(v)?v.length+' record(s)':'<span class="ok">present</span>'):'<span class="d">—</span>'}</td></tr>`).join('')}</tbody></table>
+    </details>
+    <div style="height:10px"></div>`;
+
+  $('u-back').onclick=closeUser;
   document.querySelectorAll('[data-ua]').forEach(b=>b.onclick=async()=>{
     const act=b.dataset.ua;
-    // load() clears USERS/PENDING and re-renders the active tab on its own — calling
-    // render() first as well fired a second concurrent adminUsers scan of every collection.
-    if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); USER_VIEW.uid=null; load(); }catch(e){ toast(e.message,true); } return; }
+    if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); load(); }catch(e){ toast(e.message,true); } return; }
     openAction(act); const el=$('a-uid'); if(el) el.value=uid;
   });
+
+  // AI activity loads after the page paints — it's the slowest query and the least urgent.
+  if(!AIACT || AIACT.uid!==uid){
+    try{ AIACT=(await call('adminUserAIActivity')({uid})).data; }catch{ AIACT={uid,counts:{},recent:[],notCaptured:[]}; }
+    const host=$('aiact'); if(host) host.innerHTML=renderAIActivity(AIACT);
+  }
 }
 
 // ---------- actions / wiring ----------

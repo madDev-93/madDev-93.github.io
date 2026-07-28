@@ -308,3 +308,58 @@ tr:last-child td{border-bottom:none}
   .topbar .pill,.topbar .status{display:inline-flex;align-items:center;padding-top:0;padding-bottom:0}
   .topbar .icon-btn{width:38px}
 }
+
+/* ============================================================================
+   Users page. The name/email spans were INLINE, so overflow:hidden and
+   text-overflow:ellipsis silently did nothing and the text ran under the access
+   chip — 35-56px of overlap at 390px, worse at 320.
+   ========================================================================= */
+.urow .umid{display:block;min-width:0;overflow:hidden}
+.urow .un,.urow .us{display:block;max-width:100%}
+.urow .uend{max-width:42%}
+.urow .uw{white-space:normal;line-height:1.35}
+.uav.hot{background:rgba(45,212,167,.15);color:var(--teal)}
+.uav.risk{background:rgba(245,166,35,.15);color:var(--warn)}
+.uav.lg{width:46px;height:46px;border-radius:12px;font-size:15px}
+.fpill .pc{opacity:.65;margin-left:5px}
+.chip-s.churned,.chip-s.risk{background:rgba(255,92,108,.13);color:#ff8e98}
+.chip-s['at-risk-guest']{background:rgba(245,166,35,.15);color:var(--warn)}
+
+.fold{width:100%;display:flex;align-items:center;gap:9px;padding:13px;background:transparent;
+  border:1px dashed var(--line2);border-radius:12px;color:var(--mut);font-size:12.5px;
+  margin-top:10px;min-height:48px;text-align:left}
+.fold:hover{border-color:var(--teal);color:var(--tx)}
+.fold b{color:var(--tx);font-weight:650}
+
+.idtop{display:flex;gap:13px;align-items:flex-start}
+.idchips{margin-top:8px;display:flex;gap:5px;flex-wrap:wrap}
+.warnline{margin-top:13px;padding:11px 12px;border-radius:10px;background:rgba(245,166,35,.1);
+  border:1px solid rgba(245,166,35,.3);font-size:12.5px;color:#ffcd7a;line-height:1.55}
+.warnline b{color:#ffdda6}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:13px 16px}
+.detail-grid .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700}
+.detail-grid .v{font-size:13px;margin-top:2px;overflow-wrap:anywhere}
+.prlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px 16px}
+.prlist>div{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut);
+  border-bottom:1px solid var(--line);padding-bottom:7px}
+.prlist b{color:var(--tx)}
+.airow+.airow{margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
+.airow .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700;margin-bottom:4px}
+details.card summary{list-style:none;font-size:12.5px;color:var(--mut);min-height:26px;display:flex;align-items:center}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::before{content:'▸ ';margin-right:6px}
+details.card[open] summary::before{content:'▾ '}
+.back-link{display:inline-block;font-size:12.5px;color:var(--teal);background:none;border:none;
+  padding:0 0 12px;cursor:pointer}
+.btn[disabled]{opacity:.45;pointer-events:none}
+
+@media(max-width:760px){
+  .urow .uend{max-width:38%}
+  .idtop{gap:11px}
+  .detail-grid{grid-template-columns:1fr 1fr;gap:12px 12px}
+  .prlist{grid-template-columns:1fr}
+}
+@media(max-width:360px){
+  .detail-grid{grid-template-columns:1fr}
+  .urow .uend{max-width:34%}
+}
