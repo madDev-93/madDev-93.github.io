@@ -241,6 +241,55 @@ function openReconcile(tx, prod, exp){
   };
 }
 
+// Rich profile + activity view — renders the synced snapshot the server holds
+// (full per-workout/meal history lives on-device; this is what synced up).
+function kv(label,val){ if(val==null||val===''||val==='—') return ''; return `<div><div class="l">${esc(label)}</div><div class="v">${esc(val)}</div></div>`; }
+function card(title, inner){ if(!inner||!inner.trim()) return ''; return `<div class="section-t">${esc(title)}</div><div class="card">${inner}</div>`; }
+function renderUserRich(docs){
+  const ud=docs.userData||{}, cc=docs.coachingContexts||{}, up=docs.userProfiles||{};
+  const p=ud.workoutPreferences||{};
+  const streak=ud.habitStreakData||{};
+  const kg=v=>v==null?null:Math.round(v*10)/10+' kg';
+  // Profile
+  const profile=[
+    kv('Name', ud.userName||up.name), kv('Age', ud.age), kv('Sex', ud.biologicalSex),
+    kv('Experience', ud.experienceLevel), kv('Activity level', ud.activityLevel),
+    kv('Primary goal', p.primaryGoal), kv('Goal weight', kg(ud.goalWeightKg)),
+    kv('Coaching style', ud.coachingStyle), kv('Timezone', ud.userTimezone),
+  ].join('');
+  // Training
+  const byType=ud.workoutsByType?Object.entries(ud.workoutsByType).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${esc(t)} ${n}`).join(' · '):'';
+  const trainStats=[
+    kv('Total workouts', ud.totalWorkouts), kv('Days on plan', ud.daysOnPlan),
+    kv('This week', ud.workoutsThisWeek), kv('Workout streak', streak.currentWorkoutStreak),
+    kv('Logging streak', streak.currentLoggingStreak),
+    kv('Split', p.splitType), kv('Days/week', p.daysPerWeek),
+  ].join('');
+  const rw=Array.isArray(ud.recentWorkouts)?ud.recentWorkouts.slice(0,8):[];
+  const rwTable=rw.length?`<div class="l" style="margin:14px 0 6px">Recent workouts</div><table><thead><tr><th>Workout</th><th>Type</th><th class="text-center">Min</th><th class="text-center">When</th></tr></thead><tbody>${rw.map(w=>`<tr><td>${esc(w.workoutName||'—')}</td><td>${esc(w.activityType||'—')}</td><td class="text-center">${esc(w.durationMinutes??'—')}</td><td class="text-center">${w.daysAgo!=null?esc(w.daysAgo)+'d ago':esc((w.date||'').slice(0,10))}</td></tr>`).join('')}</tbody></table>`:'';
+  const prs=Array.isArray(ud.recentPRs)?ud.recentPRs.slice(0,6):[];
+  const prList=prs.length?`<div class="l" style="margin:14px 0 6px">Recent PRs</div><div class="qsub">${prs.map(pr=>`${esc(pr.exerciseName)}: <b style="color:var(--tx)">${esc(pr.value)}</b>`).join(' · ')}</div>`:'';
+  const training=trainStats?`<div class="detail-grid">${trainStats}</div>${byType?`<div class="qsub" style="margin-top:12px">By type: ${byType}</div>`:''}${rwTable}${prList}`:'';
+  // Nutrition
+  const nutrition=[
+    kv('Target calories', ud.targetCalories), kv('Target protein', ud.targetProtein!=null?ud.targetProtein+'g':null),
+    kv('Avg protein', ud.avgDailyProtein!=null?ud.avgDailyProtein+'g':null), kv('Avg carbs', ud.avgDailyCarbs!=null?ud.avgDailyCarbs+'g':null),
+    kv('Days logged food', ud.daysLoggedFood),
+  ].join('');
+  const topFoods=Array.isArray(ud.topFoods)&&ud.topFoods.length?`<div class="qsub" style="margin-top:12px">Top foods: ${ud.topFoods.slice(0,8).map(f=>esc(typeof f==='string'?f:(f.name||f.foodName||''))).filter(Boolean).join(', ')}</div>`:'';
+  // AI coach read
+  const coach=[
+    cc.strengthsAnalysis?`<div class="l" style="margin-bottom:4px">Strengths</div><div class="qsub" style="margin-bottom:12px">${esc(cc.strengthsAnalysis)}</div>`:'',
+    cc.areasToImprove?`<div class="l" style="margin-bottom:4px">Areas to improve</div><div class="qsub" style="margin-bottom:12px">${esc(cc.areasToImprove)}</div>`:'',
+    cc.recommendedFocus?`<div class="l" style="margin-bottom:4px">Recommended focus</div><div class="qsub" style="margin-bottom:12px">${esc(cc.recommendedFocus)}</div>`:'',
+    cc.nutritionConsistency?`<div class="l" style="margin-bottom:4px">Nutrition consistency</div><div class="qsub">${esc(cc.nutritionConsistency)}</div>`:'',
+  ].join('');
+  return card('Profile',`<div class="detail-grid">${profile}</div>`)
+    + card('Training activity', training)
+    + card('Nutrition', nutrition?`<div class="detail-grid">${nutrition}</div>${topFoods}`:'')
+    + card('AI coach read', coach);
+}
+
 async function renderUserDetail(uid){
   const m=$('main');
   const row = (USERS||[]).find(u=>u.uid===uid) || {};
@@ -266,6 +315,7 @@ async function renderUserDetail(uid){
       </div>
       ${row.flags&&row.flags.length?`<div style="margin-top:14px"><div class="l" style="font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Signals</div>${row.flags.map(f=>`<span class="chip-s ${(f==='entitled-no-purchase')?'risk':(f==='guest'?'guest':'')}">${esc(f)}</span>`).join('')}</div>`:''}
     </div>
+    ${renderUserRich(r.docs)}
     <div class="section-t">Data records</div>
     <div class="card"><table><tbody>${Object.entries(r.docs).map(([c,v])=>`<tr><td>${esc(c)}</td><td class="text-center">${v?(Array.isArray(v)?v.length+' record(s)':'<span class="ok">present</span>'):'<span class="d">—</span>'}</td></tr>`).join('')}</tbody></table></div>
     <div class="section-t">Actions</div>
