@@ -25,7 +25,7 @@ let STALE = false;              // DATA is a last-good snapshot, not a fresh rea
 let INCLUDE_INTERNAL = false;   // exclude internal/test accounts by default
 let USERS = null;               // cached adminUsers list
 let USERS_HIDDEN = 0;           // internal accounts the server filtered out of that list
-let USER_VIEW = { uid: null, q: '', type: 'all' };
+let USER_VIEW = { uid: null, q: '', type: 'all', limit: 25 };
 const $ = (id) => document.getElementById(id);
 
 // ---------- helpers ----------
@@ -52,8 +52,13 @@ async function load(){
     STALE = false;
     $('updated').textContent = 'updated just now';
     const ok = DATA.reconcile.ok;
-    $('status').className = 'status'+(ok?'':' bad');
-    $('status-text').textContent = ok ? 'All systems normal' : 'Reconcile invariant failed';
+    const att = (DATA.needsAttention||[]).length;
+    $('status').className = 'status'+(ok?'':' bad')+(att?' has-alerts':'');
+    $('status-text').textContent = !ok ? 'Reconcile invariant failed'
+      : att ? att+' need'+(att===1?'s':'')+' you' : 'All systems normal';
+    // Badge the tab so triage is visible from any screen, including the bottom bar.
+    const nb = document.querySelector('.nav-item[data-tab="cockpit"]');
+    if(nb) nb.innerHTML = 'Cockpit'+(att?`<span class="nbadge">${att}</span>`:'');
     render();
   }catch(e){
     // DATA deliberately keeps the last good snapshot — wiping the dashboard on a transient
@@ -85,64 +90,119 @@ function render(){
   else if(TAB==='users'){ renderUsersTab(); }
 }
 
+// ---------- trend helpers ----------
+// History is the nightly metrics/{date} series. Absent (or too short) on a fresh
+// install, so every consumer degrades to "no trend" rather than drawing a lie.
+function series(key){
+  const h = (DATA && Array.isArray(DATA.history)) ? DATA.history : [];
+  return h.map(d=>Number(d[key])).filter(v=>Number.isFinite(v));
+}
+function sparkline(vals, color){
+  if(vals.length<2) return '';
+  const w=100,h=22,mx=Math.max(...vals),mn=Math.min(...vals),rg=(mx-mn)||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1))*w},${(h-2)-((v-mn)/rg)*(h-4)}`);
+  const last=pts[pts.length-1].split(',');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="1.6"
+      stroke-linejoin="round" stroke-linecap="round" opacity=".85" vector-effect="non-scaling-stroke"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${color}"/></svg>`;
+}
+// Delta over the retained window. Returns null when there's nothing to compare to.
+function delta(key, fmt){
+  const v=series(key);
+  if(v.length<2) return null;
+  const diff=v[v.length-1]-v[0];
+  const cls = diff>0?'up':diff<0?'dn':'flat';
+  const sign = diff>0?'▲ ':diff<0?'▼ ':'';
+  const txt = diff===0 ? '— flat over '+v.length+'d' : sign+(fmt?fmt(Math.abs(diff)):Math.abs(diff))+' in '+v.length+'d';
+  return { cls, txt };
+}
+function pcard(label, value, key, color, provKey, fmt){
+  const d=delta(key, fmt);
+  const sub = d ? `<div class="pd ${d.cls}">${esc(d.txt)}</div>`
+                : `<div class="pd flat">no history yet</div>`;
+  return `<button class="pcard" data-prov="${esc(provKey)}">
+    <div class="pl">${esc(label)}</div><div class="pn">${value}</div>${sub}
+    ${sparkline(series(key), color)}</button>`;
+}
+
 function renderCockpit(){
   const d=DATA, u=d.users, ns=d.northStar, mo=d.money;
   const activationPct = u.registered>0 ? Math.round((ns.activatedUsers/u.registered)*100) : 0;
-  const maxF = Math.max(...d.funnel.map(f=>f.count),1);
-  return `
-  <div class="grid3">
-    <div class="card">
-      <div class="qlabel"><span class="tick" style="background:var(--info)"></span> Users</div>
-      <div class="big">${u.registered}<span style="font-size:15px;color:var(--mut);font-weight:600"> registered</span></div>
-      <div class="qsub">${u.guests} guests · ${u.appUsers} app users${u.internalExcluded?` · <span class="d">${u.internalExcluded} internal hidden</span>`:''}</div>
-    </div>
-    <div class="card">
-      <div class="qlabel"><span class="tick" style="background:var(--teal)"></span> North Star · activation</div>
-      <div class="big ${activationPct<25?'cr':'ok'}">${activationPct}%</div>
-      <div class="qsub">${num(ns.activatedUsers)}/${num(u.registered)} logged a workout · ${num(ns.totalWorkoutsAll)} total · ${num(ns.avgWorkoutsPerWeek)}/wk avg</div>
-    </div>
-    <div class="card">
-      <div class="qlabel"><span class="tick" style="background:var(--warn)"></span> Money</div>
-      <div class="big">${money(mo.mrrEstimate)}<span style="font-size:15px;color:var(--mut);font-weight:600"> MRR</span></div>
-      <div class="qsub"><b class="ok" style="color:var(--tx)">${mo.payingCount} paying</b> · ${mo.entitledCount} entitled · ${mo.onReverseTrial} on trial</div>
-    </div>
-  </div>
+  const att = d.needsAttention||[];
 
-  <div class="section-t">Activation funnel · % of registered</div>
+  // Triage leads. Numbers are reference; alerts are the reason you opened this.
+  const triage = att.length ? att.map((n,i)=>{
+    const sev = esc(n.severity||'warn');
+    return `<div class="tri" data-tri="${i}">
+      <button class="tri-h"><span class="sevbar ${sev}"></span>
+        <span class="tri-t">${esc(n.title)}</span><span class="tri-c">›</span></button>
+      <div class="tri-b">
+        <p class="tri-d">${esc(n.detail)}</p>
+        <div class="acts" data-alertacts="${i}">${alertActions(n)}</div>
+        <div class="tri-result" data-res="${i}"></div>
+      </div></div>`;
+  }).join('') : `<div class="card"><div class="qsub ok">Nothing needs you right now.</div></div>`;
+
+  return `
+  <div class="section-t">Needs you${att.length?` · ${att.length}`:''}</div>
+  ${triage}
+
+  <div class="section-t">Pulse</div>
+  <div class="pulsegrid">
+    ${pcard('Users', num(u.registered), 'registered', 'var(--teal)', 'users')}
+    ${pcard('Activation', activationPct+'%', 'activationPct', activationPct<25?'var(--crit)':'var(--teal)', 'activation')}
+    ${pcard('MRR', money(mo.mrrEstimate), 'mrr', 'var(--teal)', 'mrr', v=>'$'+v.toFixed(2))}
+  </div>
+  <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users${u.internalExcluded?` · ${num(u.internalExcluded)} internal hidden`:''} · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
+
+  <div class="section-t">Activation funnel</div>
   <div class="card"><div class="funnel">
     ${d.funnel.map(f=>`<div class="fstage"><span class="nm">${esc(f.stage)}</span>
-      <div class="ftrack"><div class="ffill" style="width:${Math.max((f.count/maxF)*100,2)}%"></div></div>
-      <span class="v"><b>${f.count}</b> · ${f.pct}%</span></div>`).join('')}
+      <div class="ftrack"><div class="ffill${f.worst?' worst':''}" style="width:${Math.max(num(f.pct),2)}%"></div></div>
+      <span class="v"><b>${num(f.count)}</b> · ${num(f.pct)}%</span>
+      ${f.dropPct>0?`<span class="drop${f.worst?' worst':''}">↓ ${num(f.dropPct)}% drop from ${esc(f.from!=null?String(f.from):'')}${f.worst?' — the leak is here':''}</span>`:''}
+    </div>`).join('')}
   </div></div>
 
-  ${d.needsAttention.length?`<div class="section-t">Needs attention</div><div class="feed">
-    ${d.needsAttention.map(n=>`<div class="row"><span class="sev ${esc(n.severity)}"></span><div><div class="t">${esc(n.title)}</div><div class="d">${esc(n.detail)}</div></div></div>`).join('')}
-  </div>`:''}
-
-  <div class="section-t">Operator actions</div>
+  <div class="section-t">Do</div>
   <div class="qa">
     <button class="btn" data-act="findUser"><span class="i">◎</span> Find a user</button>
     <button class="btn" data-act="extendTrial"><span class="i">＋</span> Comp / extend trial</button>
     <button class="btn" data-act="forceRefresh"><span class="i">↻</span> Force AI refresh</button>
     <button class="btn" data-act="sendPush"><span class="i">✉</span> Send push</button>
     <button class="btn" data-act="flag"><span class="i">⚑</span> Feature flags</button>
+    <button class="btn" data-act="snapshot"><span class="i">⧗</span> Snapshot metrics</button>
   </div>
 
   <div class="grid2" style="margin-top:22px">
     <div class="card">
-      <div class="qlabel">AI usage · ${d.ai.totalCalls} calls · ${money(d.ai.totalCostUsd)}</div>
+      <div class="qlabel">AI usage · ${num(d.ai.totalCalls)} calls · ${money(d.ai.totalCostUsd)}</div>
       <div class="bars">${aiBars(d.ai.bySurface)}</div>
+      <div class="note">Counts every account including internal — spend is spend.</div>
     </div>
     <div class="card">
       <div class="qlabel">Reverse trial</div>
       <div class="kpis" style="margin-top:12px">
-        <div class="kpi"><div class="l">24h</div><div class="n">${mo.reverseTrial.grantsDay}</div></div>
-        <div class="kpi"><div class="l">7 days</div><div class="n">${mo.reverseTrial.grantsWeek}</div></div>
-        <div class="kpi"><div class="l">active now</div><div class="n">${mo.reverseTrial.activeNow}</div></div>
+        <div class="kpi"><div class="l">24h</div><div class="n">${num(mo.reverseTrial.grantsDay)}</div></div>
+        <div class="kpi"><div class="l">7 days</div><div class="n">${num(mo.reverseTrial.grantsWeek)}</div></div>
+        <div class="kpi"><div class="l">active now</div><div class="n">${num(mo.reverseTrial.activeNow)}</div></div>
       </div>
-      <div class="note">Active: ${esc(d.active.method)} — DAU ${d.active.dau}, WAU ${d.active.wau}</div>
+      <div class="note">Active-user basis: ${esc(d.active.method)}</div>
     </div>
   </div>`;
+}
+
+// Alerts must offer a way to act or verify — never just prose telling you to go elsewhere.
+function alertActions(n){
+  const t=String(n.title||'');
+  if(/Apple notification/i.test(t)) return `<button class="ab p" data-test="appStore">Test delivery</button>
+    <button class="ab" data-copy="https://us-central1-qwota-ai-coach.cloudfunctions.net/appStoreNotifications">Copy webhook URL</button>`;
+  if(/RevenueCat/i.test(t)) return `<button class="ab p" data-test="revenueCat">Test delivery</button>`;
+  if(/unattributed purchase/i.test(t)) return `<button class="ab p" data-go="users">Open the queue</button>`;
+  if(/entitled users with no verified purchase/i.test(t)) return `<button class="ab" data-go="users" data-filter="flagged">Show these users</button>`;
+  if(/[Rr]everse-trial/.test(t)) return `<button class="ab" data-act2="flag">Feature flags</button>`;
+  return '';
 }
 
 function aiBars(rows){
@@ -254,38 +314,75 @@ function renderUserList(){
   const rows = USERS.filter(u=>{
     if(tf==='registered' && u.type!=='registered') return false;
     if(tf==='guest' && u.type!=='guest') return false;
-    if(tf==='paid' && u.access!=='paid') return false;
+    if(tf==='paid' && u.access!=='paid' && u.access!=='lifetime') return false;
+    if(tf==='churned' && u.access!=='churned') return false;
     if(tf==='flagged' && !u.flags.length) return false;
     if(q){ if(!(((u.email||'')+' '+(u.name||'')+' '+u.uid).toLowerCase().includes(q))) return false; }
     return true;
   });
+  // Render a bounded page. 86 rows is survivable; a few thousand is not, and the
+  // old code built every row on every keystroke.
+  const shown = rows.slice(0, USER_VIEW.limit);
+  const count = (t)=>USERS.filter(u=>t(u)).length;
+
+  const initials = (u)=>{
+    const n=(u.name||'').trim();
+    if(!n) return '—';
+    return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  };
+  const chip = (u)=>`<span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>`;
+
   return `<div class="utoolbar">
     <input id="u-search" placeholder="Search name / email / UID" value="${esc(USER_VIEW.q)}">
     <select id="u-type">
-      <option value="all">All types</option><option value="registered">Registered</option><option value="guest">Guests</option><option value="paid">Paying</option><option value="flagged">Flagged</option>
+      <option value="all">All types</option><option value="registered">Registered</option><option value="guest">Guests</option><option value="paid">Paying</option><option value="churned">Churned</option><option value="flagged">Flagged</option>
     </select>
-    <span class="qsub">${rows.length} shown${(!INCLUDE_INTERNAL&&USERS_HIDDEN)?` · ${USERS_HIDDEN} internal hidden`:''}</span>
   </div>
+  <div class="fbar">
+    <button class="fpill${tf==='all'?' on':''}" data-f="all">All ${USERS.length}</button>
+    <button class="fpill${tf==='paid'?' on':''}" data-f="paid">Paying ${count(u=>u.access==='paid'||u.access==='lifetime')}</button>
+    <button class="fpill${tf==='churned'?' on':''}" data-f="churned">Churned ${count(u=>u.access==='churned')}</button>
+    <button class="fpill${tf==='registered'?' on':''}" data-f="registered">Registered ${count(u=>u.type==='registered')}</button>
+    <button class="fpill${tf==='guest'?' on':''}" data-f="guest">Guests ${count(u=>u.type==='guest')}</button>
+    <button class="fpill${tf==='flagged'?' on':''}" data-f="flagged">Flagged ${count(u=>u.flags.length>0)}</button>
+    <button class="fpill${INCLUDE_INTERNAL?' on':''}" id="u-internal">Internal${USERS_HIDDEN&&!INCLUDE_INTERNAL?' ('+USERS_HIDDEN+' hidden)':''}</button>
+  </div>
+
+  <div class="ucards">
+    ${shown.length?shown.map(u=>`<button class="urow ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
+      <span class="uav">${esc(initials(u))}</span>
+      <span class="umid"><span class="un">${esc(u.name||'Guest')}</span>
+        <span class="us">${esc(u.email||u.uid.slice(0,16)+'…')}</span></span>
+      <span class="uend">${chip(u)}<span class="uw">${num(u.workouts)?num(u.workouts)+' workouts':'no workouts'}</span></span>
+    </button>`).join(''):'<div class="card"><div class="qsub d">No users match.</div></div>'}
+  </div>
+
   <div class="card" style="padding:0;overflow-x:auto"><table class="utable"><thead><tr>
     <th>User</th><th>Type</th><th>Access</th><th class="text-center">Workouts</th><th class="text-center">AI</th><th>Joined</th><th>Last active</th><th>Signals</th>
   </tr></thead><tbody>
-    ${rows.map(u=>`<tr class="clickable ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
+    ${shown.map(u=>`<tr class="clickable ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
       <td><div class="uname">${esc(u.name||'—')}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
       <td>${esc(u.type)}${u.internal?' <span class="chip-s internal">internal</span>':''}</td>
-      <td><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>${u.paidProduct?'<div class="uemail mono">'+esc(u.paidProduct.replace('com.qwota.pro.',''))+'</div>':''}</td>
+      <td>${chip(u)}${u.paidProduct?'<div class="uemail mono">'+esc(u.paidProduct.replace('com.qwota.pro.',''))+'</div>':''}</td>
       <td class="text-center ${num(u.workouts)>0?'':'d'}">${num(u.workouts)}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
       <td>${u.createdAt?ago(u.createdAt):'—'}</td>
       <td>${u.lastActive?ago(u.lastActive):'—'}</td>
       <td>${u.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')||'—'}</td>
     </tr>`).join('')}
-  </tbody></table></div>`;
+  </tbody></table></div>
+  ${rows.length>shown.length?`<button class="loadmore" id="u-more">Showing ${shown.length} of ${rows.length} · Load more</button>`
+    :`<div class="qsub d" style="margin-top:10px;text-align:center">${rows.length} shown${(!INCLUDE_INTERNAL&&USERS_HIDDEN)?` · ${USERS_HIDDEN} internal hidden`:''}</div>`}`;
 }
 
 function wireUsers(){
-  const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; redrawUserList(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
-  const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; redrawUserList(); }; }
-  document.querySelectorAll('.utable tr.clickable').forEach(r=>r.onclick=()=>{ USER_VIEW.uid=r.dataset.uid; renderUsersTab(); });
+  const s=$('u-search'); if(s){ s.oninput=(e)=>{ USER_VIEW.q=e.target.value; USER_VIEW.limit=25; redrawUserList(); const n=$('u-search'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }; }
+  const t=$('u-type'); if(t){ t.value=USER_VIEW.type; t.onchange=(e)=>{ USER_VIEW.type=e.target.value; USER_VIEW.limit=25; redrawUserList(); }; }
+  document.querySelectorAll('.fpill[data-f]').forEach(b=>b.onclick=()=>{ USER_VIEW.type=b.dataset.f; USER_VIEW.limit=25; redrawUserList(); });
+  const ib=$('u-internal'); if(ib) ib.onclick=()=>toggleInternal();
+  const more=$('u-more'); if(more) more.onclick=()=>{ USER_VIEW.limit+=50; redrawUserList(); };
+  // Both renderings are in the DOM; CSS picks one by width. Wire whichever is live.
+  document.querySelectorAll('.utable tr.clickable, .urow').forEach(r=>r.onclick=()=>{ USER_VIEW.uid=r.dataset.uid; renderUsersTab(); });
   document.querySelectorAll('[data-recon]').forEach(b=>b.onclick=()=>openReconcile(b.dataset.recon, b.dataset.prod, b.dataset.exp));
 }
 
@@ -405,6 +502,65 @@ async function renderUserDetail(uid){
 // ---------- actions / wiring ----------
 function wire(){
   document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>openAction(b.dataset.act));
+  document.querySelectorAll('[data-tri]').forEach(el=>{
+    const h=el.querySelector('.tri-h'); if(h) h.onclick=()=>el.classList.toggle('open');
+  });
+  document.querySelectorAll('[data-prov]').forEach(b=>b.onclick=()=>openProvenance(b.dataset.prov));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+    try{ await navigator.clipboard.writeText(b.dataset.copy); toast('URL copied'); }
+    catch{ toast('Copy failed — select it manually', true); }
+  });
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.filter) USER_VIEW.type=b.dataset.filter;
+    TAB=b.dataset.go; render();
+  });
+  document.querySelectorAll('[data-act2]').forEach(b=>b.onclick=()=>openAction(b.dataset.act2));
+  document.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>runPipelineTest(b));
+}
+
+// Run the alert's own check and report what actually came back, rather than
+// leaving the operator to infer a cause the console can't see.
+async function runPipelineTest(btn){
+  const box = btn.closest('.tri-b').querySelector('.tri-result');
+  btn.disabled=true; const label=btn.textContent; btn.textContent='Testing…';
+  box.innerHTML = '<div class="tri-r neutral">Probing the endpoint…</div>';
+  try{
+    const r = (await call('adminTestPipeline')({ which: btn.dataset.test })).data;
+    const cls = r.verdict==='delivering' ? 'ok' : r.verdict==='endpoint_problem' ? 'bad' : 'neutral';
+    box.innerHTML = `<div class="tri-r ${cls}"><b>${esc(
+      r.verdict==='delivering' ? 'Delivering' :
+      r.verdict==='endpoint_problem' ? 'Endpoint problem' : 'Healthy, nothing received yet')}</b><br>${esc(r.detail)}
+      <br><span class="d">HTTP ${num(r.endpoint&&r.endpoint.status)} · ${num(r.loggedEvents)} event(s) logged</span></div>`;
+  }catch(e){ box.innerHTML = '<div class="tri-r bad">'+esc(e.message)+'</div>'; }
+  btn.disabled=false; btn.textContent=label;
+}
+
+// Every headline number can explain itself. The console's value is that these are
+// reconciled — showing the derivation is what makes that claim checkable.
+const PROVENANCE = {
+  users: ()=>({ t:'Registered users', v:num(DATA.users.registered),
+    p:`Firebase Auth is the source of truth, not a Firestore collection. <b>${num(DATA.users.guests)} guests</b> are counted separately — they are anonymous auth records, not registrations.${DATA.users.internalExcluded?` <b>${num(DATA.users.internalExcluded)} internal accounts</b> are hidden.`:''}`,
+    s:'auth.listUsers()\n  where providerData includes "apple.com"\n  minus config/adminSettings.internalUids' }),
+  activation: ()=>({ t:'Activation', v:(DATA.users.registered>0?Math.round((DATA.northStar.activatedUsers/DATA.users.registered)*100):0)+'%',
+    p:`<b>${num(DATA.northStar.activatedUsers)} of ${num(DATA.users.registered)}</b> registered users have logged at least one workout. Guests are excluded from both sides so the denominator matches the numerator.`,
+    s:'userData.totalWorkouts > 0\n  ∩ classified "registered"\n  ÷ registered' }),
+  mrr: ()=>({ t:'MRR estimate', v:money(DATA.money.mrrEstimate),
+    p:`<b>${num(DATA.money.payingCount)} active payers.</b> Monthly at full price, yearly ÷ 12; lifetime is one-time and contributes nothing. A purchase counts only while the buyer is still entitled — ${num(DATA.money.churnedCount)} churned ${num(DATA.money.churnedCount)===1?'payer is':'payers are'} excluded.`,
+    s:'transactionMappings\n  where environment == "Production"\n  and status != "revoked"\n  ∩ notificationPreferences.isPro == true' })
+};
+function openProvenance(key){
+  const f=PROVENANCE[key]; if(!f) return;
+  let d; try{ d=f(); }catch{ return; }
+  const el=document.createElement('div');
+  el.className='sheet';
+  el.innerHTML=`<div class="sheet-c">
+    <div class="sheet-t">${esc(d.t)}</div><div class="sheet-v">${esc(d.v)}</div>
+    <p class="sheet-p">${d.p}</p><div class="sheet-s">${esc(d.s)}</div>
+    <div class="acts" style="margin-top:14px"><button class="ab p">Got it</button></div></div>`;
+  const close=()=>el.remove();
+  el.onclick=(e)=>{ if(e.target===el) close(); };
+  el.querySelector('.ab').onclick=close;
+  document.body.appendChild(el);
 }
 
 function openModal(title, bodyHtml){ $('modal-title').textContent=title; $('modal-body').innerHTML=bodyHtml; $('modal').hidden=false; }
@@ -416,6 +572,7 @@ function openAction(act){
     extendTrial:{title:'Comp / extend reverse trial', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Days to add</label><input id="a-days" type="number" value="30"></div><div class="qsub">Added on top of any time the user has left — never shortens an existing comp.</div>`, run:async()=>{const r=await call('adminExtendReverseTrial')({uid:$('a-uid').value.trim(),days:+$('a-days').value}); return (r.data.extendedFromExisting?'Added to existing trial — now expires ':'Trial set to expire ')+String(r.data.expiresAt).slice(0,10);}},
     forceRefresh:{title:'Force AI deep-context refresh', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div>`, run:async()=>{await call('adminForceRefresh')({uid:$('a-uid').value.trim()}); return 'Refresh complete.';}},
     sendPush:{title:'Send a push to one user', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Title</label><input id="a-title"></div><div class="field"><label>Body</label><textarea id="a-body"></textarea></div>`, run:async()=>{await call('adminSendUserPush')({uid:$('a-uid').value.trim(),title:$('a-title').value,body:$('a-body').value}); return 'Push sent.';}},
+    snapshot:{title:'Snapshot metrics now', fields:`<div class="qsub">Writes today's row to the <span class="mono">metrics</span> series that powers the sparklines and deltas. The scheduled job runs nightly at 04:05 UTC — use this to seed the series or verify the job.</div>`, run:async()=>{const r=await call('adminSnapshotNow')({}); return 'Snapshot written for '+r.data.date;}},
     flag:{title:'Set a feature flag', fields:`<div class="field"><label>Key</label><input id="a-key" value="reverseTrialEnabled"></div><div class="field"><label>Value</label><select id="a-val"><option value="true">true</option><option value="false">false</option></select></div>`, run:async()=>{const r=await call('adminSetFeatureFlag')({key:$('a-key').value.trim(),value:$('a-val').value==='true'}); return 'Set '+r.data.key+' = '+r.data.value;}},
   };
   const f=forms[act]; if(!f) return;
@@ -427,14 +584,14 @@ function openAction(act){
 $('signin-btn').onclick=async()=>{ $('signin-error').textContent=''; try{ await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }catch(e){ $('signin-error').textContent=e.message; } };
 $('signout').onclick=()=>auth.signOut();
 $('refresh').onclick=load;
-$('internal-toggle').onclick=()=>{
+function toggleInternal(){
   INCLUDE_INTERNAL=!INCLUDE_INTERNAL;
   const btn=$('internal-toggle');
-  btn.textContent=INCLUDE_INTERNAL?'Incl. internal':'Real users only';
-  btn.classList.toggle('on',INCLUDE_INTERNAL);
-  USERS=null; USER_VIEW.uid=null;
+  if(btn){ btn.textContent=INCLUDE_INTERNAL?'Incl. internal':'Real users only'; btn.classList.toggle('on',INCLUDE_INTERNAL); }
+  USERS=null; USER_VIEW.uid=null; USER_VIEW.limit=25;
   load();
-};
+}
+$('internal-toggle').onclick=toggleInternal;
 $('modal-close').onclick=closeModal;
 $('modal').onclick=(e)=>{ if(e.target===$('modal')) closeModal(); };
 document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{ TAB=b.dataset.tab; render(); });

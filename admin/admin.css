@@ -142,3 +142,114 @@ tr:last-child td{border-bottom:none}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line2);color:var(--tx);padding:12px 18px;border-radius:11px;font-size:13.5px;z-index:60;box-shadow:0 12px 30px -12px rgba(0,0,0,.7)}
 .toast.err{border-color:rgba(255,92,108,.5)}
+
+/* ============================================================================
+   Mobile-first pass. The console is operated from a phone — before this, the
+   entire responsive strategy was one rule collapsing grids to a single column,
+   which left a 111px header (18% of the viewport with nav) and a 12,416px-tall
+   8-column user table on a 390px screen.
+   ========================================================================= */
+
+/* --- Triage rows: alerts lead the Cockpit, collapsed to one line, with actions --- */
+.tri{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tri+.tri{margin-top:8px}
+.tri-h{display:flex;align-items:center;gap:10px;padding:13px;width:100%;background:none;border:none;color:var(--tx);text-align:left}
+.tri-h:hover{background:var(--raised)}
+.tri .sevbar{width:3px;align-self:stretch;min-height:26px;border-radius:2px;background:var(--warn);flex:none}
+.tri .sevbar.crit{background:var(--crit)}
+.tri .sevbar.info{background:var(--info)}
+.tri-t{font-size:13.5px;font-weight:650;line-height:1.35;flex:1;letter-spacing:-.005em}
+.tri-c{color:var(--dim);font-size:12px;flex:none;transition:transform .18s}
+.tri.open .tri-c{transform:rotate(90deg)}
+.tri-b{display:none;padding:0 13px 13px 26px}
+.tri.open .tri-b{display:block}
+.tri-d{font-size:12.5px;color:var(--mut);margin:0 0 11px;line-height:1.55}
+.tri-r{font-size:12.5px;margin:0 0 11px;line-height:1.55;padding:9px 11px;border-radius:8px;background:var(--raised);border:1px solid var(--line2)}
+.tri-r.ok{color:var(--teal)} .tri-r.bad{color:var(--crit)} .tri-r.neutral{color:var(--mut)}
+.acts{display:flex;gap:7px;flex-wrap:wrap}
+.ab{font-size:12px;font-weight:650;padding:8px 12px;border-radius:8px;background:var(--raised);border:1px solid var(--line2);color:var(--tx)}
+.ab:hover{border-color:var(--teal)}
+.ab.p{background:var(--teal);border-color:var(--teal);color:#04120d}
+.ab[disabled]{opacity:.5;pointer-events:none}
+
+/* --- Pulse: headline stats with a 7-day trend --- */
+.pulsegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;text-align:left;color:var(--tx);width:100%}
+.pcard:hover{border-color:var(--line2)}
+.pcard .pl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:700}
+.pcard .pn{font-size:26px;font-weight:750;letter-spacing:-.025em;margin-top:4px;line-height:1.1}
+.pcard .pd{font-size:11.5px;color:var(--mut);margin-top:3px}
+.pcard .pd.up{color:var(--teal)} .pcard .pd.dn{color:var(--crit)} .pcard .pd.flat{color:var(--dim)}
+.pcard svg{display:block;margin-top:8px;width:100%;height:22px}
+
+/* --- Funnel: name the leak --- */
+.fstage .drop{grid-column:1/-1;font-size:10.5px;color:var(--dim);margin-top:3px}
+.fstage .drop.worst{color:var(--crit);font-weight:650}
+.ffill.worst{background:var(--crit)}
+
+/* --- Provenance sheet --- */
+.sheet{position:fixed;inset:0;background:rgba(4,6,10,.72);display:flex;align-items:flex-end;justify-content:center;z-index:60;padding:0}
+.sheet-c{width:100%;max-width:520px;background:var(--card);border:1px solid var(--line2);border-radius:16px 16px 0 0;padding:18px 17px 24px}
+@media(min-width:761px){.sheet{align-items:center;padding:24px}.sheet-c{border-radius:16px}}
+.sheet-t{font-size:15px;font-weight:700}
+.sheet-v{font-size:32px;font-weight:750;letter-spacing:-.025em;margin:2px 0 12px}
+.sheet-p{font-size:13px;color:var(--mut);line-height:1.6;margin:0}
+.sheet-p b{color:var(--tx);font-weight:650}
+.sheet-s{font-size:11.5px;color:var(--dim);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--raised);border-radius:8px;padding:10px 11px;margin-top:12px;line-height:1.7;white-space:pre-wrap;overflow-x:auto}
+
+/* --- User rows (replace the table below 760px) --- */
+.ucards{display:none}
+.urow{display:flex;align-items:center;gap:11px;padding:11px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;width:100%;text-align:left;color:var(--tx)}
+.urow+.urow{margin-top:7px}
+.urow:hover{border-color:var(--line2)}
+.urow.internal-row{opacity:.6}
+.uav{width:34px;height:34px;border-radius:9px;background:var(--raised);display:grid;place-items:center;font-size:12.5px;font-weight:700;color:var(--mut);flex:none}
+.umid{flex:1;min-width:0}
+.umid .un{font-size:13.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.umid .us{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.uend{text-align:right;flex:none}
+.uend .uw{font-size:11px;color:var(--dim);margin-top:3px}
+.loadmore{width:100%;margin-top:10px;padding:12px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--mut);font-size:12.5px;font-weight:650}
+.loadmore:hover{border-color:var(--line2);color:var(--tx)}
+.fbar{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;scrollbar-width:none}
+.fbar::-webkit-scrollbar{display:none}
+.fpill{flex:none;font-size:11.5px;font-weight:650;padding:7px 12px;border-radius:20px;background:var(--card);border:1px solid var(--line);color:var(--mut)}
+.fpill.on{background:var(--teal);border-color:var(--teal);color:#04120d}
+
+/* ====================== small screens ====================== */
+@media(max-width:760px){
+  .grid3,.grid2{grid-template-columns:1fr}
+  .wrap,.main{padding-left:12px;padding-right:12px}
+
+  /* Header: 111px -> ~46px. One row, no wrapping pills. */
+  .topbar{padding:8px 0;gap:8px;flex-wrap:nowrap}
+  .brand-sub{display:none}
+  .brand-name{font-size:14px}
+  .topbar .pill{display:none}          /* internal toggle moves into the Users filter bar */
+  .topbar .status{font-size:11px;white-space:nowrap}
+  .topbar .status #status-text{display:none}
+  .topbar .status.has-alerts #status-text{display:inline;color:var(--warn)}
+
+  /* Navigation to the bottom, where the thumb is. */
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+       gap:2px;background:rgba(11,14,20,.96);border-top:1px solid var(--line);border-bottom:none;
+       backdrop-filter:blur(10px);overflow:visible}
+  .nav-item{flex:1;text-align:center;padding:9px 4px;border-radius:9px;border-bottom:none;font-size:12.5px;font-weight:600}
+  .nav-item.active{background:var(--raised);color:var(--tx);border-bottom-color:transparent}
+  .main{padding-bottom:86px}
+
+  .pulsegrid{gap:8px}
+  .pcard{padding:11px 10px}
+  .pcard .pn{font-size:21px}
+  .pcard .pd{font-size:10.5px}
+
+  /* Eight columns do not fit 390px. Swap the table for rows. */
+  .utable{display:none}
+  .ucards{display:block}
+  .utoolbar{flex-wrap:wrap}
+  .section-t{margin-top:20px}
+}
+
+/* Tab badge for pending triage items */
+.nav-item .nbadge{display:inline-block;min-width:16px;padding:0 5px;margin-left:5px;border-radius:8px;
+  background:var(--crit);color:#fff;font-size:10px;font-weight:700;line-height:16px;text-align:center;vertical-align:1px}
