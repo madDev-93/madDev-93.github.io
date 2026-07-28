@@ -483,6 +483,12 @@ function renderAIRead(cc){
   ].join('');
 }
 
+// A page of zeroes with no explanation reads as broken. Distinguish "no data" from
+// "never uploaded any" — especially for a payer, where it's a signal in itself.
+function neverSynced(docs){
+  const ud=docs.userData;
+  return !ud || !Object.keys(ud).length;
+}
 function renderRich(docs){
   const ud=docs.userData||{}, cc=docs.coachingContexts||{}, up=docs.userProfiles||{};
   const rw=Array.isArray(ud.recentWorkouts)?ud.recentWorkouts.slice(0,8):[];
@@ -580,7 +586,10 @@ async function renderUserDetail(uid){
       <div class="pcard"><div class="pl">Avg session</div><div class="pn">${num(row.avgSessionMinutes)||'—'}</div><div class="pd">minutes · ${num(row.daysOnPlan)}d on plan</div></div>
     </div>
 
-    ${renderRich(r.docs)}
+    ${neverSynced(r.docs) ? `<div class="card" style="margin-top:16px;border-color:rgba(74,158,255,.35)">
+        <div class="qlabel" style="color:var(--info)"><span class="tick" style="background:var(--info)"></span>Nothing synced yet</div>
+        <div class="qsub" style="margin-top:8px">This account has no <span class="mono">userData</span> on the server, so there is no profile, workout history or AI context to show. Everything lives on-device until the app uploads it${row.access==='paid'||row.access==='lifetime'?' — worth a look, since this account has paid':''}.</div>
+      </div>` : renderRich(r.docs)}
 
     <div class="section-t">AI activity</div>
     <div id="aiact">${renderAIActivity(AIACT)}</div>
