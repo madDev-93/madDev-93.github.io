@@ -179,7 +179,7 @@ function renderCockpit(){
     <div class="card">
       <div class="qlabel">AI usage · ${num(d.ai.totalCalls)} calls · ${money(d.ai.totalCostUsd)}</div>
       <div class="bars">${aiBars(d.ai.bySurface)}</div>
-      <div class="note">Counts every account including internal — spend is spend.</div>
+      <div class="note">${esc(d.ai.model||'gemini')} · ${esc(d.ai.rates||'')} · counts every account including internal — spend is spend.</div>
     </div>
     <div class="card">
       <div class="qlabel">Reverse trial</div>
