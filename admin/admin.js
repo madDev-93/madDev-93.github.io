@@ -25,6 +25,7 @@ let STALE = false;              // DATA is a last-good snapshot, not a fresh rea
 let INCLUDE_INTERNAL = false;   // exclude internal/test accounts by default
 let USERS = null;               // cached adminUsers list
 let USERS_HIDDEN = 0;           // internal accounts the server filtered out of that list
+let USERS_NONREAL = 0, USERS_REASONS = {}; // auto-classified non-people
 let USER_VIEW = { uid: null, q: '', seg: 'look', limit: 25, showDormant: false };
 const $ = (id) => document.getElementById(id);
 
@@ -472,7 +473,7 @@ async function renderUsersTab(){
   if(USER_VIEW.uid){ return renderUserDetail(USER_VIEW.uid); }
   if(!USERS){
     m.innerHTML = '<div class="loading">Loading users…</div>';
-    try{ const r=(await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data; USERS=r.users; USERS_HIDDEN=num(r.internalHidden); }
+    try{ const r=(await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data; USERS=r.users; USERS_HIDDEN=num(r.internalHidden); USERS_NONREAL=num(r.nonUserCount); USERS_REASONS=r.nonUserReasons||{}; }
     catch(e){ m.innerHTML = '<div class="loading cr">'+esc(e.message)+'</div>'; return; }
   }
   if(PENDING===null){ try{ PENDING = (await call('adminListPendingPurchases')({})).data.items; }catch{ PENDING = []; } }
@@ -509,13 +510,19 @@ function flagClass(f){ return f==='entitled-no-purchase' ? 'risk' : f==='churned
 // Segments answer questions the operator actually asks. The old filters (registered /
 // guest / paid / flagged) were record properties — "flagged" matched 84 of 86 accounts
 // because "guest" and "no-workouts" counted as flags.
+// Non-users are excluded from EVERY segment except the one built to inspect them.
+// Seeded fixtures, Apple App Review sessions, simulators and never-active anonymous
+// installs were sitting in the real-user numbers — one fixture was even reported as
+// the most engaged account on the platform.
+const real = (u)=>!u.nonUser;
 const SEGMENTS = [
-  { k:'look',    label:'Worth a look', test:u=>!(u.type==='guest' && !num(u.workouts)) },
-  { k:'atrisk',  label:'At risk',      test:u=>!!u.atRisk },
-  { k:'paid',    label:'Paying',       test:u=>u.access==='paid'||u.access==='lifetime' },
-  { k:'lapsed',  label:'Lapsed',       test:u=>!!u.lapsed },
-  { k:'silent',  label:'Never trained',test:u=>!!u.silent },
-  { k:'all',     label:'Everyone',     test:()=>true },
+  { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !num(u.workouts)) },
+  { k:'atrisk',  label:'At risk',      test:u=>real(u) && !!u.atRisk },
+  { k:'paid',    label:'Paying',       test:u=>real(u) && (u.access==='paid'||u.access==='lifetime') },
+  { k:'lapsed',  label:'Lapsed',       test:u=>real(u) && !!u.lapsed },
+  { k:'silent',  label:'Never trained',test:u=>real(u) && !!u.silent },
+  { k:'all',     label:'All real',     test:u=>real(u) },
+  { k:'nonuser', label:'Not people',   test:u=>!real(u) },
 ];
 const segTest = (k)=>(SEGMENTS.find(x=>x.k===k)||SEGMENTS[0]).test;
 
@@ -538,19 +545,20 @@ function rowSignal(u){
 // sit, and how deep does engagement actually go.
 function renderUserCharts(){
   if(!USERS || !USERS.length) return '';
-  const active   = USERS.filter(u=>u.type!=='guest' && num(u.workouts)>0).length;
-  const atRisk   = USERS.filter(u=>u.atRisk).length;
-  const silent   = USERS.filter(u=>u.type!=='guest' && !num(u.workouts)).length;
-  const dormant  = USERS.filter(u=>u.type==='guest' && !num(u.workouts)).length;
+  const R = USERS.filter(real);
+  const active   = R.filter(u=>u.type!=='guest' && num(u.workouts)>0).length;
+  const atRisk   = R.filter(u=>u.atRisk).length;
+  const silent   = R.filter(u=>u.type!=='guest' && !num(u.workouts)).length;
+  const dormant  = R.filter(u=>u.type==='guest' && !num(u.workouts)).length;
   const buckets = [
-    {k:'none',    v:USERS.filter(u=>num(u.workouts)===0).length},
-    {k:'1–4',     v:USERS.filter(u=>num(u.workouts)>=1 && num(u.workouts)<5).length},
-    {k:'5–19',    v:USERS.filter(u=>num(u.workouts)>=5 && num(u.workouts)<20).length},
-    {k:'20–49',   v:USERS.filter(u=>num(u.workouts)>=20 && num(u.workouts)<50).length},
-    {k:'50+',     v:USERS.filter(u=>num(u.workouts)>=50).length},
+    {k:'none',    v:R.filter(u=>num(u.workouts)===0).length},
+    {k:'1–4',     v:R.filter(u=>num(u.workouts)>=1 && num(u.workouts)<5).length},
+    {k:'5–19',    v:R.filter(u=>num(u.workouts)>=5 && num(u.workouts)<20).length},
+    {k:'20–49',   v:R.filter(u=>num(u.workouts)>=20 && num(u.workouts)<50).length},
+    {k:'50+',     v:R.filter(u=>num(u.workouts)>=50).length},
   ];
   return `<div class="card" style="margin-bottom:14px">
-    <div class="qlabel">Population · ${USERS.length} accounts</div>
+    <div class="qlabel">Population · ${R.length} real accounts${USERS.length-R.length?` <span class="d">(${USERS.length-R.length} filtered out)</span>`:''}</div>
     <div style="margin-top:12px">${segbar([
       {k:'Training', v:active,  c:'var(--c1)'},
       {k:'At risk',  v:atRisk,  c:'var(--c2)'},
@@ -568,10 +576,11 @@ function renderUserList(){
   const matchesQ = (u)=>!q || ((u.email||'')+' '+(u.name||'')+' '+u.uid).toLowerCase().includes(q);
   // A search should look at everyone, not just the active segment — you're hunting a
   // specific person, not browsing.
-  const pool = q ? USERS.filter(matchesQ) : USERS.filter(segTest(seg));
+  // A search still shouldn't resurface fixtures — unless you're in the Not-people segment.
+  const pool = q ? USERS.filter(u=>matchesQ(u) && (seg==='nonuser' ? !real(u) : real(u))) : USERS.filter(segTest(seg));
   const rows = pool;
   const shown = rows.slice(0, USER_VIEW.limit);
-  const dormant = (!q && seg==='look') ? USERS.filter(u=>u.type==='guest' && !num(u.workouts)) : [];
+  const dormant = (!q && seg==='look') ? USERS.filter(u=>real(u) && u.type==='guest' && !num(u.workouts)) : [];
   const cnt = (k)=>USERS.filter(segTest(k)).length;
 
   return `<div class="utoolbar">
@@ -589,7 +598,7 @@ function renderUserList(){
       <span class="umid"><span class="un">${esc(u.name||(u.type==='guest'?'Anonymous':'No name'))}</span>
         <span class="us">${esc(u.email||u.uid.slice(0,14)+'…')}</span>
         <span class="uw">${esc(rowSignal(u))}</span></span>
-      <span class="uend"><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span></span>
+      <span class="uend">${u.nonUser?`<span class="chip-s internal">${esc(u.nonUserReason||'not a person')}</span>`:`<span class="chip-s ${esc(u.access)}">${esc(u.access)}</span>`}</span>
     </button>`).join(''):'<div class="card"><div class="qsub d">No users match.</div></div>'}
   </div>
 
