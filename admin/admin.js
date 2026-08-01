@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801e';
+const BUILD = '20260801f';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -82,7 +82,11 @@ async function load(){
     STALE = false;
     $('updated').textContent = 'updated just now';
     const ok = DATA.reconcile.ok;
-    const att = (DATA.needsAttention||[]).length;
+    // Only crit/warn count toward "needs you". An "info" item is, by its own severity,
+    // something that does NOT need you — counting it inflated the badge and trained the
+    // reader to ignore a number whose whole job is to be believed. Info items still
+    // render in the triage list below; they just don't demand attention.
+    const att = (DATA.needsAttention||[]).filter(n=>n.severity==='crit'||n.severity==='warn').length;
     $('status').className = 'status'+(ok?'':' bad')+(att?' has-alerts':'');
     $('status-text').textContent = !ok ? 'Reconcile invariant failed'
       : att ? att+' need'+(att===1?'s':'')+' you' : 'All systems normal';
@@ -216,7 +220,10 @@ function renderCockpit(){
   const att = d.needsAttention||[];
 
   // Triage leads. Numbers are reference; alerts are the reason you opened this.
-  const triage = att.length ? att.map((n,i)=>{
+  // Actionable first, FYIs after — the order you'd want to read them in.
+  const rank = {crit:0, warn:1, info:2};
+  const ordered = [...att].map((n,i)=>({n,i})).sort((a,b)=>(rank[a.n.severity]??1)-(rank[b.n.severity]??1));
+  const triage = ordered.length ? ordered.map(({n,i})=>{
     const sev = esc(n.severity||'warn');
     return `<div class="tri" data-tri="${i}">
       <button class="tri-h"><span class="sevbar ${sev}"></span>
