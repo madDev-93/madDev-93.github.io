@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801a';
+const BUILD = '20260801b';
 (async () => {
   try {
     if (sessionStorage.getItem('qwotaReloadedFor') === BUILD) return;
@@ -266,7 +266,7 @@ function renderCockpit(){
     return `<div class="section-t">Where onboarding stalls</div>
     <div class="card">
       ${hbars(ob.steps.map(x=>({k:x.step, v:num(x.stalled), label:num(x.stalled)+' stalled of '+num(x.reached)})),{seq:true,empty:'Everyone who started, finished.'})}
-      <div class="note">${num(ob.completed)} of ${num(ob.reporting)} reporting accounts finished onboarding. Each bar is the furthest step reached by someone who never completed — the tallest bar is the screen to fix.</div>
+      <div class="note">${num(ob.completed)} of ${num(ob.reporting)} reporting accounts finished onboarding. Each bar is the furthest screen reached by someone who never completed.${(ob.steps||[]).length>1?' The tallest bar is the screen to fix.':' Only one screen is represented, so this cannot yet localise the drop — it says where people end up, not where they turn back.'}</div>
     </div>`;
   })()}
 
