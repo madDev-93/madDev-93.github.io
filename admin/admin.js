@@ -1,3 +1,27 @@
+// Build stamp. Bumped with the ?v= in index.html on every change to this file.
+//
+// Self-healing cache check. GitHub Pages serves this console with max-age=600 and the
+// page is usually left open on a phone, so a shipped fix could sit invisible behind a
+// stale copy while the deploy looked perfectly healthy from curl — which is exactly what
+// happened with the "On trial" segment. version.json is fetched with cache:'no-store',
+// so it is always the truth; if the running build doesn't match it, reload once.
+//
+// Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
+// reload means the HTML itself is cached, and looping on it would spin forever.
+const BUILD = '20260801a';
+(async () => {
+  try {
+    if (sessionStorage.getItem('qwotaReloadedFor') === BUILD) return;
+    const r = await fetch('version.json', { cache: 'no-store' });
+    if (!r.ok) return;
+    const { build } = await r.json();
+    if (build && build !== BUILD) {
+      sessionStorage.setItem('qwotaReloadedFor', build);
+      location.replace(location.pathname + '?v=' + encodeURIComponent(build));
+    }
+  } catch { /* offline or blocked — never block the console on a freshness check */ }
+})();
+
 // Qwota Admin Console
 const firebaseConfig = {
   apiKey: "AIzaSyCG01Gi5u4IA5nvbLYaQjbX5bO3zy2pJ1E",
