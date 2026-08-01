@@ -8,15 +8,19 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801b';
+const BUILD = '20260801c';
 (async () => {
   try {
-    if (sessionStorage.getItem('qwotaReloadedFor') === BUILD) return;
+    // Guard on the build we are RUNNING, not the one we are moving to. Storing the
+    // target meant the comparison could never match on the next load — so in the one
+    // case this exists for (index.html itself cached, still requesting the old script)
+    // it reloaded on every single page load, forever.
+    if (sessionStorage.getItem('qwotaStaleReloadFrom') === BUILD) return;
     const r = await fetch('version.json', { cache: 'no-store' });
     if (!r.ok) return;
     const { build } = await r.json();
     if (build && build !== BUILD) {
-      sessionStorage.setItem('qwotaReloadedFor', build);
+      sessionStorage.setItem('qwotaStaleReloadFrom', BUILD);
       location.replace(location.pathname + '?v=' + encodeURIComponent(build));
     }
   } catch { /* offline or blocked — never block the console on a freshness check */ }
