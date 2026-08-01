@@ -536,6 +536,7 @@ const real = (u)=>!u.nonUser;
 const SEGMENTS = [
   { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !num(u.workouts)) },
   { k:'atrisk',  label:'At risk',      test:u=>real(u) && !!u.atRisk },
+  { k:'trial',   label:'On trial',    test:u=>real(u) && u.access==='trial' },
   { k:'paid',    label:'Paying',       test:u=>real(u) && (u.access==='paid'||u.access==='lifetime') },
   { k:'lapsed',  label:'Lapsed',       test:u=>real(u) && !!u.lapsed },
   { k:'silent',  label:'Never trained',test:u=>real(u) && !!u.silent },
@@ -550,10 +551,22 @@ function initials(u){
   return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 }
 // What this row is worth knowing for, in one line.
+function trialLeft(u){
+  const exp=num(u.trialExpiresAt, 0);
+  if(u.access!=='trial' || !exp) return null;
+  const ms=exp-Date.now();
+  if(ms<=0) return 'trial ended';
+  const days=Math.floor(ms/86400000);
+  if(days>=1) return `${days} day${days===1?'':'s'} of trial left`;
+  const hours=Math.max(1,Math.floor(ms/3600000));
+  return `${hours} hour${hours===1?'':'s'} of trial left`;
+}
 function rowSignal(u){
+  const t=trialLeft(u);
   const w=num(u.workouts);
-  if(!w) return u.type==='guest' ? 'no activity' : 'never trained';
+  if(!w) return [t, u.type==='guest' ? 'no activity' : 'never trained'].filter(Boolean).join(' · ');
   const bits=[w+' workout'+(w===1?'':'s')];
+  if(t) bits.unshift(t);
   if(num(u.adherence)) bits.push(num(u.adherence)+'% adherence');
   else if(num(u.streak)) bits.push(num(u.streak)+'-day streak');
   return bits.join(' · ');
@@ -596,7 +609,11 @@ function renderUserList(){
   // specific person, not browsing.
   // A search still shouldn't resurface fixtures — unless you're in the Not-people segment.
   const pool = q ? USERS.filter(u=>matchesQ(u) && (seg==='nonuser' ? !real(u) : real(u))) : USERS.filter(segTest(seg));
-  const rows = pool;
+  // The trial list is ordered by who runs out first. num() floors a missing expiry to 0,
+  // which would sort unknowns to the top, so absence is pushed to the end explicitly.
+  const rows = seg==='trial'
+    ? pool.slice().sort((a,b)=>num(a.trialExpiresAt, Infinity)-num(b.trialExpiresAt, Infinity))
+    : pool;
   const shown = rows.slice(0, USER_VIEW.limit);
   const dormant = (!q && seg==='look') ? USERS.filter(u=>real(u) && u.type==='guest' && !num(u.workouts)) : [];
   const cnt = (k)=>USERS.filter(segTest(k)).length;
