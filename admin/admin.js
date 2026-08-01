@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801g';
+const BUILD = '20260801i';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -299,6 +299,7 @@ function renderCockpit(){
   ${renderReputation()}
 
   <div class="grid2" style="margin-top:22px">
+    ${renderStability()}
     ${renderPushReach()}
     <div class="card">
       <div class="qlabel">AI usage · ${num(d.ai.totalCalls)} calls · ${money(d.ai.totalCostUsd)}</div>
@@ -400,10 +401,29 @@ function renderRetention(){
   };
   const rows=[band('d1','Day 1'),band('d7','Day 7'),band('d30','Day 30')];
   const anyEligible=['d1','d7','d30'].some(k=>num((r[k]||{}).eligible)>0);
+  const unobs=num((r.d1||{}).unobserved);
   return `<div class="section-t">Retention</div>
   <div class="card">
-    ${anyEligible?hbars(rows,{seq:true}):'<div class="chart-empty">Nothing is old enough to measure yet.</div>'}
+    ${anyEligible?hbars(rows,{seq:true}):`<div class="chart-empty">Not measurable yet${unobs?` — ${unobs} account(s) predate the heartbeat, so nothing records whether they came back.`:'.'} It fills in as build 569+ rolls out.</div>`}
+    ${anyEligible&&unobs?`<div class="qsub" style="margin-top:8px">${unobs} account(s) excluded: they predate the heartbeat, so their return can't be observed either way.</div>`:''}
     <div class="note">Cohorted on when the account was created, measured against the heartbeat's last-seen. Each band only counts accounts that have HAD that long to come back, so a day-old account never drags Day 30 down. Activation says how many ever trained; this says whether the rest bounced immediately or drifted.</div>
+  </div>`;
+}
+
+function renderStability(){
+  const st=DATA.stability;
+  if(!st || !num(st.reporting)) return `<div class="card">
+    <div class="qlabel">Stability</div>
+    <div class="chart-empty" style="margin-top:8px">No sessions reporting yet — it fills in as build 570+ rolls out.</div>
+    <div class="note">Crashlytics' crash-free rate has no readable API and no BigQuery export is configured, so the app reports its own: launches, and launches that followed a session which never reached the background.</div>
+  </div>`;
+  const pct=st.cleanPct;
+  const bad=pct!=null && pct<99;
+  return `<div class="card"${bad?' style="border-color:rgba(255,92,108,.4)"':''}>
+    <div class="qlabel">Clean sessions</div>
+    <div class="big sm" style="margin:8px 0 2px">${pct==null?'—':pct+'%'}</div>
+    <div class="qsub">${num(st.uncleanExits)} unclean of ${num(st.launches)} launch${num(st.launches)===1?'':'es'} · ${num(st.reporting)} account(s) reporting</div>
+    <div class="note">An upper bound on crashes, not a count — a force-quit looks identical from inside the app and inflates it. Crashlytics' own rate isn't readable by any API.</div>
   </div>`;
 }
 
