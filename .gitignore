@@ -1,0 +1,21 @@
+# This repo is PUBLIC and serves GitHub Pages from the branch root, so anything
+# committed here is published. It had no ignore rules at all, and an experimental
+# project sitting in a subdirectory left a Firebase service-account key and a
+# .env.local in the working tree — one `git add -A` away from being public.
+# Nothing leaked (neither was ever committed), but the guard belongs here.
+
+# Credentials — never publishable, under any path.
+.env
+.env.*
+!.env.example
+**/serviceAccountKey.json
+**/*-service-account*.json
+**/serviceAccount*.json
+
+# Build output and dependencies from any experiment dropped in here.
+node_modules/
+.cache/
+*.log
+
+# macOS
+.DS_Store
