@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801d';
+const BUILD = '20260801e';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -244,7 +244,7 @@ function renderCockpit(){
     ${pcard('Activation', activationPct+'%', 'activationPct', activationPct<25?'var(--crit)':'var(--teal)', 'activation')}
     ${pcard('MRR', money(mo.mrrEstimate), 'mrr', 'var(--teal)', 'mrr', v=>'$'+v.toFixed(2))}
   </div>
-  <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users${u.internalExcluded?` · ${num(u.internalExcluded)} internal hidden`:''} · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
+  <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users${u.internalExcluded?` · ${num(u.internalExcluded)} internal hidden`:''}${num(u.nonUserHidden)?` · ${num(u.nonUserHidden)} not people`:''} · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
 
   <div class="section-t">Activation funnel</div>
   ${d.coverage?`<div class="card" style="margin-bottom:10px;border-color:rgba(74,158,255,.3)">
