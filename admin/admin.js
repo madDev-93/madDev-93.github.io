@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801c';
+const BUILD = '20260801d';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -476,13 +476,17 @@ function renderHealth(){
   ${(()=>{
     const gb=DATA.guestBursts;
     if(!gb) return '';
+    // "Still happening" requires a burst we can attribute to real hardware. Clusters
+    // with no device reported are indistinguishable from a dev machine relaunching the
+    // app — which is exactly what every recent one turned out to be.
+    const confirmed=num(gb.confirmedLast7d)>0;
     const live=num(gb.last7d)>0;
     return `<div class="section-t">Duplicate guest accounts</div>
     <div class="card"${live?' style="border-color:rgba(255,92,108,.4)"':''}>
       <div class="qlabel"><span class="tick" style="background:${live?'var(--crit)':'var(--dim)'}"></span>
-        ${live?'Still happening':'Historic only'}</div>
+        ${confirmed?'Still happening':(live?'Unattributed':'Historic only')}</div>
       <div class="big sm" style="margin:8px 0 2px">${num(gb.duplicates)} duplicate account${num(gb.duplicates)===1?'':'s'}</div>
-      <div class="qsub">${num(gb.clusters)} burst${num(gb.clusters)===1?'':'s'} · ${num(gb.last7d)} in the last 7 days · ${num(gb.last30d)} in 30${gb.mostRecentAt?` · most recent ${ago(gb.mostRecentAt)}`:''}</div>
+      <div class="qsub">${num(gb.clusters)} burst${num(gb.clusters)===1?'':'s'} · ${num(gb.last7d)} in the last 7 days${confirmed?` (${num(gb.confirmedLast7d)} on real devices)`:', none on a confirmed real device'} · ${num(gb.last30d)} in 30${gb.mostRecentAt?` · most recent ${ago(gb.mostRecentAt)}`:''}</div>
       ${(gb.recent||[]).length?`<div style="margin-top:14px">${hbars((gb.recent||[]).map(c=>({
         k:String(c.firstAt).slice(0,10), v:num(c.size), label:num(c.size)+' accounts'
       })),{seq:true})}</div>`:''}
