@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801f';
+const BUILD = '20260801g';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -49,6 +49,9 @@ function esc(v){ if(v==null) return ''; return String(v).replace(/&/g,'&amp;').r
 function num(v, fallback){ const n = Number(v); return Number.isFinite(n) ? n : (fallback===undefined ? 0 : fallback); }
 
 let DATA = null, TAB = 'cockpit';
+// App Store figures come from Apple, not Firestore, so they load separately and the
+// cockpit paints without waiting on them.
+let APPSTORE = null, APPSTORE_STATE = 'idle';
 let STALE = false;              // DATA is a last-good snapshot, not a fresh read
 let INCLUDE_INTERNAL = false;   // exclude internal/test accounts by default
 let USERS = null;               // cached adminUsers list
@@ -118,7 +121,7 @@ function render(){
   }
   // Numbers from a snapshot that failed to refresh must say so, not read as live.
   const banner = (DATA && STALE) ? '<div class="card" style="border-color:rgba(245,166,35,.45);margin-bottom:16px"><div class="qsub"><b style="color:var(--warn)">Stale snapshot</b> — the last refresh failed, these numbers are from the previous successful load. Hit ↻ to retry.</div></div>' : '';
-  if(TAB==='cockpit'){ m.innerHTML = banner + renderCockpit(); wire(); }
+  if(TAB==='cockpit'){ m.innerHTML = banner + renderCockpit(); wire(); loadAppStore(); }
   else if(TAB==='money'){ m.innerHTML = banner + renderMoney(); wire(); }
   else if(TAB==='health'){ m.innerHTML = banner + renderHealth(); wire(); loadHealthExtras(); }
   else if(TAB==='users'){ renderUsersTab(); }
@@ -291,7 +294,12 @@ function renderCockpit(){
     <button class="btn" data-act="snapshot"><span class="i">⧗</span> Snapshot metrics</button>
   </div>
 
+  ${renderAcquisition()}
+  ${renderRetention()}
+  ${renderReputation()}
+
   <div class="grid2" style="margin-top:22px">
+    ${renderPushReach()}
     <div class="card">
       <div class="qlabel">AI usage · ${num(d.ai.totalCalls)} calls · ${money(d.ai.totalCostUsd)}</div>
       <div class="bars">${aiBars(d.ai.bySurface)}</div>
@@ -319,6 +327,94 @@ function alertActions(n){
   if(/entitled users with no verified purchase/i.test(t)) return `<button class="ab" data-go="users" data-filter="flagged">Show these users</button>`;
   if(/[Rr]everse-trial/.test(t)) return `<button class="ab" data-act2="flag">Feature flags</button>`;
   return '';
+}
+
+// Loaded after the cockpit paints — Apple can take a few seconds and this must never
+// hold up the numbers that come from Firestore. Fetched once per session unless forced.
+async function loadAppStore(force){
+  if(APPSTORE_STATE==='loading') return;
+  if(APPSTORE && !force) return;
+  APPSTORE_STATE='loading';
+  try{
+    APPSTORE=(await call('adminAppStore')({refresh:!!force})).data;
+    APPSTORE_STATE='ready';
+  }catch(e){
+    APPSTORE_STATE='error';
+    console.warn('App Store fetch failed:', e && e.message);
+  }
+  if(TAB==='cockpit' && DATA){ const m=$('main'); if(m){ m.innerHTML=renderCockpit(); wire(); } }
+}
+
+function renderAcquisition(){
+  // The half of the funnel the console never had. Without it "growth stalled" is a dead
+  // end: you cannot tell whether nobody sees the listing or people see it and don't
+  // install, and those need opposite fixes.
+  if(APPSTORE_STATE==='loading') return `<div class="section-t">Acquisition</div>
+    <div class="card"><div class="chart-empty">Asking App Store Connect…</div></div>`;
+  if(APPSTORE_STATE==='error' || !APPSTORE) return `<div class="section-t">Acquisition</div>
+    <div class="card"><div class="chart-empty">Couldn't reach App Store Connect. The numbers below the store line are unaffected.</div></div>`;
+  const a=APPSTORE;
+  const known=(a.days||[]).filter(d=>d.installs!=null);
+  const reg7=num((DATA.growth||{}).newRegistered7d);
+  // Installs → registrations is the drop nothing else measures. A person who installs
+  // and never makes an account is invisible in every other panel on this console.
+  const gap = num(a.installs7d) - reg7;
+  return `<div class="section-t">Acquisition</div>
+  <div class="card">
+    <div class="grid2">
+      <div><div class="l">First-time installs · 7d</div><div class="big sm">${num(a.installs7d)}</div></div>
+      <div><div class="l">New registrations · 7d</div><div class="big sm">${reg7}</div></div>
+    </div>
+    ${num(a.installs7d)>0?`<div class="qsub" style="margin-top:10px">${gap>0
+      ? `<b style="color:var(--warn)">${gap} of ${num(a.installs7d)} installs never became an account.</b> The loss is between download and sign-up, not at the store listing.`
+      : 'Every install this week became an account.'}</div>`:'<div class="qsub" style="margin-top:10px">No installs recorded in the last 7 days — this is a store-listing problem, not a sign-up one.</div>'}
+    ${known.length?`<div style="margin-top:14px">${hbars(known.map(d=>({k:d.date.slice(5), v:num(d.installs), label:String(num(d.installs))})),{seq:true,empty:'No install data'})}</div>`:''}
+    <div class="note">First-time installs only — re-downloads and updates excluded. Days Apple has no report for are omitted rather than drawn as zero. ${a.stale?'<b>Stale</b> — the last fetch failed; showing the previous successful read. ':''}${a.cached?'Cached up to an hour.':''}</div>
+  </div>`;
+}
+
+function renderReputation(){
+  if(!APPSTORE || !(APPSTORE.reviews||[]).length) return '';
+  const a=APPSTORE;
+  return `<div class="section-t">What people are saying</div>
+  <div class="card">
+    ${a.recentReviewAverage!=null?`<div class="qlabel">${a.recentReviewAverage.toFixed(1)} ★ across the ${num(a.reviewSampleSize)} most recent review${num(a.reviewSampleSize)===1?'':'s'}</div>`:''}
+    <div class="feed" style="margin-top:10px">${a.reviews.map(r=>`<div class="row">
+      <span class="sev ${num(r.rating)>=4?'ok':(num(r.rating)>=3?'warn':'crit')}"></span>
+      <div style="flex:1;min-width:0">
+        <div class="t">${'★'.repeat(Math.max(0,Math.min(5,num(r.rating))))} ${esc(r.title)}</div>
+        <div class="d">${esc(r.body)}</div>
+      </div>
+      <div class="d" style="white-space:nowrap">${esc(String(r.territory||''))}</div>
+    </div>`).join('')}</div>
+    <div class="note">Apple's API returns recent reviews, not the lifetime star rating — this average describes the sample above, nothing more.</div>
+  </div>`;
+}
+
+function renderRetention(){
+  const r=DATA.retention; if(!r) return '';
+  const band=(k,label)=>{
+    const b=r[k]||{};
+    const pct=b.pct==null?'—':`${num(b.pct)}%`;
+    return {k:label, v:num(b.pct), label:`${pct} · ${num(b.retained)} of ${num(b.eligible)}`};
+  };
+  const rows=[band('d1','Day 1'),band('d7','Day 7'),band('d30','Day 30')];
+  const anyEligible=['d1','d7','d30'].some(k=>num((r[k]||{}).eligible)>0);
+  return `<div class="section-t">Retention</div>
+  <div class="card">
+    ${anyEligible?hbars(rows,{seq:true}):'<div class="chart-empty">Nothing is old enough to measure yet.</div>'}
+    <div class="note">Cohorted on when the account was created, measured against the heartbeat's last-seen. Each band only counts accounts that have HAD that long to come back, so a day-old account never drags Day 30 down. Activation says how many ever trained; this says whether the rest bounced immediately or drifted.</div>
+  </div>`;
+}
+
+function renderPushReach(){
+  const p=DATA.pushReach; if(!p) return '';
+  return `<div class="card">
+    <div class="qlabel">Push reach</div>
+    <div class="big sm" style="margin:8px 0 2px">${num(p.pct)}%</div>
+    <div class="qsub">${num(p.reachable)} of ${num(p.total)} accounts have a push token</div>
+    <div class="note">Re-engagement is the main retention lever, so this is the ceiling on it — nobody without a token can be brought back by a notification.</div>
+  </div>`;
 }
 
 function aiBars(rows){
