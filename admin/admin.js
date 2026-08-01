@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801l';
+const BUILD = '20260801m';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -411,43 +411,51 @@ function renderReputation(){
 }
 
 function renderJourney(){
-  // The whole point: every stage names WHAT stopped them and what to look at next.
-  // A funnel that only shows percentages tells you there's a problem; this has to tell
-  // you which problem, because that's the question being asked of it.
-  const j=(DATA.journey||{}).allTime; if(!j) return '';
-  const w=(DATA.journey||{}).window30||{};
+  const J=DATA.journey; if(!J||!J.allTime) return '';
+  const a=J.allTime, w30=J.window30||{}, w7=J.window7||{};
   const installs=APPSTORE?num(APPSTORE.installs7d):null;
-  const reg7=num((DATA.growth||{}).newRegistered7d);
 
+  // Three stages, and they nest. Signing in is NOT one of them — it happens on the
+  // welcome screen before the questionnaire, and guests complete onboarding too, so
+  // placing it between them produced a "funnel" that went 39 → 11 → 37.
   const stages=[
-    { k:'Opened the app', v:num(j.opened), why:null },
-    { k:'Got through onboarding', v:num(j.reached),
-      why:'They opened it and never reached the main app. Onboarding is where they stopped — the step breakdown below names the screen once build 570+ has spread.' },
-    { k:'Signed in with Apple', v:num(j.registered),
-      why:'They reached the app but stayed a guest. Guest data is lost on reinstall, and they can\'t be reached by push.' },
-    { k:'Logged a workout', v:num(j.activated),
-      why:'They signed in and never used the core feature. This is a product question, not a funnel one.' },
+    { k:'Opened the app', v:num(a.opened), why:null },
+    { k:'Finished setup',  v:num(a.onboarded),
+      why:'They opened it and never got through setup. That is a screen-by-screen problem — the onboarding breakdown names which one, once build 570+ has spread.' },
+    { k:'Logged a workout', v:num(a.activated),
+      why:'They finished setup and never did the one thing the app is for. Nothing in the funnel explains this; it is a product question.' },
   ];
   const top=stages[0].v||1;
   let worstIdx=-1, worstDrop=-1;
-  stages.forEach((st,i)=>{ if(i===0) return; const prev=stages[i-1].v; const d=prev>0?Math.round(((prev-st.v)/prev)*100):0; st.drop=d; st.from=prev; if(d>worstDrop){worstDrop=d;worstIdx=i;} });
+  stages.forEach((st,i)=>{ if(!i) return; const prev=stages[i-1].v;
+    st.drop=prev>0?Math.round(((prev-st.v)/prev)*100):0; st.from=prev;
+    if(st.drop>worstDrop){worstDrop=st.drop;worstIdx=i;} });
 
+  const openGap = installs!=null ? installs-num(w7.opened) : null;
   return `<div class="section-t">Where people actually stop</div>
   <div class="card">
-    ${installs!=null?`<div class="qsub" style="margin-bottom:12px">Apple recorded <b>${installs}</b> first-time install${installs===1?'':'s'} in the last 7 days, against <b>${reg7}</b> new registration${reg7===1?'':'s'}. The stages below are all-time, where the numbers are big enough to read.</div>`:''}
     <div class="funnel">
       ${stages.map((st,i)=>`<div class="fstage"><span class="nm">${esc(st.k)}</span>
         <div class="ftrack"><div class="ffill${i===worstIdx?' worst':''}" style="width:${Math.max(Math.round((st.v/top)*100),2)}%"></div></div>
-        <span class="v"><b>${st.v}</b>${i>0?` · ${top>0?Math.round((st.v/top)*100):0}%`:''}</span>
-        ${i>0&&st.drop>0?`<span class="drop${i===worstIdx?' worst':''}">↓ ${st.drop}% lost from ${st.from}${i===worstIdx?' — the biggest single loss':''}</span>`:''}
+        <span class="v"><b>${st.v}</b>${i?` · ${top>0?Math.round((st.v/top)*100):0}%`:''}</span>
+        ${i&&st.drop>0?`<span class="drop${i===worstIdx?' worst':''}">↓ ${st.drop}% lost from ${st.from}${i===worstIdx?' — the biggest single loss':''}</span>`:''}
       </div>`).join('')}
     </div>
     ${worstIdx>0?`<div class="qsub" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
       <b style="color:var(--warn)">${esc(stages[worstIdx].k)}</b> — ${esc(stages[worstIdx].why||'')}</div>`:''}
+
+    <div class="grid2" style="margin-top:16px">
+      <div><div class="l">Chose to sign in</div><div class="big sm">${num(a.signedIn)}</div>
+        <div class="qsub">of ${num(a.opened)} who opened it — the rest stayed guests, whose data is lost on reinstall and who can't be reached by push. Not a funnel stage: the choice is offered on the welcome screen, before setup.</div></div>
+      <div><div class="l">Opened it · last 7 days</div><div class="big sm">${num(w7.opened)}</div>
+        <div class="qsub">${installs!=null?`Apple recorded ${installs} first-time install${installs===1?'':'s'} in the same week. ${openGap>0?`<b style="color:var(--warn)">${openGap} install${openGap===1?'':'s'} never produced an account</b> — those people downloaded it and didn't open it, or it failed before sign-in.`:`More accounts than installs, which means repeat launches or accounts being created more than once per person.`}`:'App Store figures still loading.'}</div></div>
+    </div>
+
     <div class="note">
-      "Opened the app" = an auth account exists; the app creates one on launch, so it means installed AND opened.
-      "Got through onboarding" = a notificationPreferences document exists, which is only written from the main tab view — so it means they reached the app itself.
-      Last 30 days: ${num(w.opened)} opened, ${num(w.reached)} got through, ${num(w.registered)} signed in.
+      Only staff, simulators and self-declared test sessions are excluded here — unlike every other panel, an account that did nothing is kept, because it IS the question.
+      "Opened the app" = an auth account exists, which the app creates on launch.
+      "Finished setup" = a userProfiles document exists, written when onboarding completes.
+      Last 30 days: ${num(w30.opened)} opened, ${num(w30.onboarded)} finished setup, ${num(w30.activated)} trained.
     </div>
   </div>`;
 }
