@@ -820,6 +820,7 @@ async function renderUserDetail(uid){
         <button class="btn" data-ua="sendPush" ${pushOff?'disabled title="No push token on file — this user cannot be reached"':''}><span class="i">✉</span> ${pushOff?'Send push · unreachable':'Send push'}</button>
         <button class="btn" data-ua="forceRefresh"><span class="i">↻</span> Force AI refresh</button>
         <button class="btn" data-ua="internal"><span class="i">${row.internal?'✓':'⊘'}</span> ${row.internal?'Unmark internal':'Mark internal'}</button>
+        ${row.nonUserReason==='automated test session'?`<button class="btn" data-ua="untest"><span class="i">↺</span> Not a test session</button>`:''}
       </div>
 
       <div class="detail-grid" style="margin-top:16px">
@@ -861,6 +862,10 @@ async function renderUserDetail(uid){
   document.querySelectorAll('[data-ua]').forEach(b=>b.onclick=async()=>{
     const act=b.dataset.ua;
     if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); load(); }catch(e){ toast(e.message,true); } return; }
+    // The test-session flag is set by the CLIENT (automation announces itself), so anyone
+    // who can sign in could mark themselves and vanish from every chart. This is the way
+    // back — without it a mis-flagged account is invisible with no remedy.
+    if(act==='untest'){ try{ await call('adminSetTestSession')({uid, testSession:false}); toast('Restored to real users'); load(); }catch(e){ toast(e.message,true); } return; }
     openAction(act); const el=$('a-uid'); if(el) el.value=uid;
   });
 
