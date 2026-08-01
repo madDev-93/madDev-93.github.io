@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801i';
+const BUILD = '20260801j';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -367,10 +367,10 @@ function renderAcquisition(){
       <div><div class="l">New registrations · 7d</div><div class="big sm">${reg7}</div></div>
     </div>
     ${num(a.installs7d)>0?`<div class="qsub" style="margin-top:10px">${gap>0
-      ? `<b style="color:var(--warn)">${gap} of ${num(a.installs7d)} installs never became an account.</b> The loss is between download and sign-up, not at the store listing.`
-      : 'Every install this week became an account.'}</div>`:'<div class="qsub" style="margin-top:10px">No installs recorded in the last 7 days — this is a store-listing problem, not a sign-up one.</div>'}
+      ? `<b style="color:var(--warn)">${gap} of ${num(a.installs7d)} installs didn't produce a registered account.</b> They either stayed on the guest path or left before signing in — the store listing is working; what follows the download isn't.`
+      : 'Every install this week produced a registered account.'}</div>`:'<div class="qsub" style="margin-top:10px">No installs recorded in the last 7 days — that points at the store listing, not at sign-up.</div>'}
     ${known.length?`<div style="margin-top:14px">${hbars(known.map(d=>({k:d.date.slice(5), v:num(d.installs), label:String(num(d.installs))})),{seq:true,empty:'No install data'})}</div>`:''}
-    <div class="note">First-time installs only — re-downloads and updates excluded. Days Apple has no report for are omitted rather than drawn as zero. ${a.stale?'<b>Stale</b> — the last fetch failed; showing the previous successful read. ':''}${a.cached?'Cached up to an hour.':''}</div>
+    <div class="note">First-time installs only — re-downloads and updates excluded${num(a.daysKnown7d)&&num(a.daysKnown7d)<7?`, and Apple has reports for only ${num(a.daysKnown7d)} of the last 7 days`:''}. Days with no report are omitted rather than drawn as zero. "Registered" counts Apple sign-ins that survive the not-a-person filter, so a guest who installs and never signs in shows in the gap. ${a.stale?'<b>Stale</b> — the last fetch failed; showing the previous successful read. ':''}${a.cached?'Cached up to an hour.':''}</div>
   </div>`;
 }
 
