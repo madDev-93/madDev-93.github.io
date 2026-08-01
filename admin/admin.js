@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801j';
+const BUILD = '20260801k';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -271,7 +271,24 @@ function renderCockpit(){
       <span class="v"><b>${num(f.count)}</b> · ${num(f.pct)}%</span>
       ${f.dropPct>0?`<span class="drop${f.worst?' worst':''}">↓ ${num(f.dropPct)}% drop from ${esc(f.from!=null?String(f.from):'')}${f.worst?' — the leak is here':''}</span>`:''}
     </div>`).join('')}
-  </div></div>
+  </div>
+  ${(()=>{
+    // The activation stage counts every unobservable account as "didn't activate".
+    // Stating 5% while 31 of 37 accounts have no workout source at all is a claim the
+    // data cannot support, and it was steering decisions.
+    const ns=DATA.northStar||{};
+    const un=num(ns.activationUnobservable);
+    if(!un) return '';
+    return `<div class="qsub" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+      <b style="color:var(--warn)">That activation figure is a floor, not a rate.</b>
+      ${un} of ${num(DATA.users.registered)} registered accounts have no workout source at all —
+      no profile sync (Pro-gated) and no heartbeat (shipping from build 569) — and every one of
+      them counts as "didn't activate". Of the ${num(ns.activationObservable)} we can actually see,
+      ${num(ns.activatedUsers)} trained${ns.activationObservablePct!=null?` (${num(ns.activationObservablePct)}%)`:''}.
+      The true rate is somewhere between the two and won't be knowable until the heartbeat spreads.
+    </div>`;
+  })()}
+  </div>
 
   ${(()=>{
     const ob=d.onboarding||{reporting:0,completed:0,steps:[]};
