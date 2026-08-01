@@ -482,8 +482,8 @@ function renderHealth(){
     const confirmed=num(gb.confirmedLast7d)>0;
     const live=num(gb.last7d)>0;
     return `<div class="section-t">Duplicate guest accounts</div>
-    <div class="card"${live?' style="border-color:rgba(255,92,108,.4)"':''}>
-      <div class="qlabel"><span class="tick" style="background:${live?'var(--crit)':'var(--dim)'}"></span>
+    <div class="card"${confirmed?' style="border-color:rgba(255,92,108,.4)"':''}>
+      <div class="qlabel"><span class="tick" style="background:${confirmed?'var(--crit)':'var(--dim)'}"></span>
         ${confirmed?'Still happening':(live?'Unattributed':'Historic only')}</div>
       <div class="big sm" style="margin:8px 0 2px">${num(gb.duplicates)} duplicate account${num(gb.duplicates)===1?'':'s'}</div>
       <div class="qsub">${num(gb.clusters)} burst${num(gb.clusters)===1?'':'s'} · ${num(gb.last7d)} in the last 7 days${confirmed?` (${num(gb.confirmedLast7d)} on real devices)`:', none on a confirmed real device'} · ${num(gb.last30d)} in 30${gb.mostRecentAt?` · most recent ${ago(gb.mostRecentAt)}`:''}</div>
