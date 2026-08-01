@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801k';
+const BUILD = '20260801l';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -312,6 +312,7 @@ function renderCockpit(){
   </div>
 
   ${renderAcquisition()}
+  ${renderJourney()}
   ${renderRetention()}
   ${renderReputation()}
 
@@ -406,6 +407,48 @@ function renderReputation(){
       <div class="d" style="white-space:nowrap">${esc(String(r.territory||''))}</div>
     </div>`).join('')}</div>
     <div class="note">Apple's API returns recent reviews, not the lifetime star rating — this average describes the sample above, nothing more.</div>
+  </div>`;
+}
+
+function renderJourney(){
+  // The whole point: every stage names WHAT stopped them and what to look at next.
+  // A funnel that only shows percentages tells you there's a problem; this has to tell
+  // you which problem, because that's the question being asked of it.
+  const j=(DATA.journey||{}).allTime; if(!j) return '';
+  const w=(DATA.journey||{}).window30||{};
+  const installs=APPSTORE?num(APPSTORE.installs7d):null;
+  const reg7=num((DATA.growth||{}).newRegistered7d);
+
+  const stages=[
+    { k:'Opened the app', v:num(j.opened), why:null },
+    { k:'Got through onboarding', v:num(j.reached),
+      why:'They opened it and never reached the main app. Onboarding is where they stopped — the step breakdown below names the screen once build 570+ has spread.' },
+    { k:'Signed in with Apple', v:num(j.registered),
+      why:'They reached the app but stayed a guest. Guest data is lost on reinstall, and they can\'t be reached by push.' },
+    { k:'Logged a workout', v:num(j.activated),
+      why:'They signed in and never used the core feature. This is a product question, not a funnel one.' },
+  ];
+  const top=stages[0].v||1;
+  let worstIdx=-1, worstDrop=-1;
+  stages.forEach((st,i)=>{ if(i===0) return; const prev=stages[i-1].v; const d=prev>0?Math.round(((prev-st.v)/prev)*100):0; st.drop=d; st.from=prev; if(d>worstDrop){worstDrop=d;worstIdx=i;} });
+
+  return `<div class="section-t">Where people actually stop</div>
+  <div class="card">
+    ${installs!=null?`<div class="qsub" style="margin-bottom:12px">Apple recorded <b>${installs}</b> first-time install${installs===1?'':'s'} in the last 7 days, against <b>${reg7}</b> new registration${reg7===1?'':'s'}. The stages below are all-time, where the numbers are big enough to read.</div>`:''}
+    <div class="funnel">
+      ${stages.map((st,i)=>`<div class="fstage"><span class="nm">${esc(st.k)}</span>
+        <div class="ftrack"><div class="ffill${i===worstIdx?' worst':''}" style="width:${Math.max(Math.round((st.v/top)*100),2)}%"></div></div>
+        <span class="v"><b>${st.v}</b>${i>0?` · ${top>0?Math.round((st.v/top)*100):0}%`:''}</span>
+        ${i>0&&st.drop>0?`<span class="drop${i===worstIdx?' worst':''}">↓ ${st.drop}% lost from ${st.from}${i===worstIdx?' — the biggest single loss':''}</span>`:''}
+      </div>`).join('')}
+    </div>
+    ${worstIdx>0?`<div class="qsub" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+      <b style="color:var(--warn)">${esc(stages[worstIdx].k)}</b> — ${esc(stages[worstIdx].why||'')}</div>`:''}
+    <div class="note">
+      "Opened the app" = an auth account exists; the app creates one on launch, so it means installed AND opened.
+      "Got through onboarding" = a notificationPreferences document exists, which is only written from the main tab view — so it means they reached the app itself.
+      Last 30 days: ${num(w.opened)} opened, ${num(w.reached)} got through, ${num(w.registered)} signed in.
+    </div>
   </div>`;
 }
 
