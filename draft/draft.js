@@ -200,13 +200,23 @@ const posClass = (pos) => pos === 'DST' ? 'DST' : pos;
 const riskClass = (r) => r >= 40 ? 'hi' : r >= 20 ? 'md' : 'lo';
 const riskWord = (r) => r >= 40 ? 'High' : r >= 20 ? 'Med' : 'Low';
 const fmt = (v, d = 1) => v == null ? '—' : (+v).toFixed(d);
+/* "3h ago" / "in 2d" from a timestamp or ISO string. */
+function ago(t) {
+  const ms = typeof t === 'number' ? t : Date.parse(t);
+  if (!Number.isFinite(ms)) return '—';
+  const s = Math.round((Date.now() - ms) / 1000), a = Math.abs(s);
+  const n = a < 60 ? `${a}s` : a < 3600 ? `${Math.round(a / 60)}m` : a < 86400 ? `${Math.round(a / 3600)}h` : `${Math.round(a / 86400)}d`;
+  return s < 0 ? `in ${n}` : `${n} ago`;
+}
 
 function render() {
   renderSettings(); renderClock(); renderTurn(); renderCounts();
   if (ui.tab === 'board') renderBoard(); if (ui.tab === 'team') renderTeam(); if (ui.tab === 'taken') renderTaken();
   for (const t of document.querySelectorAll('.pane')) t.hidden = t.id !== 'pane-' + ui.tab;
   for (const t of document.querySelectorAll('.tab')) t.classList.toggle('on', t.dataset.tab === ui.tab);
-  $('foot').innerHTML = `Rankings built ${esc(new Date(DATA.built).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))} · ${esc(DATA.sources.join(' · '))}`;
+  const age = Date.now() - new Date(DATA.built).getTime();
+  $('foot').innerHTML = `Rankings built ${esc(ago(new Date(DATA.built).getTime()))}${age > 36 * 3600e3 ? ' — tap ↻ to refresh' : ''} · ${esc(DATA.sources.length)} sources: ${esc(DATA.sources.join(' · '))}`;
+  $('b-refresh').title = `Rankings built ${new Date(DATA.built).toLocaleString()}`;
 }
 function renderSettings() {
   const t = $('s-teams'), s = $('s-slot');
@@ -398,6 +408,59 @@ function openSettings() {
     <div class="row-actions"><button class="btn ghost wide" data-close="1">Done</button></div>`);
 }
 
+
+// ---- refresh ------------------------------------------------------------------------------
+// Two layers, because only some sources allow a browser to call them:
+//  1. players.json — rebuilt every morning by .github/workflows/draft-rankings.yml from ALL five
+//     sources (ESPN, FantasyPros consensus, FFC ADP, nflverse history, Sleeper). Tiny to fetch.
+//  2. a live top-up straight from ESPN (CORS-open) for injury status and projections, so a
+//     Sunday-morning tag lands here even if the nightly build ran before it.
+// Limited to once a day; hold the button to force.
+const REFRESH_MS = 22 * 3600 * 1000;
+const lastRefresh = () => { try { return +localStorage.getItem('draftboard.refreshed') || 0; } catch { return 0; } };
+const sinceRefresh = () => Date.now() - lastRefresh();
+async function refreshRankings(force) {
+  if (!force && sinceRefresh() < REFRESH_MS) { toast(`Refreshed ${ago(lastRefresh())} — hold to force`); return; }
+  const btn = $('b-refresh'); btn.classList.add('spin'); btn.disabled = true;
+  const notes = [];
+  try {
+    // 1. the nightly file
+    const fresh = await (await fetch('players.json?cb=' + Date.now(), { cache: 'no-store' })).json();
+    if (fresh?.players?.length) {
+      const built = new Date(fresh.built);
+      DATA = fresh; P = new Map(); DATA.players.forEach((p) => P.set(p.id, p)); registerWriteIns();
+      notes.push(`rankings from ${ago(built.getTime())}`);
+    }
+    // 2. live injuries + projections from ESPN
+    try {
+      const r = await fetch(`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${DATA.season}/segments/0/leaguedefaults/3?view=kona_player_info`,
+        { headers: { 'x-fantasy-filter': JSON.stringify({ players: { limit: 250, sortDraftRanks: { sortPriority: 100, sortAsc: true, value: 'PPR' } } }) } });
+      const live = await r.json();
+      let changed = 0;
+      for (const row of live.players || []) {
+        const p = P.get(String(row.player.id)); if (!p) continue;
+        const st = row.player.injuryStatus && row.player.injuryStatus !== 'ACTIVE' ? row.player.injuryStatus : null;
+        if (st !== (p.injury ?? null)) {
+          changed++;
+          p.injury = st;
+          // Recompute risk from the stored non-injury base so a new tag actually moves the pick.
+          const add = st ? (st === 'INJURY_RESERVE' || st === 'OUT' ? 45 : 25) : 0;
+          p.risk = Math.min(100, (p.riskBase ?? p.risk) + add);
+          p.riskWhy = (p.riskWhy || []).filter((w) => !/(questionable|doubtful|^out$|injury reserve)/i.test(w));
+          if (st) p.riskWhy.unshift(st.toLowerCase().replace('_', ' '));
+        }
+        const proj = row.player.stats?.find((x) => x.seasonId === DATA.season && x.statSourceId === 1 && x.scoringPeriodId === 0);
+        if (proj?.appliedTotal) p.proj = +(+proj.appliedTotal).toFixed(1);
+      }
+      notes.push(changed ? `${changed} injury change${changed === 1 ? '' : 's'} from ESPN` : 'no new injuries');
+    } catch { notes.push("couldn't reach ESPN — file only"); }
+    try { localStorage.setItem('draftboard.refreshed', String(Date.now())); } catch {}
+    render(); toast(notes.join(' · '));
+  } catch (e) {
+    toast("Couldn't refresh: " + e.message);
+  } finally { btn.classList.remove('spin'); btn.disabled = false; }
+}
+
 // ---- events -------------------------------------------------------------------------
 document.addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -425,6 +488,7 @@ document.addEventListener('click', (e) => {
   if (b.dataset.more) { ui.limit += 60; renderBoard(); return; }
   if (b.dataset.step) { const [k, d] = b.dataset.step.split(':'); S.roster[k] = Math.max(k === 'BE' ? 0 : 0, Math.min(k === 'BE' ? 12 : 3, S.roster[k] + +d)); save(); openSettings(); renderClock(); renderCounts(); return; }
   if (b.dataset.close) { closeSheet(); return; }
+  if (b.id === 'b-refresh') { if (!b._held) refreshRankings(false); b._held = false; return; }
   if (b.id === 'b-settings') { openSettings(); return; }
   if (b.id === 'b-reset') { if (b.dataset.armed) { resetDraft(); } else { b.dataset.armed = '1'; b.textContent = 'Tap again to clear everything'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Clear the whole draft'; }, 4000); } return; }
 });
@@ -441,6 +505,9 @@ const HOLD_MS = 2500;
 const holdState = { el: null, t: null };
 function holdCancel() { const h = holdState; if (!h.el) return; clearTimeout(h.t); h.el.classList.remove('holding'); h.el.style.removeProperty('--hold'); h.el = null; }
 document.addEventListener('pointerdown', (e) => {
+  // Hold the refresh button to force a refresh inside the once-a-day window.
+  const rb = e.target.closest('#b-refresh');
+  if (rb) { clearTimeout(rb._t); rb._t = setTimeout(() => { rb._held = true; refreshRankings(true); }, 700); return; }
   const c = e.target.closest('#likely .chip.pick'); if (!c || !c.dataset.log) return;
   holdCancel(); holdState.el = c; c.style.setProperty('--hold', HOLD_MS + 'ms'); c.classList.add('holding');
   holdState.t = setTimeout(() => {
@@ -451,7 +518,7 @@ document.addEventListener('pointerdown', (e) => {
 });
 // Release or a scroll (the browser fires pointercancel) ends the hold. No pointerleave/contextmenu
 // listeners: they made Chrome's synthetic mouse-event dispatch hang under automation.
-for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => holdCancel(), true);
+for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => { const rb = $('b-refresh'); if (rb) clearTimeout(rb._t); holdCancel(); }, true);
 
 // ---- boot ----------------------------------------------------------------------------
 (async () => {

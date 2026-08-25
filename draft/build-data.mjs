@@ -147,13 +147,17 @@ for (const p of list) {
   p.gamesLast = p.history[SEASON - 1]?.games ?? null;
   // Risk 0-100. Each term is a reason the ranking could be wrong, not a judgement of talent.
   let risk = 0; const why = [];
-  if (p.injury) { risk += p.injury === "INJURY_RESERVE" || p.injury === "OUT" ? 45 : 25; why.push(p.injury.toLowerCase().replace("_", " ")); }
+  const injuryRisk = (st) => st ? (st === "INJURY_RESERVE" || st === "OUT" ? 45 : 25) : 0;
+  if (p.injury) { risk += injuryRisk(p.injury); why.push(p.injury.toLowerCase().replace("_", " ")); }
   const ageCap = { RB: 27, WR: 30, TE: 31, QB: 36, K: 40, DST: 99 }[p.pos];
   if (p.age && p.age >= ageCap) { risk += Math.min(30, (p.age - ageCap + 1) * 10); why.push(`age ${p.age}`); }
   if (p.exp === 0 || (p.seasons === 0 && p.exp != null && p.exp <= 1)) { risk += 20; why.push("rookie"); }
   else if (p.gamesLast != null && p.gamesLast < 12) { risk += 15; why.push(`${p.gamesLast} games in ${SEASON - 1}`); }
   if (p.ecrStd != null && p.ecr != null) { const spread = p.ecrStd / Math.max(4, p.ecr * 0.25); if (spread > 1) { risk += Math.min(20, Math.round(spread * 8)); why.push("experts split"); } }
   p.risk = Math.min(100, Math.round(risk)); p.riskWhy = why;
+  // Everything except the injury term, so the page can recompute risk when it pulls a fresh
+  // injury status without re-running this script.
+  p.riskBase = Math.min(100, Math.round(risk - injuryRisk(p.injury)));
 }
 // Composite 0-100 within position, from rank consensus + projection + production + durability.
 const pct = (arr, v, lowerBetter = false) => { if (v == null || !arr.length) return null; const n = arr.filter((x) => lowerBetter ? x > v : x < v).length; return n / arr.length; };

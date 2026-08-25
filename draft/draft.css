@@ -29,6 +29,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .selwrap .lab{position:absolute;top:-7px;left:8px;background:var(--bg);padding:0 4px;font:600 9px var(--mono);letter-spacing:.14em;color:var(--faint);text-transform:uppercase;pointer-events:none}
 .sel{appearance:none;-webkit-appearance:none;background:var(--panel);border:1px solid var(--hair-2);color:var(--ink);border-radius:8px;height:36px;padding:0 24px 0 10px;font:500 13px var(--sans);min-width:52px}
 .selwrap::after{content:"";position:absolute;right:10px;top:50%;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.icon:disabled{opacity:.5}
+.icon.spin{color:var(--teal)}
+@media (prefers-reduced-motion:no-preference){.icon.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}}
 .icon{width:36px;height:36px;border-radius:8px;border:1px solid var(--hair-2);background:var(--panel);color:var(--muted);font-size:18px;line-height:1;display:grid;place-items:center}
 
 /* clock — pinned so round + who's picking are always in view while scrolling the board */

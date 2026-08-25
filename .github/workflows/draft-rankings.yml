@@ -1,0 +1,30 @@
+# Rebuilds draft/players.json from the public 2026 sources every morning, so the board is current
+# without anyone running the script by hand. Also runnable on demand from the Actions tab.
+name: Refresh draft rankings
+on:
+  schedule:
+    - cron: "0 11 * * *"   # 07:00 ET / 06:00 CT daily
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build players.json
+        run: node draft/build-data.mjs
+      - name: Commit if the rankings changed
+        run: |
+          if git diff --quiet -- draft/players.json; then
+            echo "No change in rankings."
+            exit 0
+          fi
+          git config user.name "rankings-bot"
+          git config user.email "rankings-bot@users.noreply.github.com"
+          git add draft/players.json
+          git commit -m "Refresh draft rankings ($(date -u +%Y-%m-%d))"
+          git push
