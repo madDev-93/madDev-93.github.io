@@ -4,7 +4,7 @@
   --bg:#0c0c0d;--bg-2:#141416;--panel:#16161a;--panel-2:#1c1c21;
   --ink:#ededea;--muted:#9a9a92;--faint:#6a6a64;
   --hair:rgba(255,255,255,.09);--hair-2:rgba(255,255,255,.14);
-  --teal:#2EC4A7;--teal-deep:#1f8f7a;--teal-dim:rgba(46,196,167,.13);--teal-ink:#062a23;
+  --teal:#2EC4A7;--teal-deep:#1f8f7a;--teal-dim:rgba(46,196,167,.13);--teal-bg:#0f2622;--teal-ink:#062a23;
   --qb:#a99cf5;--rb:#6fcf97;--wr:#e0b35a;--te:#e08a6f;--kd:#8d8d85;
   --lo:#6fcf97;--md:#e0b35a;--hi:#e0706a;
   --serif:'Fraunces',Georgia,serif;--sans:'Archivo',system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
@@ -40,7 +40,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .clock .rnd .v small{font:500 13px var(--sans);color:var(--muted);margin-left:2px}
 .clock .who .v{font:700 20px/1.15 var(--sans);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .clock .who .sub{font:500 12px var(--mono);color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.clock.mine{background:var(--teal-dim);border-color:rgba(46,196,167,.5)}
+.clock.mine{background:var(--teal-bg);border-color:rgba(46,196,167,.5)}
 .clock.mine .k,.clock.mine .sub{color:var(--teal-deep)}
 .clock.mine .who .v,.clock.mine .rnd .v{color:var(--teal)}
 .clock.mine .rnd{border-right-color:rgba(46,196,167,.3)}
@@ -107,18 +107,17 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 
 /* board rows */
 .rows{margin-top:6px}
-.row{display:grid;grid-template-columns:30px 1fr auto var(--tap);gap:8px;align-items:center;min-height:56px;padding:8px 0 8px 12px;border-bottom:1px solid var(--hair);position:relative;width:100%;text-align:left}
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;min-height:56px;padding:8px 14px 8px 12px;border-bottom:1px solid var(--hair);position:relative;width:100%;text-align:left}
 .row::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 2px 2px 0;background:var(--lo)}
 .row.md::before{background:var(--md)}.row.hi::before{background:var(--hi)}
 .row .rk{font:500 13px var(--mono);color:var(--faint);text-align:right;font-variant-numeric:tabular-nums}
-.row .nm{font-weight:600;font-size:15px;line-height:1.25}
+.row .nm{display:block;font-weight:600;font-size:15px;line-height:1.25}
 .row .sub{display:flex;gap:7px;align-items:center;font:12px var(--mono);color:var(--muted);margin-top:3px;flex-wrap:wrap}
 .row .sub .pos{font-size:10px;padding:1px 6px}
 .row .right{text-align:right;white-space:nowrap}
-.row .ppg{font:500 17px var(--serif);font-variant-numeric:tabular-nums}
-.row .adp{font:11px var(--mono);color:var(--faint)}
+.row .ppg{display:block;font:500 17px var(--serif);font-variant-numeric:tabular-nums}
+.row .adp{display:block;font:11px var(--mono);color:var(--faint)}
 .row .adp.val{color:var(--teal)}
-.row .info{width:var(--tap);height:var(--tap);display:grid;place-items:center;color:var(--faint);font:500 15px var(--serif);border-left:1px solid var(--hair)}
 .row.taken{opacity:.38}
 .row.taken .nm{text-decoration:line-through}
 .row.mine .nm::after{content:"you";font:600 9px var(--mono);letter-spacing:.14em;color:var(--teal);margin-left:8px;vertical-align:middle;text-decoration:none;display:inline-block}
@@ -157,6 +156,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 /* sheet */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--panel);border:1px solid var(--hair-2);border-bottom:0;border-radius:16px 16px 0 0;z-index:10;max-height:88dvh;overflow:auto;padding:8px 14px calc(16px + env(safe-area-inset-bottom))}
+.row:active{background:var(--panel)}
+.xclose{position:absolute;top:8px;right:10px;width:var(--tap);height:var(--tap);border-radius:50%;display:grid;place-items:center;color:var(--muted);font:400 26px/1 var(--sans);background:var(--bg-2)}
+.xclose:active{color:var(--ink)}
 .sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--hair-2);margin:6px auto 12px}
 .sheet h2{font:600 24px/1.1 var(--serif);margin:0 0 4px;letter-spacing:-.01em}
 .sheet .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:500 12px var(--mono);color:var(--muted);margin-bottom:12px}
@@ -185,7 +187,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .foot{padding:20px 16px 0;font:11px var(--mono);color:var(--faint);text-align:center;letter-spacing:.03em;line-height:1.6}
 
 /* toast */
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font:600 13px var(--sans);z-index:11;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px)}
+/* Below the sheet layers (9/10) on purpose: a toast must never sit over a card's action buttons. */
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font:600 13px var(--sans);z-index:8;display:flex;gap:14px;align-items:center;max-width:calc(100% - 32px)}
 .toast button{color:var(--teal-deep);font-weight:700}
 
 @media (prefers-reduced-motion:no-preference){

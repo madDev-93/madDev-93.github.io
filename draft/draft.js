@@ -227,18 +227,17 @@ function renderBoard() {
     return true;
   });
   const shown = list.slice(0, ui.limit);
-  $('rows').innerHTML = (!S.picks.length && !q ? `<div class="note" style="margin:10px 12px 4px"><b>How it works:</b> as the draft happens, tap each player when a team takes him — the clock advances and the panel above re-plans for you. On your turn, tap the teal button (or the row). Mis-tap? Undo in the toast, or fix it on the Taken tab.</div>` : '') + shown.map((p) => {
+  $('rows').innerHTML = (!S.picks.length && !q ? `<div class="note" style="margin:10px 12px 4px"><b>How it works:</b> tap any player to see his card; from there mark him taken by the team on the clock, or draft him to you. The clock advances and the panel above re-plans. Mis-tap? Undo in the toast, or fix it on the Taken tab.</div>` : '') + shown.map((p) => {
     const t = taken.has(p.id), w = who[p.id]; const adp = p.adp ?? p.adpEspn;
     const value = !t && adp != null && cur - adp >= 6;
-    return `<div class="row ${riskClass(p.risk)} ${t ? 'taken' : ''} ${w && w.team === S.slot ? 'mine' : ''}">
-      <button class="rk" data-take="${t ? '' : p.id}" aria-label="Mark taken">${p.rank}</button>
-      <button data-take="${t ? '' : p.id}" style="text-align:left;min-width:0">
-        <div class="nm">${esc(p.name)}${w && w.team !== S.slot ? `<span class="who">T${w.team}</span>` : ''}</div>
-        <div class="sub"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)} · bye ${p.bye ?? '—'} · ${esc(p.posRank)}</span>${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replace('_', ' '))}</span>` : ''}</div>
-      </button>
-      <button class="right" data-take="${t ? '' : p.id}"><div class="ppg">${fmt(p.ppgLast)}</div><div class="adp ${value ? 'val' : ''}">${t ? label(w.no) : adp != null ? (value ? 'ADP ' + fmt(adp, 0) + ' · value' : 'ADP ' + fmt(adp, 0)) : 'no ADP'}</div></button>
-      <button class="info" data-open="${p.id}" aria-label="Player card">i</button>
-    </div>`;
+    return `<button class="row ${riskClass(p.risk)} ${t ? 'taken' : ''} ${w && w.team === S.slot ? 'mine' : ''}" data-open="${p.id}">
+      <span class="rk">${p.rank}</span>
+      <span style="min-width:0">
+        <span class="nm">${esc(p.name)}${w && w.team !== S.slot ? `<span class="who">T${w.team}</span>` : ''}</span>
+        <span class="sub"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)} · bye ${p.bye ?? '—'} · ${esc(p.posRank)}</span>${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replace('_', ' '))}</span>` : ''}</span>
+      </span>
+      <span class="right"><span class="ppg">${fmt(p.ppgLast)}</span><span class="adp ${value ? 'val' : ''}">${t ? label(w.no) : adp != null ? (value ? 'ADP ' + fmt(adp, 0) + ' · value' : 'ADP ' + fmt(adp, 0)) : 'no ADP'}</span></span>
+    </button>`;
   }).join('') + (list.length > ui.limit ? `<button class="more" data-more="1">Show ${Math.min(60, list.length - ui.limit)} more of ${list.length}</button>` : '');
 }
 
@@ -264,7 +263,7 @@ function renderTaken() {
 }
 
 // ---- sheets --------------------------------------------------------------------------
-function openSheet(html) { $('sheet').innerHTML = '<div class="grab"></div>' + html; $('sheet').hidden = false; $('sheet-bg').hidden = false; }
+function openSheet(html) { $('sheet').innerHTML = '<div class="grab"></div><button class="xclose" data-close="1" aria-label="Close">×</button>' + html; $('sheet').hidden = false; $('sheet-bg').hidden = false; }
 function closeSheet() { $('sheet').hidden = true; $('sheet-bg').hidden = true; }
 function openPlayer(id) {
   const p = P.get(id); const taken = takenIds().has(id); const w = S.picks.find((x) => x.id === id);
