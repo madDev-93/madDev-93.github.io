@@ -103,6 +103,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .chip.pick .p{font:600 10px var(--mono);letter-spacing:.06em}
 .chip.pick .p.QB{color:var(--qb)}.chip.pick .p.RB{color:var(--rb)}.chip.pick .p.WR{color:var(--wr)}.chip.pick .p.TE{color:var(--te)}.chip.pick .p.K,.chip.pick .p.DST{color:var(--kd)}
 .chip.pick .a{font:11px var(--mono);color:var(--faint)}
+.chip.pick.armed{background:var(--teal);border-color:var(--teal);color:var(--teal-ink);grid-column:1/-1}
+.chip.pick.armed .n{white-space:normal;text-align:center}
+.lhit.writein .nm{color:var(--teal)}
 .why.plan{border-top:1px solid var(--hair);margin-top:10px;padding-top:10px}
 .why .ok{color:var(--lo)}.why .no{color:var(--hi);text-decoration:line-through}
 .turn .empty b{color:var(--ink)}

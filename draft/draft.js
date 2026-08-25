@@ -241,7 +241,12 @@ function renderLogResults() {
   if (!q) { box.innerHTML = ''; return; }
   const hits = available().filter((p) => p.name.toLowerCase().includes(q) || p.team.toLowerCase() === q).slice(0, 6);
   box.innerHTML = hits.length ? hits.map((p) => `<button class="lhit" data-log="${p.id}"><span class="nm">${esc(p.name)}</span><span class="d"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span> ${esc(p.team)} · ${esc(p.posRank)} · ADP ${fmt(p.adp ?? p.adpEspn, 0)}</span><span class="go">Team ${teamAt(current())} took</span></button>`).join('')
-    : `<div class="lnone">No available player matches "${esc(q)}" — already taken? Check the Taken tab.</div>`;
+    : `<div class="lnone">No available player matches "${esc(q)}".</div><button class="lhit writein" data-writein="${esc(ui.lq.trim())}"><span class="nm">Write in "${esc(ui.lq.trim())}"</span><span class="d">Logs the pick under that name so the order stays right</span><span class="go">Team ${teamAt(current())} took</span></button>`;
+}
+/* Write-ins live in state, not players.json; give each a minimal player record so the Taken tab,
+   My team and counts can render them. Never match them in search or the board. */
+function registerWriteIns() {
+  for (const [id, name] of Object.entries(S.writeIns || {})) if (!P.has(id)) P.set(id, { id, name, pos: '?', team: '—', rank: '—', posRank: 'write-in', proj: 0, risk: 0, riskWhy: [], history: {}, writeIn: true });
 }
 function renderCounts() { $('c-board').textContent = available().length; $('c-team').textContent = `${mine().length}/${rounds()}`; $('c-taken').textContent = S.picks.length; }
 
@@ -348,7 +353,25 @@ function openSettings() {
 document.addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.take) { take(b.dataset.take); if (b.dataset.close) closeSheet(); return; }
-  if (b.dataset.log) { ui.lq = ''; take(b.dataset.log); return; }
+  if (b.dataset.log) {
+    // Chips confirm on a second tap — they're big, they're near the search box, and a mis-tap
+    // logs a pick to the wrong team. Search hits were typed on purpose, so they go straight through.
+    if (b.classList.contains('chip') && b.dataset.armed !== '1') {
+      document.querySelectorAll('#likely .chip[data-armed="1"]').forEach((c) => { c.dataset.armed = ''; c.innerHTML = c._orig; c.classList.remove('armed'); });
+      b._orig = b.innerHTML; b.dataset.armed = '1'; b.classList.add('armed');
+      b.innerHTML = `<span class="n">Tap again · Team ${teamAt(current())} took ${esc(P.get(b.dataset.log)?.name.split(' ').pop() || '')}</span>`;
+      clearTimeout(b._t); b._t = setTimeout(() => { if (b.isConnected) { b.dataset.armed = ''; b.innerHTML = b._orig; b.classList.remove('armed'); } }, 3500);
+      return;
+    }
+    ui.lq = ''; take(b.dataset.log); return;
+  }
+  if (b.dataset.writein != null) {
+    // A name that isn't in the pool (obscure player, or a spelling the search can't match) still has
+    // to occupy the pick, or every later team number is off by one.
+    const name = b.dataset.writein.trim(); if (!name) return;
+    const id = 'w:' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + ':' + current();
+    S.writeIns = S.writeIns || {}; S.writeIns[id] = name; registerWriteIns(); ui.lq = ''; take(id); return;
+  }
   if (b.dataset.takeMe) { S.picks.push({ id: b.dataset.takeMe, team: S.slot, no: current() }); save(); render(); closeSheet(); toast(`${P.get(b.dataset.takeMe).name} → you (out of turn)`); return; }
   if (b.dataset.open) { openPlayer(b.dataset.open); return; }
   if (b.dataset.undo != null) { const x = S.picks[+b.dataset.undo]; undoPick(+b.dataset.undo); toast(`${P.get(x.id).name} back on the board`); return; }
@@ -373,6 +396,7 @@ document.addEventListener('input', (e) => { if (e.target.id === 'lq') { ui.lq = 
   try {
     DATA = await (await fetch('players.json?v=' + Math.floor(Date.now() / 3.6e6))).json();
     DATA.players.forEach((p) => P.set(p.id, p));
+    registerWriteIns();
     render();
   } catch (e) {
     $('turn').innerHTML = `<div class="empty">Couldn't load the player data (${esc(e.message)}). Reload, or rebuild players.json.</div>`;
