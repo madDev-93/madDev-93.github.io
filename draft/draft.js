@@ -108,8 +108,14 @@ function recommend() {
   const backupOk = startersOpen === 0 && picksLeft <= 4;
   const capped = (p) => (p.pos === 'QB' && count('QB') >= (S.roster.QB || 1) + (backupOk ? 1 : 0)) || (p.pos === 'TE' && count('TE') >= (S.roster.TE || 1) + (backupOk ? 1 : 0))
     || (p.pos === 'K' && count('K') >= (S.roster.K || 1)) || (p.pos === 'DST' && count('DST') >= (S.roster.DST || 1));
-  // K/D-ST: the last two picks, unless nothing else is left to fill.
-  const kdAllowed = picksLeft <= 2;
+  // Every starting slot still empty, K/D-ST included. Once I have no more picks than empty
+  // slots, this is the last chance to fill them: an unfilled starter scores ZERO all season,
+  // which no bench upgrade can outweigh. (A 1000-league run ended with an empty K slot because
+  // the final pick compared a kicker against "a replacement-level kicker" and took a backup TE.)
+  const openAll = fillRoster(have).slots.filter((s) => !s.p && s.pos !== 'BE').length;
+  const mustFill = picksLeft <= openAll;
+  // K/D-ST: the last two picks, or sooner if they're what's left to fill.
+  const kdAllowed = picksLeft <= 2 || mustFill;
   const byeCount = {}; for (const s of fillRoster(have).slots) if (s.p && s.pos !== 'BE' && s.p.bye) byeCount[s.p.bye] = (byeCount[s.p.bye] || 0) + 1;
   // Candidate pool: the top of the board plus every K/D-ST once they're allowed (they rank ~180+).
   const pool = avail.slice(0, 120).concat(kdAllowed ? avail.filter(isKD) : []);
@@ -147,6 +153,8 @@ function recommend() {
     // room behaves). Each pick earlier than the room takes him, past a 3-pick grace, costs 2.5 —
     // enough that a QB the room takes at 34 isn't the pick at 20, but can be at 27.
     value -= Math.max(0, adpOf(p) - cur - 3) * 2.5;
+    // Out of picks to spare: anything that doesn't fill an empty starting slot is unaffordable.
+    if (mustFill && !fills) value -= 1000;
     // Bye-week stack: don't put a third starter on the same bye.
     if (p.bye && (byeCount[p.bye] || 0) >= 2 && fills) value -= 8;
     // Consensus as a light tiebreak only.
