@@ -1,0 +1,304 @@
+/* Draft Board — live draft assistant. Data: players.json (built by build-data.mjs).
+   State lives in localStorage so a refresh mid-draft loses nothing. */
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const KEY = 'draftboard.v1';
+
+const DEFAULT_ROSTER = { QB: 1, RB: 2, WR: 2, TE: 1, FLEX: 1, DST: 1, K: 1, BE: 7 };
+const FLEX_POS = new Set(['RB', 'WR', 'TE']);
+const POS_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'DST', 'K'];
+
+let DATA = null;          // players.json
+let P = new Map();        // id -> player
+let S = load();           // state
+let ui = { tab: 'board', filter: 'ALL', q: '', showTaken: false, limit: 60 };
+
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.picks) return { teams: 10, slot: 1, roster: { ...DEFAULT_ROSTER }, ...s }; } catch {}
+  return { teams: 10, slot: 1, roster: { ...DEFAULT_ROSTER }, picks: [] };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
+
+// ---- draft math -------------------------------------------------------------------------
+const rounds = () => Object.values(S.roster).reduce((a, b) => a + b, 0);
+const totalPicks = () => rounds() * S.teams;
+function teamAt(pickNo) { // snake
+  const r = Math.ceil(pickNo / S.teams), i = (pickNo - 1) % S.teams;
+  return r % 2 === 1 ? i + 1 : S.teams - i;
+}
+const roundOf = (pickNo) => Math.ceil(pickNo / S.teams);
+const label = (pickNo) => `${roundOf(pickNo)}.${String(((pickNo - 1) % S.teams) + 1).padStart(2, '0')}`;
+const current = () => S.picks.length + 1;
+function myPicks() { const out = []; for (let p = 1; p <= totalPicks(); p++) if (teamAt(p) === S.slot) out.push(p); return out; }
+function nextMyPick(from = current()) { return myPicks().find((p) => p >= from) ?? null; }
+const takenIds = () => new Set(S.picks.map((x) => x.id));
+const mine = () => S.picks.filter((x) => x.team === S.slot).map((x) => P.get(x.id)).filter(Boolean);
+const available = () => DATA.players.filter((p) => !takenIds().has(p.id));
+
+/* Fill roster slots greedily by projection: starters by position, then FLEX, then bench. */
+function fillRoster(list) {
+  const slots = [];
+  for (const pos of POS_ORDER) for (let i = 0; i < (S.roster[pos] || 0); i++) slots.push({ pos, p: null });
+  for (let i = 0; i < (S.roster.BE || 0); i++) slots.push({ pos: 'BE', p: null });
+  const left = [...list].sort((a, b) => (b.proj ?? 0) - (a.proj ?? 0));
+  for (const s of slots) if (s.pos !== 'FLEX' && s.pos !== 'BE') { const i = left.findIndex((p) => p.pos === s.pos); if (i >= 0) s.p = left.splice(i, 1)[0]; }
+  for (const s of slots) if (s.pos === 'FLEX') { const i = left.findIndex((p) => FLEX_POS.has(p.pos)); if (i >= 0) s.p = left.splice(i, 1)[0]; }
+  for (const s of slots) if (s.pos === 'BE' && left.length) s.p = left.shift();
+  return { slots, extra: left };
+}
+const starterPoints = (list) => fillRoster(list).slots.filter((s) => s.pos !== 'BE' && s.p).reduce((t, s) => t + (s.p.proj || 0), 0);
+
+/* Recommendation: for each candidate, the roster's projected starter points if I take him now,
+   minus what I'd expect to get at that position if I wait for my next pick. "Expected at next
+   pick" = best available at the position whose ADP is at/after my next pick number. */
+function recommend() {
+  const avail = available();
+  const have = mine();
+  const base = starterPoints(have);
+  const next = nextMyPick(current() + 1);
+  const late = roundOf(current()) >= rounds() - 2;
+  const replacementAt = (pos) => {
+    if (!next) return 0;
+    const later = avail.filter((p) => p.pos === pos && (p.adp ?? p.adpEspn ?? p.rank) >= next - 1);
+    return later.length ? Math.max(...later.map((p) => p.proj || 0)) : 0;
+  };
+  const cands = avail.slice(0, 80).map((p) => {
+    // Value = what he adds to my starters now, minus most of what I'd still get at that slot
+    // by waiting (scarcity), nudged by the consensus score and pulled down by risk. Points are
+    // season projections, so a 20-point edge is about a point a week.
+    const gain = starterPoints([...have, p]) - base;              // starters improved now
+    const benchValue = gain === 0 ? (p.proj || 0) * 0.25 : 0;      // depth still worth something
+    const opp = replacementAt(p.pos);                              // what waiting would still get me
+    let value = (gain || benchValue) - (gain ? opp * 0.85 : 0);
+    if ((p.pos === 'K' || p.pos === 'DST') && !late) value *= 0.15; // never worth a pick before the last rounds
+    value += (p.score - 80) * 1.0;                                  // consensus: 10 score pts ≈ 10 season pts
+    value -= p.risk * 0.3;                                          // 100 risk ≈ 30 season pts (~1.8 a week)
+    const tierDrop = tierDropBefore(p, avail, next);                // for the explanation only
+    return { p, value, gain, opp, tierDrop, fills: gain > 0 ? filledSlot(have, p) : null };
+  }).sort((a, b) => b.value - a.value);
+  return { cands, next };
+}
+function filledSlot(have, p) { const after = fillRoster([...have, p]).slots; for (let i = 0; i < after.length; i++) if (after[i].p?.id === p.id) return after[i].pos === 'BE' ? null : `${after[i].pos}${after[i].pos === 'FLEX' ? '' : after.slice(0, i + 1).filter((s) => s.pos === after[i].pos).length}`; return null; }
+/* How many projected points the position loses between this player and the best one likely left at my next pick. */
+function tierDropBefore(p, avail, next) { if (!next) return 0; const later = avail.filter((x) => x.pos === p.pos && x.id !== p.id && (x.adp ?? x.adpEspn ?? x.rank) >= next - 1); const best = later.length ? Math.max(...later.map((x) => x.proj || 0)) : 0; return Math.max(0, (p.proj || 0) - best); }
+
+function whyText(c, next) {
+  const bits = [];
+  if (c.fills) bits.push(`fills your <b>${esc(c.fills)}</b>`);
+  else bits.push('best value on the board for depth');
+  if (next) {
+    if (c.tierDrop >= 25) bits.push(`the best ${c.p.pos === 'DST' ? 'D/ST' : c.p.pos} likely left at your next pick (${label(next)}) projects <b>${Math.round(c.tierDrop)} pts</b> lower over the season`);
+    else if (c.tierDrop <= 8 && c.gain > 0) bits.push(`${c.p.pos} options hold until ${label(next)}, so this is about talent, not scarcity`);
+  }
+  if (c.p.adp && c.p.adp - current() >= 6) bits.push(`going <b>${Math.round(c.p.adp - current())} picks</b> earlier than his ADP — you're not reaching`);
+  else if (c.p.adp && current() - c.p.adp >= 6) bits.push(`<b>${Math.round(current() - c.p.adp)} picks</b> past his ADP — a discount`);
+  if (c.p.risk >= 40) bits.push(`risk is real: ${esc(c.p.riskWhy.join(', '))}`);
+  const s = bits.join('; ');
+  return s.charAt(0).toUpperCase() + s.slice(1) + '.';
+}
+
+// ---- actions ----------------------------------------------------------------------------
+function take(id) {
+  if (current() > totalPicks()) return toast('Draft is complete');
+  const team = teamAt(current());
+  S.picks.push({ id, team, no: current() }); save(); render();
+  const p = P.get(id);
+  toast(`${label(current() - 1)} · ${p.name} → ${team === S.slot ? 'you' : 'Team ' + team}`, () => undoPick(S.picks.length - 1));
+}
+function undoPick(i) { S.picks.splice(i, 1); S.picks.forEach((x, k) => { x.no = k + 1; x.team = teamAt(k + 1); }); save(); render(); }
+function resetDraft() { S.picks = []; save(); render(); toast('Draft cleared'); }
+
+let toastT;
+function toast(msg, undo) {
+  const t = $('toast'); t.innerHTML = esc(msg) + (undo ? '<button id="t-undo">Undo</button>' : ''); t.hidden = false;
+  if (undo) $('t-undo').onclick = () => { undo(); t.hidden = true; };
+  clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), undo ? 5000 : 2500);
+}
+
+// ---- render ---------------------------------------------------------------------------
+const posClass = (pos) => pos === 'DST' ? 'DST' : pos;
+const riskClass = (r) => r >= 40 ? 'hi' : r >= 20 ? 'md' : 'lo';
+const riskWord = (r) => r >= 40 ? 'High' : r >= 20 ? 'Med' : 'Low';
+const fmt = (v, d = 1) => v == null ? '—' : (+v).toFixed(d);
+
+function render() {
+  renderSettings(); renderClock(); renderTurn(); renderCounts();
+  if (ui.tab === 'board') renderBoard(); if (ui.tab === 'team') renderTeam(); if (ui.tab === 'taken') renderTaken();
+  for (const t of document.querySelectorAll('.pane')) t.hidden = t.id !== 'pane-' + ui.tab;
+  for (const t of document.querySelectorAll('.tab')) t.classList.toggle('on', t.dataset.tab === ui.tab);
+  $('foot').innerHTML = `Rankings built ${esc(new Date(DATA.built).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))} · ${esc(DATA.sources.join(' · '))}`;
+}
+function renderSettings() {
+  const t = $('s-teams'), s = $('s-slot');
+  t.innerHTML = [8, 10, 12, 14].map((n) => `<option ${n === S.teams ? 'selected' : ''}>${n}</option>`).join('');
+  s.innerHTML = Array.from({ length: S.teams }, (_, i) => i + 1).map((n) => `<option ${n === S.slot ? 'selected' : ''}>${n}</option>`).join('');
+}
+function renderClock() {
+  const cur = current(), total = totalPicks();
+  if (cur > total) { $('clock').innerHTML = `<div><div class="k">Round</div><div class="v">${rounds()}<small>of ${rounds()}</small></div></div><div class="done"><div class="k">Draft</div><div class="v">done</div></div><div><div class="k">Your picks</div><div class="v">${mine().length}</div></div>`; return; }
+  const team = teamAt(cur), next = nextMyPick(), until = next - cur;
+  $('clock').innerHTML = `
+    <div><div class="k">Round</div><div class="v">${roundOf(cur)}<small>of ${rounds()}</small></div></div>
+    <div><div class="k">On the clock</div><div class="v">${label(cur)}<small>${team === S.slot ? 'you' : 'Team ' + team}</small></div></div>
+    <div class="you"><div class="k">You pick in</div><div class="v">${until === 0 ? 'now' : until + '<small>pick' + (until === 1 ? '' : 's') + '</small>'}</div></div>`;
+}
+function renderTurn() {
+  const el = $('turn'); const cur = current();
+  if (cur > totalPicks()) { el.className = 'turn'; el.innerHTML = `<div class="empty"><b>Draft complete.</b> Your roster is on the My team tab; the board stays here if you need to fix a pick.</div>`; return; }
+  const myTurn = teamAt(cur) === S.slot; el.className = 'turn' + (myTurn ? ' mine' : '');
+  const { cands, next } = recommend(); const top = cands[0]; if (!top) { el.innerHTML = '<div class="empty">No players left.</div>'; return; }
+  const p = top.p;
+  el.innerHTML = `
+    <div class="turn-h"><span class="eyebrow ${myTurn ? '' : 'q'}">${myTurn ? 'Your pick · best available' : 'If you were picking now'}</span><span class="eyebrow q">${S.picks.length} gone</span></div>
+    <div class="rec">
+      <div><div class="nm">${esc(p.name)}</div>
+        <div class="meta"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)}</span><span class="bye">bye ${p.bye ?? '—'}</span><span>${esc(p.posRank)} · ADP ${fmt(p.adp ?? p.adpEspn, 1)}</span></div></div>
+      <div class="score"><div class="n">${p.score}</div><div class="k">score</div></div>
+    </div>
+    <div class="why">${whyText(top, next)}</div>
+    <div class="stats">
+      <div><div class="k">${DATA.season - 1} PPG</div><div class="v">${fmt(p.ppgLast)}</div></div>
+      <div><div class="k">3-yr avg</div><div class="v">${fmt(p.ppg3)}</div></div>
+      <div><div class="k">Risk</div><div class="v ${riskClass(p.risk)}">${riskWord(p.risk)}</div></div>
+      <div><div class="k">Proj</div><div class="v">${fmt(p.proj, 0)}</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" data-take="${p.id}">${myTurn ? 'Draft to my team' : 'Team ' + teamAt(cur) + ' took him'}</button>
+      <button class="btn" data-open="${p.id}">Full card</button>
+    </div>
+    <div class="alts"><span class="eyebrow q">${myTurn ? "If he's gone" : 'Next best'}</span>
+      ${cands.slice(1, 4).map((c, i) => `<button class="alt" data-open="${c.p.id}"><span class="r">${i + 2}</span><div><div class="n">${esc(c.p.name)}<span class="pos ${posClass(c.p.pos)}">${c.p.pos === 'DST' ? 'D/ST' : c.p.pos}</span></div><div class="d">${c.fills ? 'fills ' + esc(c.fills) : 'depth'} · ${Math.round(c.value - top.value)} pts vs top · ADP ${fmt(c.p.adp ?? c.p.adpEspn, 1)}</div></div><span class="s">${c.p.score}</span></button>`).join('')}
+    </div>`;
+}
+function renderCounts() { $('c-board').textContent = available().length; $('c-team').textContent = `${mine().length}/${rounds()}`; $('c-taken').textContent = S.picks.length; }
+
+function renderBoard() {
+  const f = $('filters');
+  f.innerHTML = ['ALL', 'QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DST'].map((k) => `<button class="chip ${ui.filter === k ? 'on' : ''}" data-f="${k}">${k === 'DST' ? 'D/ST' : k === 'ALL' ? 'All' : k}</button>`).join('') +
+    `<button class="chip tog ${ui.showTaken ? 'on' : ''}" data-tog="1">${ui.showTaken ? 'Hiding none' : 'Show taken'}</button>`;
+  const taken = takenIds(); const q = ui.q.trim().toLowerCase(); const cur = current();
+  const who = Object.fromEntries(S.picks.map((x) => [x.id, x]));
+  let list = DATA.players.filter((p) => {
+    if (ui.filter === 'FLEX' ? !FLEX_POS.has(p.pos) : ui.filter !== 'ALL' && p.pos !== ui.filter) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q)) return false;
+    if (!ui.showTaken && !q && taken.has(p.id)) return false;
+    return true;
+  });
+  const shown = list.slice(0, ui.limit);
+  $('rows').innerHTML = shown.map((p) => {
+    const t = taken.has(p.id), w = who[p.id]; const adp = p.adp ?? p.adpEspn;
+    const value = !t && adp != null && cur - adp >= 6;
+    return `<div class="row ${riskClass(p.risk)} ${t ? 'taken' : ''} ${w && w.team === S.slot ? 'mine' : ''}">
+      <button class="rk" data-take="${t ? '' : p.id}" aria-label="Mark taken">${p.rank}</button>
+      <button data-take="${t ? '' : p.id}" style="text-align:left;min-width:0">
+        <div class="nm">${esc(p.name)}${w && w.team !== S.slot ? `<span class="who">T${w.team}</span>` : ''}</div>
+        <div class="sub"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)} · bye ${p.bye ?? '—'} · ${esc(p.posRank)}</span>${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replace('_', ' '))}</span>` : ''}</div>
+      </button>
+      <button class="right" data-take="${t ? '' : p.id}"><div class="ppg">${fmt(p.ppgLast)}</div><div class="adp ${value ? 'val' : ''}">${t ? label(w.no) : adp != null ? (value ? 'ADP ' + fmt(adp, 0) + ' · value' : 'ADP ' + fmt(adp, 0)) : 'no ADP'}</div></button>
+      <button class="info" data-open="${p.id}" aria-label="Player card">i</button>
+    </div>`;
+  }).join('') + (list.length > ui.limit ? `<button class="more" data-more="1">Show ${Math.min(60, list.length - ui.limit)} more of ${list.length}</button>` : '');
+}
+
+function renderTeam() {
+  const have = mine(); const { slots } = fillRoster(have); const starters = slots.filter((s) => s.pos !== 'BE');
+  const pts = starters.reduce((t, s) => t + (s.p?.proj || 0), 0);
+  const byes = {}; for (const s of starters) if (s.p?.bye) (byes[s.p.bye] ||= []).push(s.p.name.split(' ').pop());
+  const clash = Object.entries(byes).filter(([, v]) => v.length >= 3);
+  const risky = have.filter((p) => p.risk >= 40);
+  const row = (s) => `<div class="slot ${s.pos === 'BE' ? 'bench' : ''}"><span class="lab ${s.pos}">${s.pos === 'DST' ? 'D/ST' : s.pos === 'BE' ? 'BE' : s.pos}</span>${s.p ? `<span class="nm">${esc(s.p.name)}<span class="bye">${esc(s.p.team)} · bye ${s.p.bye ?? '—'}</span></span><span class="pts">${fmt(s.p.proj, 0)}</span>` : `<span class="nm open">open</span><span class="pts">—</span>`}</div>`;
+  $('pane-team').innerHTML = `
+    <div class="team-sum"><div><div class="k">Starters proj</div><div class="v">${Math.round(pts)}</div></div><div><div class="k">Drafted</div><div class="v">${have.length}<small style="font:12px var(--sans);color:var(--muted)"> / ${rounds()}</small></div></div><div><div class="k">Next pick</div><div class="v">${nextMyPick() ? label(nextMyPick()) : '—'}</div></div></div>
+    <div class="slots">${starters.map(row).join('')}<div style="height:10px"></div>${slots.filter((s) => s.pos === 'BE').map(row).join('')}<div class="slot bench"><span class="lab">IR</span><span class="nm open">open</span><span class="pts">—</span></div></div>
+    ${clash.length ? `<div class="note warn"><b>Bye week pile-up:</b> ${clash.map(([w, v]) => `week ${w} — ${esc(v.join(', '))}`).join('; ')}.</div>` : ''}
+    ${risky.length ? `<div class="note"><b>Carrying risk:</b> ${risky.map((p) => `${esc(p.name)} (${esc(p.riskWhy.join(', '))})`).join('; ')}.</div>` : ''}
+    ${!have.length ? '<div class="note">Nothing drafted yet. Your picks land here as you take them from the board.</div>' : ''}`;
+}
+function renderTaken() {
+  const el = $('pane-taken');
+  if (!S.picks.length) { el.innerHTML = '<div class="note">No picks yet. Tap a player on the board when a team takes them.</div>'; return; }
+  el.innerHTML = [...S.picks].reverse().map((x, i) => { const p = P.get(x.id); const idx = S.picks.length - 1 - i; return `<button class="pick ${x.team === S.slot ? 'mine' : ''}" data-undo="${idx}"><span class="no">${label(x.no)}<b>${x.no}</b></span><div><div class="nm">${esc(p?.name)}</div><div class="team">${x.team === S.slot ? 'you' : 'Team ' + x.team} · ${p?.pos === 'DST' ? 'D/ST' : esc(p?.pos)} ${esc(p?.team)}</div></div><span class="x">remove</span></button>`; }).join('') +
+    `<div style="padding:12px"><button class="btn ghost danger" id="b-reset" style="width:100%">Clear the whole draft</button></div>`;
+}
+
+// ---- sheets --------------------------------------------------------------------------
+function openSheet(html) { $('sheet').innerHTML = '<div class="grab"></div>' + html; $('sheet').hidden = false; $('sheet-bg').hidden = false; }
+function closeSheet() { $('sheet').hidden = true; $('sheet-bg').hidden = true; }
+function openPlayer(id) {
+  const p = P.get(id); const taken = takenIds().has(id); const w = S.picks.find((x) => x.id === id);
+  const yrs = Object.keys(p.history).sort();
+  openSheet(`
+    <h2>${esc(p.name)}</h2>
+    <div class="meta"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)}</span><span>bye ${p.bye ?? '—'}</span>${p.age ? `<span>age ${p.age}</span>` : ''}${p.exp != null ? `<span>${p.exp === 0 ? 'rookie' : p.exp + ' yr' + (p.exp === 1 ? '' : 's')}</span>` : ''}${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replace('_', ' '))}</span>` : ''}</div>
+    <div class="grid4">
+      <div><div class="k">Overall</div><div class="v">${p.rank}</div></div>
+      <div><div class="k">Position</div><div class="v">${esc(p.posRank)}</div></div>
+      <div><div class="k">Tier</div><div class="v">${p.tier ?? '—'}</div></div>
+      <div><div class="k">Score</div><div class="v" style="color:var(--teal)">${p.score}</div></div>
+    </div>
+    <h3>Where he goes</h3>
+    <div class="grid4">
+      <div><div class="k">ADP (10-tm)</div><div class="v">${fmt(p.adp, 1)}</div></div>
+      <div><div class="k">ADP range</div><div class="v" style="font-size:13px">${p.adpHigh ? `${p.adpHigh}–${p.adpLow}` : '—'}</div></div>
+      <div><div class="k">Experts</div><div class="v" style="font-size:13px">${p.ecrMin ? `${p.ecrMin}–${p.ecrMax}` : '—'}</div></div>
+      <div><div class="k">ESPN</div><div class="v">${p.espnRank ?? '—'}</div></div>
+    </div>
+    <h3>Production</h3>
+    <table class="hist"><tr><th>Season</th><th>Games</th><th>PPR pts</th><th>PPG</th></tr>
+      ${yrs.length ? yrs.map((y) => `<tr><td>${y}</td><td>${p.history[y].games ?? '—'}</td><td>${fmt(p.history[y].pts, 0)}</td><td>${fmt(p.history[y].ppg)}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:left;color:var(--faint)">No NFL seasons yet</td></tr>'}
+      <tr><td>${DATA.season} proj</td><td>17</td><td>${fmt(p.proj, 0)}</td><td>${fmt(p.projPpg)}</td></tr></table>
+    <h3>Risk · ${p.risk}/100</h3>
+    <div class="risklist">${p.riskWhy.length ? p.riskWhy.map((r) => `<span>${esc(r)}</span>`).join('') : '<span>nothing flagged</span>'}${p.injuryNote ? `<span>${esc(p.injuryNote)}</span>` : ''}</div>
+    ${p.outlook ? `<h3>Outlook</h3><p>${esc(p.outlook)}</p>` : ''}
+    <div class="row-actions">
+      ${taken ? `<button class="btn ghost wide" data-undo-id="${p.id}">Undo — put back on the board (${w ? (w.team === S.slot ? 'you' : 'Team ' + w.team) : ''})</button>`
+        : `<button class="btn primary" data-take="${p.id}" data-close="1">${teamAt(current()) === S.slot ? 'Draft to my team' : 'Team ' + teamAt(current()) + ' took him'}</button><button class="btn ghost" data-take-me="${p.id}">Draft to me anyway</button>`}
+    </div>`);
+}
+function openSettings() {
+  const r = S.roster;
+  const field = (k, lab, d) => `<div class="field"><span class="k">${lab}<span class="d">${d}</span></span><span class="stepper"><button data-step="${k}:-1">−</button><span>${r[k]}</span><button data-step="${k}:1">+</button></span></div>`;
+  openSheet(`
+    <h2>Settings</h2>
+    <p>Full PPR is fixed for this league. Teams and your pick slot are in the header.</p>
+    <h3>Roster slots</h3>
+    ${field('QB', 'QB', 'starting quarterbacks')}${field('RB', 'RB', 'starting running backs')}${field('WR', 'WR', 'starting receivers')}${field('TE', 'TE', 'starting tight ends')}${field('FLEX', 'FLEX', 'RB / WR / TE')}${field('DST', 'D/ST', 'defense')}${field('K', 'K', 'kicker')}${field('BE', 'Bench', 'reserve spots (IR not counted)')}
+    <p style="margin-top:12px">Rounds: <b style="color:var(--ink)">${rounds()}</b> · picks in draft: <b style="color:var(--ink)">${totalPicks()}</b></p>
+    <h3>Data</h3>
+    <p>Built ${esc(new Date(DATA.built).toLocaleString())} from ${esc(DATA.sources.join(', '))}. Score = 40% expert consensus, 25% ${DATA.season} projection, 15% ${DATA.season - 1} PPG, 10% three-year PPG, 10% durability — within position.</p>
+    <div class="row-actions"><button class="btn ghost wide" data-close="1">Done</button></div>`);
+}
+
+// ---- events -------------------------------------------------------------------------
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.take) { take(b.dataset.take); if (b.dataset.close) closeSheet(); return; }
+  if (b.dataset.takeMe) { S.picks.push({ id: b.dataset.takeMe, team: S.slot, no: current() }); save(); render(); closeSheet(); toast(`${P.get(b.dataset.takeMe).name} → you (out of turn)`); return; }
+  if (b.dataset.open) { openPlayer(b.dataset.open); return; }
+  if (b.dataset.undo != null) { const x = S.picks[+b.dataset.undo]; undoPick(+b.dataset.undo); toast(`${P.get(x.id).name} back on the board`); return; }
+  if (b.dataset.undoId) { const i = S.picks.findIndex((x) => x.id === b.dataset.undoId); if (i >= 0) undoPick(i); closeSheet(); return; }
+  if (b.dataset.tab) { ui.tab = b.dataset.tab; render(); return; }
+  if (b.dataset.f) { ui.filter = b.dataset.f; ui.limit = 60; renderBoard(); return; }
+  if (b.dataset.tog) { ui.showTaken = !ui.showTaken; renderBoard(); return; }
+  if (b.dataset.more) { ui.limit += 60; renderBoard(); return; }
+  if (b.dataset.step) { const [k, d] = b.dataset.step.split(':'); S.roster[k] = Math.max(k === 'BE' ? 0 : 0, Math.min(k === 'BE' ? 12 : 3, S.roster[k] + +d)); save(); openSettings(); renderClock(); renderCounts(); return; }
+  if (b.dataset.close) { closeSheet(); return; }
+  if (b.id === 'b-settings') { openSettings(); return; }
+  if (b.id === 'b-reset') { if (b.dataset.armed) { resetDraft(); } else { b.dataset.armed = '1'; b.textContent = 'Tap again to clear everything'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Clear the whole draft'; }, 4000); } return; }
+});
+$('sheet-bg').addEventListener('click', closeSheet);
+$('s-teams').addEventListener('change', (e) => { S.teams = +e.target.value; if (S.slot > S.teams) S.slot = S.teams; S.picks.forEach((x, k) => (x.team = teamAt(k + 1))); save(); render(); });
+$('s-slot').addEventListener('change', (e) => { S.slot = +e.target.value; save(); render(); });
+$('q').addEventListener('input', (e) => { ui.q = e.target.value; ui.limit = 60; renderBoard(); });
+
+// ---- boot ----------------------------------------------------------------------------
+(async () => {
+  try {
+    DATA = await (await fetch('players.json?v=' + Math.floor(Date.now() / 3.6e6))).json();
+    DATA.players.forEach((p) => P.set(p.id, p));
+    render();
+  } catch (e) {
+    $('turn').innerHTML = `<div class="empty">Couldn't load the player data (${esc(e.message)}). Reload, or rebuild players.json.</div>`;
+  }
+})();

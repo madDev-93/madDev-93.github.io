@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Draft Board</title>
+  <link rel="icon" href="../images/app-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <!-- ?v= bumped with every change to draft.css / draft.js -->
+  <link rel="stylesheet" href="draft.css?v=20260824a">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><span class="q">Q</span><span class="sep">/</span><span class="name">Draft Board · PPR</span></div>
+    <div class="settings">
+      <label class="selwrap"><span class="lab">Teams</span><select class="sel" id="s-teams"></select></label>
+      <label class="selwrap"><span class="lab">Pick</span><select class="sel" id="s-slot"></select></label>
+      <button class="icon" id="b-settings" aria-label="Settings">⋯</button>
+    </div>
+  </header>
+
+  <div class="clock" id="clock"></div>
+  <section class="turn" id="turn"></section>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-tab="board">Board <span class="c" id="c-board"></span></button>
+    <button class="tab" data-tab="team">My team <span class="c" id="c-team"></span></button>
+    <button class="tab" data-tab="taken">Taken <span class="c" id="c-taken"></span></button>
+  </nav>
+
+  <section class="pane" id="pane-board">
+    <div class="filters" id="filters"></div>
+    <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search a player" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+    <div class="rows" id="rows"></div>
+    <p class="hint">tap a row → taken by the team on the clock · ⓘ for the full card · stripe = risk</p>
+  </section>
+  <section class="pane" id="pane-team" hidden></section>
+  <section class="pane" id="pane-taken" hidden></section>
+
+  <footer class="foot" id="foot"></footer>
+</div>
+
+<div class="sheet-bg" id="sheet-bg" hidden></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="draft.js?v=20260824a"></script>
+</body>
+</html>
