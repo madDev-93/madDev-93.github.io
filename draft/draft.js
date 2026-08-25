@@ -293,7 +293,10 @@ function openPlayer(id) {
     ${p.outlook ? `<h3>Outlook</h3><p>${esc(p.outlook)}</p>` : ''}
     <div class="row-actions">
       ${taken ? `<button class="btn ghost wide" data-undo-id="${p.id}">Undo — put back on the board (${w ? (w.team === S.slot ? 'you' : 'Team ' + w.team) : ''})</button>`
-        : `<button class="btn primary" data-take="${p.id}" data-close="1">${teamAt(current()) === S.slot ? 'Draft to my team' : 'Team ' + teamAt(current()) + ' took him'}</button><button class="btn ghost" data-take-me="${p.id}">Draft to me anyway</button>`}
+        : teamAt(current()) === S.slot
+          // On your turn the team on the clock is you — one action, not two that do the same thing.
+          ? `<button class="btn primary wide" data-take="${p.id}" data-close="1">Draft to my team</button>`
+          : `<button class="btn primary" data-take="${p.id}" data-close="1">Team ${teamAt(current())} took him</button><button class="btn ghost" data-take-me="${p.id}">Draft to me out of turn</button>`}
     </div>`);
 }
 function openSettings() {
