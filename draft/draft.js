@@ -137,8 +137,11 @@ function recommend() {
       // Bench: value over a FREE AGENT, discounted. RB/WR depth is real (bye weeks, injuries, FLEX);
       // a backup QB/TE is a luxury for the last few picks only.
       const over = Math.max(0, adj(p) - bl.waiver[p.pos]);
-      value = FLEX_POS.has(p.pos) ? over * (startersOpen ? 0.15 : 0.5)
-        : over * 0.15;
+      // Diminishing returns: each extra bench body at a position is worth less than the last —
+      // a seventh RB covers nothing a sixth didn't, while a third WR covers a bye week.
+      const benchAtPos = Math.max(0, count(p.pos) - (S.roster[p.pos] || 0) - (FLEX_POS.has(p.pos) ? 1 : 0));
+      const dim = 1 / (1 + 0.5 * benchAtPos);
+      value = (FLEX_POS.has(p.pos) ? over * (startersOpen ? 0.15 : 0.5) : over * 0.15) * dim;
     }
     // Market discipline: ADP carries what projections don't (replaceability, variance, how the
     // room behaves). Each pick earlier than the room takes him, past a 3-pick grace, costs 2.5 —
