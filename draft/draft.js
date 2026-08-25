@@ -52,68 +52,110 @@ const starterPoints = (list) => fillRoster(list).slots.filter((s) => s.pos !== '
 /* Recommendation: for each candidate, the roster's projected starter points if I take him now,
    minus what I'd expect to get at that position if I wait for my next pick. "Expected at next
    pick" = best available at the position whose ADP is at/after my next pick number. */
-/* Replacement level per position: the projection of the last starter-quality player in a league
-   this size (10th QB, ~25th RB/WR once FLEX is shared, ~12th TE). Points above that line are what a
-   player is actually worth — raw projections make every QB look like the best pick on the board. */
+/* Positional lines for a league this size. `starter` = the last starter-quality player (10th QB,
+   ~25th RB/WR with FLEX shared, ~12th TE); `waiver` = what a free agent looks like (≈45th RB,
+   55th WR, 20th TE/QB) — the honest baseline for BENCH value. Using the starter line for bench
+   made every late RB/WR worth exactly 0, which is what let a backup QB sneak in at round 8. */
 function baselines() {
   const r = S.roster, t = S.teams, flex = (r.FLEX || 0) * t;
-  const depth = { QB: (r.QB || 1) * t, RB: (r.RB || 2) * t + flex * 0.45, WR: (r.WR || 2) * t + flex * 0.45, TE: (r.TE || 1) * t + flex * 0.10, K: (r.K || 1) * t, DST: (r.DST || 1) * t };
-  const out = {};
-  for (const pos of Object.keys(depth)) {
-    const sorted = DATA.players.filter((p) => p.pos === pos && p.proj != null).sort((a, b) => b.proj - a.proj);
-    out[pos] = sorted[Math.min(sorted.length - 1, Math.round(depth[pos]))]?.proj ?? 0;
-  }
-  // A player in the FLEX slot competes with every RB/WR/TE for it, so he's measured against the
-  // deepest of those lines — otherwise a TE's low positional baseline makes a 2nd TE look elite.
-  out.FLEX = Math.max(out.RB, out.WR, out.TE);
+  const starter = { QB: (r.QB || 1) * t, RB: (r.RB || 2) * t + flex * 0.45, WR: (r.WR || 2) * t + flex * 0.45, TE: (r.TE || 1) * t + flex * 0.10, K: (r.K || 1) * t, DST: (r.DST || 1) * t };
+  const waiver = { QB: 2 * t, RB: 4.5 * t, WR: 5.5 * t, TE: 2 * t, K: 1.2 * t, DST: 1.2 * t };
+  const at = (pos, n) => { const sorted = DATA.players.filter((p) => p.pos === pos && p.proj != null).sort((a, b) => b.proj - a.proj); return sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(n) - 1))]?.proj ?? 0; };
+  const out = { starter: {}, waiver: {} };
+  for (const pos of Object.keys(starter)) { out.starter[pos] = at(pos, starter[pos]); out.waiver[pos] = at(pos, waiver[pos]); }
+  out.starter.FLEX = Math.max(out.starter.RB, out.starter.WR, out.starter.TE);
+  out.waiver.FLEX = Math.max(out.waiver.RB, out.waiver.WR, out.waiver.TE);
   return out;
+}
+/* Risk-adjusted projection: a 100-risk player loses 30% of his season (Nacua "questionable" at
+   25 → −7.5%, McCaffrey at 65 → −20%). Applied to candidates AND to the alternatives we compare
+   them against, so a position isn't "safe to wait on" because its fallback is a hurt rookie. */
+const adj = (p) => (p.proj || 0) * (1 - 0.3 * (p.risk || 0) / 100);
+/* Where the room takes him, on the 10-team scale. ESPN's ADP runs long; consensus rank is the
+   last resort. `sd` is how spread real drafts are on him — the width of the "is he there?" bell. */
+const adpOf = (p) => p.adp ?? (p.adpEspn != null ? p.adpEspn / 1.1 : (p.rank ?? 400));
+const sdOf = (p) => Math.max(4, p.adpStd ?? 8);
+const Phi = (z) => 0.5 * (1 + Math.tanh(0.7978845608 * (z + 0.044715 * z * z * z)));  // normal CDF, close enough
+/* P(still on the board at pick n). ADP is a mean, not a floor: a player with ADP 22 is gone by
+   21 about half the time. */
+const pAvail = (p, n) => Phi((adpOf(p) - n) / sdOf(p));
+/* Expected best risk-adjusted projection among `pool` at pick n: walk the pool best-first and
+   take each player's projection weighted by "he's there and nobody better was". */
+function expectedBest(pool, n) {
+  const sorted = [...pool].sort((a, b) => adj(b) - adj(a));
+  let e = 0, pNoneBetter = 1;
+  for (const p of sorted) { const pa = pAvail(p, n); e += adj(p) * pa * pNoneBetter; pNoneBetter *= (1 - pa); if (pNoneBetter < 0.01) break; }
+  return e;
 }
 function recommend() {
   const avail = available();
   const have = mine();
   const base = starterPoints(have);
-  const next = nextMyPick(current() + 1);
-  const late = roundOf(current()) >= rounds() - 2;
+  const cur = current();
+  // Horizon for "can I wait?": my next pick — unless it's the very next pick (the turn of the
+  // snake), in which case nobody picks in between and the real question is what survives until
+  // the pick AFTER that pair.
+  const nextAny = nextMyPick(cur + 1);
+  const next = nextAny === cur + 1 ? (nextMyPick(cur + 2) ?? nextAny) : nextAny;
   const bl = baselines();
-  const vorp = (p) => Math.max(0, (p.proj || 0) - (bl[p.pos] || 0));
   const count = (pos) => have.filter((x) => x.pos === pos).length;
-  // Roster caps: one backup QB/TE at most, exactly one K and D/ST. Beyond that a pick is wasted.
-  const capped = (p) => (p.pos === 'QB' && count('QB') > (S.roster.QB || 1)) || (p.pos === 'TE' && count('TE') > (S.roster.TE || 1))
+  const isKD = (p) => p.pos === 'K' || p.pos === 'DST';
+  // Caps: one backup QB/TE at most, exactly one K and D/ST.
+  const startersOpen = fillRoster(have).slots.filter((s) => !s.p && s.pos !== 'BE' && !['K', 'DST'].includes(s.pos)).length;
+  const picksLeft = myPicks().filter((n) => n >= cur).length;
+  // A backup QB/TE is a last-four-picks luxury once every starter is filled — never before, and
+  // never a third. Exactly one K and D/ST.
+  const backupOk = startersOpen === 0 && picksLeft <= 4;
+  const capped = (p) => (p.pos === 'QB' && count('QB') >= (S.roster.QB || 1) + (backupOk ? 1 : 0)) || (p.pos === 'TE' && count('TE') >= (S.roster.TE || 1) + (backupOk ? 1 : 0))
     || (p.pos === 'K' && count('K') >= (S.roster.K || 1)) || (p.pos === 'DST' && count('DST') >= (S.roster.DST || 1));
-  // Best projection still expected at my next pick, per position (or any flex-eligible player).
-  const laterAt = (test) => next ? avail.filter((p) => test(p) && (p.adp ?? p.adpEspn ?? p.rank) >= next - 1) : [];
-  const oppProj = (test) => { const l = laterAt(test); return l.length ? Math.max(...l.map((p) => p.proj || 0)) : 0; };
-  // Open starter slots (K/D-ST aside) and picks I have left. While starters are open, depth is
-  // a luxury; and K/D-ST wait for the last two rounds unless nothing else is left to fill.
-  const startersOpen = fillRoster(have).slots.filter((s) => !s.p && s.pos !== 'BE' && s.pos !== 'K' && s.pos !== 'DST').length;
-  const picksLeft = myPicks().filter((n) => n >= current()).length;
-  const kdAllowed = late || (startersOpen === 0 && picksLeft <= 3);
-  const cands = avail.slice(0, 90).filter((p) => !capped(p)).filter((p) => kdAllowed || (p.pos !== 'K' && p.pos !== 'DST')).map((p) => {
-    const gain = starterPoints([...have, p]) - base;   // does he improve my starting lineup now?
-    const fills = gain > 0 ? filledSlot(have, p) : null;
-    // Starter: an empty slot scores zero, so filling it is worth his whole projection — minus
-    // what waiting would still put there (the best player at that slot expected to be left at
-    // my next pick). That difference IS scarcity: a QB now vs. a QB later is worth little; an
-    // RB now vs. the RB left at 2.10 is worth a lot. Waiting only counts while spare picks exist.
-    // Waiting can't beat taking the best now; a later-ADP player who projects higher just means
-    // this candidate isn't the best fill, and the cap keeps the value from going negative.
-    const opp = fills ? Math.min(p.proj || 0, oppProj(fills === 'FLEX' ? (x) => FLEX_POS.has(x.pos) : (x) => x.pos === p.pos)) : 0;
-    const waitW = Math.max(0, Math.min(1, (picksLeft - startersOpen) / 3));
-    // Bench: value over the positional replacement line, discounted — heavily while any starter
-    // slot is open, and a backup QB/TE is worth less than RB/WR depth that can flex in.
-    const benchMult = FLEX_POS.has(p.pos) ? 0.3 * (startersOpen ? 0.3 : 1) : (startersOpen ? 0 : 0.08);
-    // 0.9: a player in hand beats an ADP forecast — keep 10% of the later option as uncertainty.
-    let value = fills ? (p.proj || 0) - opp * waitW * 0.9 : vorp(p) * benchMult;
-    value *= 0.6 + p.score / 250;                                     // consensus: score 100 → ×1.0, 50 → ×0.8
-    value -= p.risk * 0.15;                                           // 100 risk ≈ 15 season pts
-    const tierDrop = tierDropBefore(p, avail, next);                  // for the explanation only
+  // K/D-ST: the last two picks, unless nothing else is left to fill.
+  const kdAllowed = picksLeft <= 2;
+  const byeCount = {}; for (const s of fillRoster(have).slots) if (s.p && s.pos !== 'BE' && s.p.bye) byeCount[s.p.bye] = (byeCount[s.p.bye] || 0) + 1;
+  // Candidate pool: the top of the board plus every K/D-ST once they're allowed (they rank ~180+).
+  const pool = avail.slice(0, 120).concat(kdAllowed ? avail.filter(isKD) : []);
+  const cands = pool.filter((p) => !capped(p) && (kdAllowed || !isKD(p))).map((p) => {
+    const gain = starterPoints([...have, p]) - base;      // marginal lineup gain — an upgrade counts only its edge
+    let fills = gain > 0 ? filledSlot(have, p) : null;
+    // A tight end in the FLEX is a bench-grade outcome in PPR; value him as depth, not a starter.
+    if (fills === 'FLEX' && p.pos === 'TE') fills = null;
+    const slotPos = fills === 'FLEX' ? 'FLEX' : p.pos;
+    let value, opp = 0;
+    if (fills) {
+      // What the same slot would get if I wait: the expected best at my horizon, minus the
+      // incumbent it would have to beat (0 for an empty slot). Waiting is only worth counting
+      // while I have spare picks — with 3 starters open and 4 picks left there's no waiting.
+      const incumbent = (p.proj || 0) - gain;
+      const later = avail.filter((x) => x.id !== p.id && (slotPos === 'FLEX' ? FLEX_POS.has(x.pos) : x.pos === p.pos));
+      opp = next ? Math.max(0, expectedBest(later, next) - incumbent) : 0;
+      const waitW = Math.max(0, Math.min(1, (picksLeft - startersOpen) / 3));
+      const gainAdj = gain - (p.proj || 0) + adj(p);       // same marginal gain, risk-adjusted
+      // Floor: a real starter in hand is never worth less than a tenth of his gain — otherwise a
+      // round where every fill looks slightly negative gets decided by a zero-value bench tiebreak.
+      value = Math.max(gainAdj - opp * waitW, gainAdj * 0.1);
+      if (!next) value = adj(p) - bl.waiver[slotPos];       // last pick: no waiting math, just value over a free agent
+    } else {
+      // Bench: value over a FREE AGENT, discounted. RB/WR depth is real (bye weeks, injuries, FLEX);
+      // a backup QB/TE is a luxury for the last few picks only.
+      const over = Math.max(0, adj(p) - bl.waiver[p.pos]);
+      value = FLEX_POS.has(p.pos) ? over * (startersOpen ? 0.15 : 0.5)
+        : over * 0.15;
+    }
+    // Market discipline: ADP carries what projections don't (replaceability, variance, how the
+    // room behaves). Each pick earlier than the room takes him, past a 3-pick grace, costs 2.5 —
+    // enough that a QB the room takes at 34 isn't the pick at 20, but can be at 27.
+    value -= Math.max(0, adpOf(p) - cur - 3) * 2.5;
+    // Bye-week stack: don't put a third starter on the same bye.
+    if (p.bye && (byeCount[p.bye] || 0) >= 2 && fills) value -= 8;
+    // Consensus as a light tiebreak only.
+    value += (p.score - 80) * 0.05;
+    const tierDrop = tierDropBefore(p, avail, next);
     return { p, value, gain, opp, tierDrop, fills };
   }).sort((a, b) => b.value - a.value);
   return { cands, next };
 }
 function filledSlot(have, p) { const after = fillRoster([...have, p]).slots; for (let i = 0; i < after.length; i++) if (after[i].p?.id === p.id) return after[i].pos === 'BE' ? null : `${after[i].pos}${after[i].pos === 'FLEX' ? '' : after.slice(0, i + 1).filter((s) => s.pos === after[i].pos).length}`; return null; }
 /* How many projected points the position loses between this player and the best one likely left at my next pick. */
-function tierDropBefore(p, avail, next) { if (!next) return 0; const later = avail.filter((x) => x.pos === p.pos && x.id !== p.id && (x.adp ?? x.adpEspn ?? x.rank) >= next - 1); const best = later.length ? Math.max(...later.map((x) => x.proj || 0)) : 0; return Math.max(0, (p.proj || 0) - best); }
+function tierDropBefore(p, avail, next) { if (!next) return 0; const later = avail.filter((x) => x.pos === p.pos && x.id !== p.id); return Math.max(0, adj(p) - expectedBest(later, next)); }
 
 function whyText(c, next) {
   const bits = [];
@@ -124,8 +166,9 @@ function whyText(c, next) {
     if (c.tierDrop >= 25) bits.push(`the best ${c.p.pos === 'DST' ? 'D/ST' : c.p.pos} likely left at your next pick (${nextWords}) projects <b>${Math.round(c.tierDrop)} pts</b> lower over the season`);
     else if (c.tierDrop <= 8 && c.gain > 0) bits.push(`${c.p.pos} options should still be there in ${nextWords}, so this is about talent, not scarcity`);
   }
-  if (c.p.adp && c.p.adp - current() >= 6) bits.push(`going <b>${Math.round(c.p.adp - current())} picks</b> earlier than his ADP — you're not reaching`);
-  else if (c.p.adp && current() - c.p.adp >= 6) bits.push(`<b>${Math.round(current() - c.p.adp)} picks</b> past his ADP — a discount`);
+  const adpRef = c.p.adp ?? c.p.adpEspn;
+  if (adpRef && adpRef - current() >= 6) bits.push(`this is <b>${Math.round(adpRef - current())} picks</b> before the room usually takes him (ADP ${Math.round(adpRef)}) — a reach, priced in`);
+  else if (adpRef && current() - adpRef >= 6) bits.push(`<b>${Math.round(current() - adpRef)} picks</b> past his ADP — a discount`);
   if (c.p.risk >= 40) bits.push(`risk is real: ${esc(c.p.riskWhy.join(', '))}`);
   const s = bits.join('; ');
   return s.charAt(0).toUpperCase() + s.slice(1) + '.';
@@ -217,14 +260,16 @@ function renderTurn() {
    then the players most likely to go next (by ADP — the best predictor of what someone ELSE
    does), then whether your own plan is surviving. */
 function logPanel(cur, cands, next) {
+  void next;
   const team = teamAt(cur);
   const likely = available().filter((p) => p.adp != null || p.adpEspn != null)
     .sort((a, b) => (a.adp ?? a.adpEspn) - (b.adp ?? b.adpEspn)).slice(0, 6);
-  const lasts = (p) => next ? ((p.adp ?? p.adpEspn ?? p.rank) >= next - 1) : true;
+  const mine1 = nextMyPick(cur);                       // my very next pick — the question the user is asking
+  const lasts = (p) => mine1 ? pAvail(p, mine1) >= 0.5 : true;
   const plan = cands.slice(0, 3).map((c) => ({ p: c.p, lasts: lasts(c.p) }));
   const keep = plan.filter((x) => x.lasts);
-  // If none of the top three should survive, name the first one who should — that's the plan.
-  const fallback = keep.length ? null : cands.slice(3, 20).find((c) => lasts(c.p))?.p;
+  // If none of the top three should survive, name the best one who should — and not a reach.
+  const fallback = keep.length ? null : cands.slice(3, 25).find((c) => lasts(c.p) && adpOf(c.p) - mine1 <= 6)?.p;
   return `
     <div class="turn-h"><span class="eyebrow q">Who did Team ${team} take?</span><span class="eyebrow q">${S.picks.length} gone</span></div>
     <label class="search inpanel"><span aria-hidden="true">⌕</span><input id="lq" type="search" placeholder="Type a name" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(ui.lq || '')}"></label>
@@ -233,8 +278,8 @@ function logPanel(cur, cands, next) {
     <div class="chips" id="likely">${likely.map((p) => `<button class="chip pick" data-log="${p.id}"><span class="p ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span class="n">${esc(p.name)}</span><span class="a">${fmt(p.adp ?? p.adpEspn, 1)}</span></button>`).join('')}</div>
     <div class="why plan">${!next ? 'This is the last round.'
       : `Your best options now: ${plan.map((x) => `<b class="${x.lasts ? 'ok' : 'no'}">${esc(x.p.name)}</b>`).join(', ')}` +
-        (keep.length ? ` — <b class="ok">${esc(keep[0].p.name)}</b> should still be there in round ${roundOf(next)}.`
-          : fallback ? ` — none should last to round ${roundOf(next)}; likely plan: <b>${esc(fallback.name)}</b>.` : '.')}</div>`;
+        (keep.length ? ` — <b class="ok">${esc(keep[0].p.name)}</b> should still be there at your pick (round ${roundOf(mine1)}).`
+          : fallback ? ` — none should last to your pick; likely plan: <b>${esc(fallback.name)}</b>.` : '.')}</div>`;
 }
 function renderLogResults() {
   const box = $('lq-res'); if (!box) return;
@@ -401,8 +446,9 @@ document.addEventListener('pointerdown', (e) => {
     ui.lq = ''; take(id);
   }, HOLD_MS);
 });
-for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) document.addEventListener(ev, (e) => { if (holdState.el && (ev !== 'pointerleave' || e.target === holdState.el)) holdCancel(); }, true);
-document.addEventListener('contextmenu', (e) => { if (e.target.closest('#likely .chip.pick')) e.preventDefault(); });
+// Release or a scroll (the browser fires pointercancel) ends the hold. No pointerleave/contextmenu
+// listeners: they made Chrome's synthetic mouse-event dispatch hang under automation.
+for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => holdCancel(), true);
 
 // ---- boot ----------------------------------------------------------------------------
 (async () => {
