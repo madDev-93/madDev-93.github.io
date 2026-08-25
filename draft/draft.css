@@ -86,6 +86,25 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .alt .d{font:12px var(--sans);color:var(--muted)}
 .alt .s{font:500 16px var(--serif);color:var(--muted);font-variant-numeric:tabular-nums}
 .turn .empty{padding:14px;color:var(--muted);font-size:14px}
+/* log-the-pick panel (someone else's turn) */
+.search.inpanel{margin:6px 14px 0;border-color:var(--hair-2)}
+.lres:empty{display:none}
+.lres{margin:6px 14px 0;border:1px solid var(--hair);border-radius:10px;overflow:hidden}
+.lhit{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;width:100%;text-align:left;min-height:52px;padding:8px 12px;border-bottom:1px solid var(--hair)}
+.lhit:last-child{border-bottom:0}
+.lhit .nm{font-weight:600}
+.lhit .d{grid-row:2;font:12px var(--mono);color:var(--muted)}
+.lhit .d .pos{font-size:10px;padding:1px 6px}
+.lhit .go{grid-row:1/3;font:600 12px var(--sans);color:var(--teal);border:1px solid rgba(46,196,167,.4);border-radius:8px;padding:8px 10px;white-space:nowrap}
+.lnone{padding:12px;color:var(--muted);font-size:13px}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px 4px}
+.chip.pick{min-height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;color:var(--ink);min-width:0;text-align:left;border-radius:10px}
+.chip.pick .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.pick .p{font:600 10px var(--mono);letter-spacing:.06em}
+.chip.pick .p.QB{color:var(--qb)}.chip.pick .p.RB{color:var(--rb)}.chip.pick .p.WR{color:var(--wr)}.chip.pick .p.TE{color:var(--te)}.chip.pick .p.K,.chip.pick .p.DST{color:var(--kd)}
+.chip.pick .a{font:11px var(--mono);color:var(--faint)}
+.why.plan{border-top:1px solid var(--hair);margin-top:10px;padding-top:10px}
+.why .ok{color:var(--lo)}.why .no{color:var(--hi);text-decoration:line-through}
 .turn .empty b{color:var(--ink)}
 
 /* tabs */

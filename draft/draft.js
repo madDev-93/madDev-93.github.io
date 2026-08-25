@@ -189,6 +189,7 @@ function renderTurn() {
   if (cur > totalPicks()) { el.className = 'turn'; el.innerHTML = `<div class="empty"><b>Draft complete.</b> Your roster is on the My team tab; the board stays here if you need to fix a pick.</div>`; return; }
   const myTurn = teamAt(cur) === S.slot; el.className = 'turn' + (myTurn ? ' mine' : '');
   const { cands, next } = recommend(); const top = cands[0]; if (!top) { el.innerHTML = '<div class="empty">No players left.</div>'; return; }
+  if (!myTurn) { el.innerHTML = logPanel(cur, cands, next); renderLogResults(); return; }
   const p = top.p;
   el.innerHTML = `
     <div class="turn-h"><span class="eyebrow ${myTurn ? '' : 'q'}">${myTurn ? 'Your pick · best available' : 'If you were picking now'}</span><span class="eyebrow q">${S.picks.length} gone</span></div>
@@ -212,6 +213,36 @@ function renderTurn() {
       ${cands.slice(1, 4).map((c, i) => `<button class="alt" data-open="${c.p.id}"><span class="r">${i + 2}</span><div><div class="n">${esc(c.p.name)}<span class="pos ${posClass(c.p.pos)}">${c.p.pos === 'DST' ? 'D/ST' : c.p.pos}</span></div><div class="d">${c.fills ? 'fills ' + esc(c.fills) : 'depth'} · ${Math.round(c.value - top.value)} pts vs top · ADP ${fmt(c.p.adp ?? c.p.adpEspn, 1)}</div></div><span class="s">${c.p.score}</span></button>`).join('')}
     </div>`;
 }
+/* Between your picks the panel's job is logging what other teams take — fast. Search first,
+   then the players most likely to go next (by ADP — the best predictor of what someone ELSE
+   does), then whether your own plan is surviving. */
+function logPanel(cur, cands, next) {
+  const team = teamAt(cur);
+  const likely = available().filter((p) => p.adp != null || p.adpEspn != null)
+    .sort((a, b) => (a.adp ?? a.adpEspn) - (b.adp ?? b.adpEspn)).slice(0, 6);
+  const lasts = (p) => next ? ((p.adp ?? p.adpEspn ?? p.rank) >= next - 1) : true;
+  const plan = cands.slice(0, 3).map((c) => ({ p: c.p, lasts: lasts(c.p) }));
+  const keep = plan.filter((x) => x.lasts);
+  // If none of the top three should survive, name the first one who should — that's the plan.
+  const fallback = keep.length ? null : cands.slice(3, 20).find((c) => lasts(c.p))?.p;
+  return `
+    <div class="turn-h"><span class="eyebrow q">Who did Team ${team} take?</span><span class="eyebrow q">${S.picks.length} gone</span></div>
+    <label class="search inpanel"><span aria-hidden="true">⌕</span><input id="lq" type="search" placeholder="Type a name" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(ui.lq || '')}"></label>
+    <div class="lres" id="lq-res"></div>
+    <div class="chips" id="likely">${likely.map((p) => `<button class="chip pick" data-log="${p.id}"><span class="p ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span class="n">${esc(p.name)}</span><span class="a">${fmt(p.adp ?? p.adpEspn, 1)}</span></button>`).join('')}</div>
+    <div class="why plan">${!next ? 'This is the last round.'
+      : `Your best options now: ${plan.map((x) => `<b class="${x.lasts ? 'ok' : 'no'}">${esc(x.p.name)}</b>`).join(', ')}` +
+        (keep.length ? ` — <b class="ok">${esc(keep[0].p.name)}</b> should still be there in round ${roundOf(next)}.`
+          : fallback ? ` — none should last to round ${roundOf(next)}; likely plan: <b>${esc(fallback.name)}</b>.` : '.')}</div>`;
+}
+function renderLogResults() {
+  const box = $('lq-res'); if (!box) return;
+  const q = (ui.lq || '').trim().toLowerCase(); $('likely').hidden = !!q;
+  if (!q) { box.innerHTML = ''; return; }
+  const hits = available().filter((p) => p.name.toLowerCase().includes(q) || p.team.toLowerCase() === q).slice(0, 6);
+  box.innerHTML = hits.length ? hits.map((p) => `<button class="lhit" data-log="${p.id}"><span class="nm">${esc(p.name)}</span><span class="d"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span> ${esc(p.team)} · ${esc(p.posRank)} · ADP ${fmt(p.adp ?? p.adpEspn, 0)}</span><span class="go">Team ${teamAt(current())} took</span></button>`).join('')
+    : `<div class="lnone">No available player matches "${esc(q)}" — already taken? Check the Taken tab.</div>`;
+}
 function renderCounts() { $('c-board').textContent = available().length; $('c-team').textContent = `${mine().length}/${rounds()}`; $('c-taken').textContent = S.picks.length; }
 
 function renderBoard() {
@@ -227,7 +258,7 @@ function renderBoard() {
     return true;
   });
   const shown = list.slice(0, ui.limit);
-  $('rows').innerHTML = (!S.picks.length && !q ? `<div class="note" style="margin:10px 12px 4px"><b>How it works:</b> tap any player to see his card; from there mark him taken by the team on the clock, or draft him to you. The clock advances and the panel above re-plans. Mis-tap? Undo in the toast, or fix it on the Taken tab.</div>` : '') + shown.map((p) => {
+  $('rows').innerHTML = (!S.picks.length && !q ? `<div class="note" style="margin:10px 12px 4px"><b>How it works:</b> log each team's pick in the panel above — search or tap a likely name. On your turn the panel shows your best pick. Tap any player here for his full card. Mis-tap? Undo in the toast, or fix it on the Taken tab.</div>` : '') + shown.map((p) => {
     const t = taken.has(p.id), w = who[p.id]; const adp = p.adp ?? p.adpEspn;
     const value = !t && adp != null && cur - adp >= 6;
     return `<button class="row ${riskClass(p.risk)} ${t ? 'taken' : ''} ${w && w.team === S.slot ? 'mine' : ''}" data-open="${p.id}">
@@ -317,6 +348,7 @@ function openSettings() {
 document.addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.take) { take(b.dataset.take); if (b.dataset.close) closeSheet(); return; }
+  if (b.dataset.log) { ui.lq = ''; take(b.dataset.log); return; }
   if (b.dataset.takeMe) { S.picks.push({ id: b.dataset.takeMe, team: S.slot, no: current() }); save(); render(); closeSheet(); toast(`${P.get(b.dataset.takeMe).name} → you (out of turn)`); return; }
   if (b.dataset.open) { openPlayer(b.dataset.open); return; }
   if (b.dataset.undo != null) { const x = S.picks[+b.dataset.undo]; undoPick(+b.dataset.undo); toast(`${P.get(x.id).name} back on the board`); return; }
@@ -334,6 +366,7 @@ $('sheet-bg').addEventListener('click', closeSheet);
 $('s-teams').addEventListener('change', (e) => { S.teams = +e.target.value; if (S.slot > S.teams) S.slot = S.teams; S.picks.forEach((x, k) => (x.team = teamAt(k + 1))); save(); render(); });
 $('s-slot').addEventListener('change', (e) => { S.slot = +e.target.value; save(); render(); });
 $('q').addEventListener('input', (e) => { ui.q = e.target.value; ui.limit = 60; renderBoard(); });
+document.addEventListener('input', (e) => { if (e.target.id === 'lq') { ui.lq = e.target.value; renderLogResults(); } });
 
 // ---- boot ----------------------------------------------------------------------------
 (async () => {
