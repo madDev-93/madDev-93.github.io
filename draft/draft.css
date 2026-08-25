@@ -97,14 +97,22 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .lhit .d .pos{font-size:10px;padding:1px 6px}
 .lhit .go{grid-row:1/3;font:600 12px var(--sans);color:var(--teal);border:1px solid rgba(46,196,167,.4);border-radius:8px;padding:8px 10px;white-space:nowrap}
 .lnone{padding:12px;color:var(--muted);font-size:13px}
+.chipcap{padding:12px 14px 0}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px 4px}
 .chip.pick{min-height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;color:var(--ink);min-width:0;text-align:left;border-radius:10px}
 .chip.pick .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.pick .p{font:600 10px var(--mono);letter-spacing:.06em}
 .chip.pick .p.QB{color:var(--qb)}.chip.pick .p.RB{color:var(--rb)}.chip.pick .p.WR{color:var(--wr)}.chip.pick .p.TE{color:var(--te)}.chip.pick .p.K,.chip.pick .p.DST{color:var(--kd)}
 .chip.pick .a{font:11px var(--mono);color:var(--faint)}
-.chip.pick.armed{background:var(--teal);border-color:var(--teal);color:var(--teal-ink);grid-column:1/-1}
-.chip.pick.armed .n{white-space:normal;text-align:center}
+/* hold-to-log: a teal fill sweeps left→right over --hold; release early and it snaps back */
+.chip.pick{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.chip.pick>*{position:relative;z-index:1}
+.chip.pick::before{content:"";position:absolute;inset:0;background:var(--teal);transform:scaleX(0);transform-origin:left;opacity:.9}
+.chip.pick.holding{border-color:var(--teal)}
+.chip.pick.holding::before{transform:scaleX(1);transition:transform var(--hold,2500ms) linear}
+.chip.pick.holding>*{color:var(--teal-ink)}
+.chip.pick.holding .a,.chip.pick.holding .p{color:var(--teal-ink)}
+@media (prefers-reduced-motion:reduce){.chip.pick.holding::before{transition:none;transform:scaleX(1);opacity:.35}}
 .lhit.writein .nm{color:var(--teal)}
 .why.plan{border-top:1px solid var(--hair);margin-top:10px;padding-top:10px}
 .why .ok{color:var(--lo)}.why .no{color:var(--hi);text-decoration:line-through}

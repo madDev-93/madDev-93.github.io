@@ -229,6 +229,7 @@ function logPanel(cur, cands, next) {
     <div class="turn-h"><span class="eyebrow q">Who did Team ${team} take?</span><span class="eyebrow q">${S.picks.length} gone</span></div>
     <label class="search inpanel"><span aria-hidden="true">⌕</span><input id="lq" type="search" placeholder="Type a name" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(ui.lq || '')}"></label>
     <div class="lres" id="lq-res"></div>
+    <div class="chipcap"><span class="eyebrow q">Most likely next · press and hold to log</span></div>
     <div class="chips" id="likely">${likely.map((p) => `<button class="chip pick" data-log="${p.id}"><span class="p ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span class="n">${esc(p.name)}</span><span class="a">${fmt(p.adp ?? p.adpEspn, 1)}</span></button>`).join('')}</div>
     <div class="why plan">${!next ? 'This is the last round.'
       : `Your best options now: ${plan.map((x) => `<b class="${x.lasts ? 'ok' : 'no'}">${esc(x.p.name)}</b>`).join(', ')}` +
@@ -354,15 +355,9 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.take) { take(b.dataset.take); if (b.dataset.close) closeSheet(); return; }
   if (b.dataset.log) {
-    // Chips confirm on a second tap — they're big, they're near the search box, and a mis-tap
-    // logs a pick to the wrong team. Search hits were typed on purpose, so they go straight through.
-    if (b.classList.contains('chip') && b.dataset.armed !== '1') {
-      document.querySelectorAll('#likely .chip[data-armed="1"]').forEach((c) => { c.dataset.armed = ''; c.innerHTML = c._orig; c.classList.remove('armed'); });
-      b._orig = b.innerHTML; b.dataset.armed = '1'; b.classList.add('armed');
-      b.innerHTML = `<span class="n">Tap again · Team ${teamAt(current())} took ${esc(P.get(b.dataset.log)?.name.split(' ').pop() || '')}</span>`;
-      clearTimeout(b._t); b._t = setTimeout(() => { if (b.isConnected) { b.dataset.armed = ''; b.innerHTML = b._orig; b.classList.remove('armed'); } }, 3500);
-      return;
-    }
+    // Chips are press-and-hold (see holdToLog) — a plain tap must never log a pick. Search hits
+    // were typed on purpose, so they go straight through.
+    if (b.classList.contains('chip')) return;
     ui.lq = ''; take(b.dataset.log); return;
   }
   if (b.dataset.writein != null) {
@@ -390,6 +385,24 @@ $('s-teams').addEventListener('change', (e) => { S.teams = +e.target.value; if (
 $('s-slot').addEventListener('change', (e) => { S.slot = +e.target.value; save(); render(); });
 $('q').addEventListener('input', (e) => { ui.q = e.target.value; ui.limit = 60; renderBoard(); });
 document.addEventListener('input', (e) => { if (e.target.id === 'lq') { ui.lq = e.target.value; renderLogResults(); } });
+
+// ---- press-and-hold on the likely-pick chips --------------------------------------------
+// A big pill next to a search box is easy to brush. Holding for HOLD_MS fills the chip; letting
+// go early (or scrolling — the browser fires pointercancel) does nothing.
+const HOLD_MS = 2500;
+const holdState = { el: null, t: null };
+function holdCancel() { const h = holdState; if (!h.el) return; clearTimeout(h.t); h.el.classList.remove('holding'); h.el.style.removeProperty('--hold'); h.el = null; }
+document.addEventListener('pointerdown', (e) => {
+  const c = e.target.closest('#likely .chip.pick'); if (!c || !c.dataset.log) return;
+  holdCancel(); holdState.el = c; c.style.setProperty('--hold', HOLD_MS + 'ms'); c.classList.add('holding');
+  holdState.t = setTimeout(() => {
+    const id = c.dataset.log; holdCancel();
+    if (navigator.vibrate) navigator.vibrate(30);
+    ui.lq = ''; take(id);
+  }, HOLD_MS);
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) document.addEventListener(ev, (e) => { if (holdState.el && (ev !== 'pointerleave' || e.target === holdState.el)) holdCancel(); }, true);
+document.addEventListener('contextmenu', (e) => { if (e.target.closest('#likely .chip.pick')) e.preventDefault(); });
 
 // ---- boot ----------------------------------------------------------------------------
 (async () => {
