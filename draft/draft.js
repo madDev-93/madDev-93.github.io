@@ -52,30 +52,62 @@ const starterPoints = (list) => fillRoster(list).slots.filter((s) => s.pos !== '
 /* Recommendation: for each candidate, the roster's projected starter points if I take him now,
    minus what I'd expect to get at that position if I wait for my next pick. "Expected at next
    pick" = best available at the position whose ADP is at/after my next pick number. */
+/* Replacement level per position: the projection of the last starter-quality player in a league
+   this size (10th QB, ~25th RB/WR once FLEX is shared, ~12th TE). Points above that line are what a
+   player is actually worth — raw projections make every QB look like the best pick on the board. */
+function baselines() {
+  const r = S.roster, t = S.teams, flex = (r.FLEX || 0) * t;
+  const depth = { QB: (r.QB || 1) * t, RB: (r.RB || 2) * t + flex * 0.45, WR: (r.WR || 2) * t + flex * 0.45, TE: (r.TE || 1) * t + flex * 0.10, K: (r.K || 1) * t, DST: (r.DST || 1) * t };
+  const out = {};
+  for (const pos of Object.keys(depth)) {
+    const sorted = DATA.players.filter((p) => p.pos === pos && p.proj != null).sort((a, b) => b.proj - a.proj);
+    out[pos] = sorted[Math.min(sorted.length - 1, Math.round(depth[pos]))]?.proj ?? 0;
+  }
+  // A player in the FLEX slot competes with every RB/WR/TE for it, so he's measured against the
+  // deepest of those lines — otherwise a TE's low positional baseline makes a 2nd TE look elite.
+  out.FLEX = Math.max(out.RB, out.WR, out.TE);
+  return out;
+}
 function recommend() {
   const avail = available();
   const have = mine();
   const base = starterPoints(have);
   const next = nextMyPick(current() + 1);
   const late = roundOf(current()) >= rounds() - 2;
-  const replacementAt = (pos) => {
-    if (!next) return 0;
-    const later = avail.filter((p) => p.pos === pos && (p.adp ?? p.adpEspn ?? p.rank) >= next - 1);
-    return later.length ? Math.max(...later.map((p) => p.proj || 0)) : 0;
-  };
-  const cands = avail.slice(0, 80).map((p) => {
-    // Value = what he adds to my starters now, minus most of what I'd still get at that slot
-    // by waiting (scarcity), nudged by the consensus score and pulled down by risk. Points are
-    // season projections, so a 20-point edge is about a point a week.
-    const gain = starterPoints([...have, p]) - base;              // starters improved now
-    const benchValue = gain === 0 ? (p.proj || 0) * 0.25 : 0;      // depth still worth something
-    const opp = replacementAt(p.pos);                              // what waiting would still get me
-    let value = (gain || benchValue) - (gain ? opp * 0.85 : 0);
-    if ((p.pos === 'K' || p.pos === 'DST') && !late) value *= 0.15; // never worth a pick before the last rounds
-    value += (p.score - 80) * 1.0;                                  // consensus: 10 score pts ≈ 10 season pts
-    value -= p.risk * 0.3;                                          // 100 risk ≈ 30 season pts (~1.8 a week)
-    const tierDrop = tierDropBefore(p, avail, next);                // for the explanation only
-    return { p, value, gain, opp, tierDrop, fills: gain > 0 ? filledSlot(have, p) : null };
+  const bl = baselines();
+  const vorp = (p) => Math.max(0, (p.proj || 0) - (bl[p.pos] || 0));
+  const count = (pos) => have.filter((x) => x.pos === pos).length;
+  // Roster caps: one backup QB/TE at most, exactly one K and D/ST. Beyond that a pick is wasted.
+  const capped = (p) => (p.pos === 'QB' && count('QB') > (S.roster.QB || 1)) || (p.pos === 'TE' && count('TE') > (S.roster.TE || 1))
+    || (p.pos === 'K' && count('K') >= (S.roster.K || 1)) || (p.pos === 'DST' && count('DST') >= (S.roster.DST || 1));
+  // Best projection still expected at my next pick, per position (or any flex-eligible player).
+  const laterAt = (test) => next ? avail.filter((p) => test(p) && (p.adp ?? p.adpEspn ?? p.rank) >= next - 1) : [];
+  const oppProj = (test) => { const l = laterAt(test); return l.length ? Math.max(...l.map((p) => p.proj || 0)) : 0; };
+  // Open starter slots (K/D-ST aside) and picks I have left. While starters are open, depth is
+  // a luxury; and K/D-ST wait for the last two rounds unless nothing else is left to fill.
+  const startersOpen = fillRoster(have).slots.filter((s) => !s.p && s.pos !== 'BE' && s.pos !== 'K' && s.pos !== 'DST').length;
+  const picksLeft = myPicks().filter((n) => n >= current()).length;
+  const kdAllowed = late || (startersOpen === 0 && picksLeft <= 3);
+  const cands = avail.slice(0, 90).filter((p) => !capped(p)).filter((p) => kdAllowed || (p.pos !== 'K' && p.pos !== 'DST')).map((p) => {
+    const gain = starterPoints([...have, p]) - base;   // does he improve my starting lineup now?
+    const fills = gain > 0 ? filledSlot(have, p) : null;
+    // Starter: an empty slot scores zero, so filling it is worth his whole projection — minus
+    // what waiting would still put there (the best player at that slot expected to be left at
+    // my next pick). That difference IS scarcity: a QB now vs. a QB later is worth little; an
+    // RB now vs. the RB left at 2.10 is worth a lot. Waiting only counts while spare picks exist.
+    // Waiting can't beat taking the best now; a later-ADP player who projects higher just means
+    // this candidate isn't the best fill, and the cap keeps the value from going negative.
+    const opp = fills ? Math.min(p.proj || 0, oppProj(fills === 'FLEX' ? (x) => FLEX_POS.has(x.pos) : (x) => x.pos === p.pos)) : 0;
+    const waitW = Math.max(0, Math.min(1, (picksLeft - startersOpen) / 3));
+    // Bench: value over the positional replacement line, discounted — heavily while any starter
+    // slot is open, and a backup QB/TE is worth less than RB/WR depth that can flex in.
+    const benchMult = FLEX_POS.has(p.pos) ? 0.3 * (startersOpen ? 0.3 : 1) : (startersOpen ? 0 : 0.08);
+    // 0.9: a player in hand beats an ADP forecast — keep 10% of the later option as uncertainty.
+    let value = fills ? (p.proj || 0) - opp * waitW * 0.9 : vorp(p) * benchMult;
+    value *= 0.6 + p.score / 250;                                     // consensus: score 100 → ×1.0, 50 → ×0.8
+    value -= p.risk * 0.15;                                           // 100 risk ≈ 15 season pts
+    const tierDrop = tierDropBefore(p, avail, next);                  // for the explanation only
+    return { p, value, gain, opp, tierDrop, fills };
   }).sort((a, b) => b.value - a.value);
   return { cands, next };
 }
@@ -135,13 +167,21 @@ function renderSettings() {
   s.innerHTML = Array.from({ length: S.teams }, (_, i) => i + 1).map((n) => `<option ${n === S.slot ? 'selected' : ''}>${n}</option>`).join('');
 }
 function renderClock() {
-  const cur = current(), total = totalPicks();
-  if (cur > total) { $('clock').innerHTML = `<div><div class="k">Round</div><div class="v">${rounds()}<small>of ${rounds()}</small></div></div><div class="done"><div class="k">Draft</div><div class="v">done</div></div><div><div class="k">Your picks</div><div class="v">${mine().length}</div></div>`; return; }
-  const team = teamAt(cur), next = nextMyPick(), until = next - cur;
-  $('clock').innerHTML = `
-    <div><div class="k">Round</div><div class="v">${roundOf(cur)}<small>of ${rounds()}</small></div></div>
-    <div><div class="k">On the clock</div><div class="v">${label(cur)}<small>${team === S.slot ? 'you' : 'Team ' + team}</small></div></div>
-    <div class="you"><div class="k">You pick in</div><div class="v">${until === 0 ? 'now' : until + '<small>pick' + (until === 1 ? '' : 's') + '</small>'}</div></div>`;
+  const el = $('clock'); const cur = current(), total = totalPicks();
+  if (cur > total) {
+    el.className = 'clock done';
+    el.innerHTML = `<div class="rnd"><span class="k">Round</span><span class="v">${rounds()}<small>/${rounds()}</small></span></div><div class="who"><span class="k">Draft</span><span class="v">Complete</span><span class="sub">${mine().length} players on your team</span></div>`;
+    return;
+  }
+  const team = teamAt(cur), next = nextMyPick(), until = next - cur, myTurn = until === 0;
+  el.className = 'clock' + (myTurn ? ' mine' : '');
+  el.innerHTML = `
+    <div class="rnd"><span class="k">Round</span><span class="v">${roundOf(cur)}<small>/${rounds()}</small></span></div>
+    <div class="who">
+      <span class="k">${myTurn ? 'On the clock' : 'On the clock · pick ' + label(cur)}</span>
+      <span class="v">${myTurn ? 'Your pick' : 'Team ' + team}</span>
+      <span class="sub">${myTurn ? 'pick ' + label(cur) + ' · next up ' + (nextMyPick(cur + 1) ? label(nextMyPick(cur + 1)) : 'none') : "you're up in " + until + (until === 1 ? ' pick' : ' picks') + ' (' + label(next) + ')'}</span>
+    </div>`;
 }
 function renderTurn() {
   const el = $('turn'); const cur = current();
@@ -186,7 +226,7 @@ function renderBoard() {
     return true;
   });
   const shown = list.slice(0, ui.limit);
-  $('rows').innerHTML = shown.map((p) => {
+  $('rows').innerHTML = (!S.picks.length && !q ? `<div class="note" style="margin:10px 12px 4px"><b>How it works:</b> as the draft happens, tap each player when a team takes him — the clock advances and the panel above re-plans for you. On your turn, tap the teal button (or the row). Mis-tap? Undo in the toast, or fix it on the Taken tab.</div>` : '') + shown.map((p) => {
     const t = taken.has(p.id), w = who[p.id]; const adp = p.adp ?? p.adpEspn;
     const value = !t && adp != null && cur - adp >= 6;
     return `<div class="row ${riskClass(p.risk)} ${t ? 'taken' : ''} ${w && w.team === S.slot ? 'mine' : ''}">

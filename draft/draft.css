@@ -31,15 +31,20 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .selwrap::after{content:"";position:absolute;right:10px;top:50%;width:6px;height:6px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 .icon{width:36px;height:36px;border-radius:8px;border:1px solid var(--hair-2);background:var(--panel);color:var(--muted);font-size:18px;line-height:1;display:grid;place-items:center}
 
-/* clock */
-.clock{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-top:6px}
-.clock>div{padding:9px 14px;border-right:1px solid var(--hair);min-width:0}
-.clock>div:last-child{border-right:0}
-.clock .k{font:600 10px var(--mono);letter-spacing:.14em;color:var(--faint);text-transform:uppercase;white-space:nowrap}
-.clock .v{font:500 22px/1.15 var(--serif);font-variant-numeric:tabular-nums;white-space:nowrap}
-.clock .v small{font:500 12px var(--sans);color:var(--muted);margin-left:4px}
-.clock .you .v{color:var(--teal)}
-.clock .done .v{color:var(--muted)}
+/* clock — pinned so round + who's picking are always in view while scrolling the board */
+.clock{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:auto 1fr;gap:0;margin-top:6px;background:var(--bg);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.clock .rnd{display:flex;flex-direction:column;justify-content:center;padding:10px 16px 10px 14px;border-right:1px solid var(--hair);min-width:84px}
+.clock .who{display:flex;flex-direction:column;justify-content:center;padding:10px 14px;min-width:0}
+.clock .k{font:600 10px var(--mono);letter-spacing:.14em;color:var(--faint);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clock .rnd .v{font:600 34px/1 var(--serif);font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:2px}
+.clock .rnd .v small{font:500 13px var(--sans);color:var(--muted);margin-left:2px}
+.clock .who .v{font:700 20px/1.15 var(--sans);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.clock .who .sub{font:500 12px var(--mono);color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clock.mine{background:var(--teal-dim);border-color:rgba(46,196,167,.5)}
+.clock.mine .k,.clock.mine .sub{color:var(--teal-deep)}
+.clock.mine .who .v,.clock.mine .rnd .v{color:var(--teal)}
+.clock.mine .rnd{border-right-color:rgba(46,196,167,.3)}
+.clock.done .who .v{color:var(--muted)}
 
 /* your-turn panel */
 .turn{margin:12px 12px 0;background:var(--panel);border:1px solid var(--hair-2);border-radius:14px;overflow:hidden}
