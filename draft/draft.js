@@ -120,8 +120,9 @@ function whyText(c, next) {
   if (c.fills) bits.push(`fills your <b>${esc(c.fills)}</b>`);
   else bits.push('best value on the board for depth');
   if (next) {
-    if (c.tierDrop >= 25) bits.push(`the best ${c.p.pos === 'DST' ? 'D/ST' : c.p.pos} likely left at your next pick (${label(next)}) projects <b>${Math.round(c.tierDrop)} pts</b> lower over the season`);
-    else if (c.tierDrop <= 8 && c.gain > 0) bits.push(`${c.p.pos} options hold until ${label(next)}, so this is about talent, not scarcity`);
+    const nextWords = `round ${roundOf(next)}`;
+    if (c.tierDrop >= 25) bits.push(`the best ${c.p.pos === 'DST' ? 'D/ST' : c.p.pos} likely left at your next pick (${nextWords}) projects <b>${Math.round(c.tierDrop)} pts</b> lower over the season`);
+    else if (c.tierDrop <= 8 && c.gain > 0) bits.push(`${c.p.pos} options should still be there in ${nextWords}, so this is about talent, not scarcity`);
   }
   if (c.p.adp && c.p.adp - current() >= 6) bits.push(`going <b>${Math.round(c.p.adp - current())} picks</b> earlier than his ADP — you're not reaching`);
   else if (c.p.adp && current() - c.p.adp >= 6) bits.push(`<b>${Math.round(current() - c.p.adp)} picks</b> past his ADP — a discount`);
@@ -178,9 +179,9 @@ function renderClock() {
   el.innerHTML = `
     <div class="rnd"><span class="k">Round</span><span class="v">${roundOf(cur)}<small>/${rounds()}</small></span></div>
     <div class="who">
-      <span class="k">${myTurn ? 'On the clock' : 'On the clock · pick ' + label(cur)}</span>
+      <span class="k">On the clock · pick ${((cur - 1) % S.teams) + 1} of ${S.teams} · #${cur} overall</span>
       <span class="v">${myTurn ? 'Your pick' : 'Team ' + team}</span>
-      <span class="sub">${myTurn ? 'pick ' + label(cur) + ' · next up ' + (nextMyPick(cur + 1) ? label(nextMyPick(cur + 1)) : 'none') : "you're up in " + until + (until === 1 ? ' pick' : ' picks') + ' (' + label(next) + ')'}</span>
+      <span class="sub">${myTurn ? 'after this you pick again ' + (nextMyPick(cur + 1) ? 'in round ' + roundOf(nextMyPick(cur + 1)) : 'never — last one') : "you're up in " + until + (until === 1 ? ' pick' : ' picks') + ' — round ' + roundOf(next) + ', pick ' + (((next - 1) % S.teams) + 1)}</span>
     </div>`;
 }
 function renderTurn() {
