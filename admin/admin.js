@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20260801m';
+const BUILD = '20260824b';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -79,6 +79,15 @@ function engagementClaim(row){
   if(imp>0) s+=`, plus ${imp} imported from Apple Health`;
   return s;
 }
+// Two-tap confirm for buttons that change what the console counts. First tap arms the
+// button (label swaps to "Tap again to confirm", auto-disarms in 4s) and returns false;
+// a second tap within the window returns true and restores the label.
+function armed(b){
+  if(b.dataset.armed==='1'){ clearTimeout(b._disarm); b.dataset.armed=''; b.innerHTML=b._orig; return true; }
+  b._orig=b.innerHTML; b.dataset.armed='1'; b.textContent='Tap again to confirm';
+  b._disarm=setTimeout(()=>{ b.dataset.armed=''; b.innerHTML=b._orig; }, 4000);
+  return false;
+}
 function ago(iso){
   if(!iso) return '—';
   const t=new Date(iso).getTime(); if(!Number.isFinite(t)) return '—';
@@ -107,8 +116,12 @@ async function load(){
     // reader to ignore a number whose whole job is to be believed. Info items still
     // render in the triage list below; they just don't demand attention.
     const att = (DATA.needsAttention||[]).filter(n=>n.severity==='crit'||n.severity==='warn').length;
-    $('status').className = 'status'+(ok?'':' bad')+(att?' has-alerts':'');
+    // A collection the server couldn't read is a status of its own — otherwise every number
+    // derived from it (DAU, retention, failures) shows as a confident zero.
+    const unreadable = (DATA.health && DATA.health.unreadable) || [];
+    $('status').className = 'status'+((ok && !unreadable.length)?'':' bad')+(att?' has-alerts':'');
     $('status-text').textContent = !ok ? 'Reconcile invariant failed'
+      : unreadable.length ? unreadable.length+' source'+(unreadable.length===1?'':'s')+' unreadable'
       : att ? att+' need'+(att===1?'s':'')+' you' : 'All systems normal';
     // Badge the tab so triage is visible from any screen, including the bottom bar.
     const nb = document.querySelector('.nav-item[data-tab="cockpit"]');
@@ -677,7 +690,9 @@ function renderHealth(){
     </div>
   </div>
   <div class="grid3" style="margin-top:14px">
-    <div class="card"><div class="qlabel">AI failures · 24h</div><div class="big ${h.aiFailures24h?'cr':'ok'}">${h.aiFailures24h}</div></div>
+    ${(h.unreadable||[]).some(n=>/Logs$/.test(n))
+      ? `<div class="card"><div class="qlabel">AI failures · 24h</div><div class="big cr">?</div><div class="qsub">Couldn't verify — ${(h.unreadable||[]).filter(n=>/Logs$/.test(n)).map(esc).join(', ')} failed to read. Not a clean zero.</div></div>`
+      : `<div class="card"><div class="qlabel">AI failures · 24h</div><div class="big ${h.aiFailures24h?'cr':'ok'}">${num(h.aiFailures24h)}</div></div>`}
     <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
     <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
   </div>
@@ -1127,11 +1142,17 @@ async function renderUserDetail(uid){
   $('u-back').onclick=closeUser;
   document.querySelectorAll('[data-ua]').forEach(b=>b.onclick=async()=>{
     const act=b.dataset.ua;
-    if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); load(); }catch(e){ toast(e.message,true); } return; }
-    // The test-session flag is set by the CLIENT (automation announces itself), so anyone
-    // who can sign in could mark themselves and vanish from every chart. This is the way
-    // back — without it a mis-flagged account is invisible with no remedy.
-    if(act==='untest'){ try{ await call('adminSetTestSession')({uid, testSession:false}); toast('Restored to real users'); load(); }catch(e){ toast(e.message,true); } return; }
+    // Both of these rewrite who counts as a real user on every chart, and both used to fire
+    // on one tap while every other action went through a modal. Two taps now: the first
+    // arms the button for 4s and says so; the second runs it.
+    if(act==='internal' || act==='untest'){
+      if(!armed(b)) return;
+      if(act==='internal'){ try{ await call('adminSetInternal')({uid, internal: !row.internal}); toast(row.internal?'Unmarked internal':'Marked internal'); load(); }catch(e){ toast(e.message,true); } return; }
+      // The test-session flag is set by the CLIENT (automation announces itself), so anyone
+      // who can sign in could mark themselves and vanish from every chart. This is the way
+      // back — without it a mis-flagged account is invisible with no remedy.
+      try{ await call('adminSetTestSession')({uid, testSession:false}); toast('Restored to real users'); load(); }catch(e){ toast(e.message,true); } return;
+    }
     openAction(act); const el=$('a-uid'); if(el) el.value=uid;
   });
 
