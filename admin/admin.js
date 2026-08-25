@@ -62,6 +62,23 @@ const $ = (id) => document.getElementById(id);
 
 // ---------- helpers ----------
 function toast(msg, isErr){ const t=$('toast'); t.textContent=msg; t.className='toast'+(isErr?' err':''); t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, 3200); }
+// The at-risk sentence. Says only what the data supports: in-app workouts and distinct
+// active days when the client reports them; otherwise the raw count with a caveat, because
+// pre-2.3.9 clients can't separate Apple Health imports from workouts logged here — and a
+// first-run import backfills 30 days, which once read as "31 workouts and 29 days of history".
+// Workouts the user logged IN QWOTA when the client reports the split, the raw total otherwise.
+// Every list row, segment, bucket and avatar ranks on this — never on the import-inflated total.
+function eng(u){ return u.engaged!=null ? num(u.engaged) : (u.loggedInApp!=null ? num(u.loggedInApp) : num(u.workouts)); }
+function engagementClaim(row){
+  const w=num(row.workouts);
+  if(row.loggedInApp==null){
+    return `${w} workout${w===1?'':'s'} (client can't yet say how many were Apple Health imports)`;
+  }
+  const inApp=num(row.loggedInApp), imp=num(row.importedWorkouts), days=num(row.activeDays);
+  let s=`${inApp} workout${inApp===1?'':'s'} logged in Qwota across ${days} active day${days===1?'':'s'}`;
+  if(imp>0) s+=`, plus ${imp} imported from Apple Health`;
+  return s;
+}
 function ago(iso){
   if(!iso) return '—';
   const t=new Date(iso).getTime(); if(!Number.isFinite(t)) return '—';
@@ -757,7 +774,7 @@ function flagClass(f){ return f==='entitled-no-purchase' ? 'risk' : f==='churned
 // the most engaged account on the platform.
 const real = (u)=>!u.nonUser;
 const SEGMENTS = [
-  { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !num(u.workouts)) },
+  { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !eng(u)) },
   { k:'atrisk',  label:'At risk',      test:u=>real(u) && !!u.atRisk },
   { k:'trial',   label:'On trial',    test:u=>real(u) && u.access==='trial' },
   { k:'paid',    label:'Paying',       test:u=>real(u) && (u.access==='paid'||u.access==='lifetime') },
@@ -786,9 +803,13 @@ function trialLeft(u){
 }
 function rowSignal(u){
   const t=trialLeft(u);
-  const w=num(u.workouts);
-  if(!w) return [t, u.type==='guest' ? 'no activity' : 'never trained'].filter(Boolean).join(' · ');
-  const bits=[w+' workout'+(w===1?'':'s')];
+  const w=eng(u);
+  if(!w){
+    const imp=num(u.importedWorkouts);
+    const none = u.type==='guest' ? 'no activity' : 'never trained';
+    return [t, imp>0 ? `${none} · ${imp} Health import${imp===1?'':'s'} only` : none].filter(Boolean).join(' · ');
+  }
+  const bits=[w+' workout'+(w===1?'':'s')+(u.loggedInApp!=null?' in Qwota':'')];
   if(t) bits.unshift(t);
   if(num(u.adherence)) bits.push(num(u.adherence)+'% adherence');
   else if(num(u.streak)) bits.push(num(u.streak)+'-day streak');
@@ -800,16 +821,16 @@ function rowSignal(u){
 function renderUserCharts(){
   if(!USERS || !USERS.length) return '';
   const R = USERS.filter(real);
-  const active   = R.filter(u=>u.type!=='guest' && num(u.workouts)>0).length;
+  const active   = R.filter(u=>u.type!=='guest' && eng(u)>0).length;
   const atRisk   = R.filter(u=>u.atRisk).length;
-  const silent   = R.filter(u=>u.type!=='guest' && !num(u.workouts)).length;
-  const dormant  = R.filter(u=>u.type==='guest' && !num(u.workouts)).length;
+  const silent   = R.filter(u=>u.type!=='guest' && !eng(u)).length;
+  const dormant  = R.filter(u=>u.type==='guest' && !eng(u)).length;
   const buckets = [
-    {k:'none',    v:R.filter(u=>num(u.workouts)===0).length},
-    {k:'1–4',     v:R.filter(u=>num(u.workouts)>=1 && num(u.workouts)<5).length},
-    {k:'5–19',    v:R.filter(u=>num(u.workouts)>=5 && num(u.workouts)<20).length},
-    {k:'20–49',   v:R.filter(u=>num(u.workouts)>=20 && num(u.workouts)<50).length},
-    {k:'50+',     v:R.filter(u=>num(u.workouts)>=50).length},
+    {k:'none',    v:R.filter(u=>eng(u)===0).length},
+    {k:'1–4',     v:R.filter(u=>eng(u)>=1 && eng(u)<5).length},
+    {k:'5–19',    v:R.filter(u=>eng(u)>=5 && eng(u)<20).length},
+    {k:'20–49',   v:R.filter(u=>eng(u)>=20 && eng(u)<50).length},
+    {k:'50+',     v:R.filter(u=>eng(u)>=50).length},
   ];
   return `<div class="card" style="margin-bottom:14px">
     <div class="qlabel">Population · ${R.length} real accounts${USERS.length-R.length?` <span class="d">(${USERS.length-R.length} filtered out)</span>`:''}</div>
@@ -838,7 +859,7 @@ function renderUserList(){
     ? pool.slice().sort((a,b)=>num(a.trialExpiresAt, Infinity)-num(b.trialExpiresAt, Infinity))
     : pool;
   const shown = rows.slice(0, USER_VIEW.limit);
-  const dormant = (!q && seg==='look') ? USERS.filter(u=>real(u) && u.type==='guest' && !num(u.workouts)) : [];
+  const dormant = (!q && seg==='look') ? USERS.filter(u=>real(u) && u.type==='guest' && !eng(u)) : [];
   const cnt = (k)=>USERS.filter(segTest(k)).length;
 
   return `<div class="utoolbar">
@@ -852,7 +873,7 @@ function renderUserList(){
 
   <div class="ucards">
     ${shown.length?shown.map(u=>`<button class="urow ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
-      <span class="uav ${u.atRisk?'risk':(num(u.workouts)>0?'hot':'')}">${esc(initials(u))}</span>
+      <span class="uav ${u.atRisk?'risk':(eng(u)>0?'hot':'')}">${esc(initials(u))}</span>
       <span class="umid"><span class="un">${esc(u.name||(u.type==='guest'?'Anonymous':'No name'))}</span>
         <span class="us">${esc(u.email||u.uid.slice(0,14)+'…')}</span>
         <span class="uw">${esc(rowSignal(u))}</span></span>
@@ -867,7 +888,7 @@ function renderUserList(){
       <td><div class="uname">${esc(u.name||(u.type==='guest'?'Anonymous':'—'))}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
       <td>${esc(u.type)}${u.internal?' <span class="chip-s internal">internal</span>':''}</td>
       <td><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span></td>
-      <td class="text-center ${num(u.workouts)>0?'':'d'}">${num(u.workouts)}</td>
+      <td class="text-center ${eng(u)>0?'':'d'}">${eng(u)}</td>
       <td class="text-center ${num(u.adherence)?'':'d'}">${num(u.adherence)?num(u.adherence)+'%':'—'}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
       <td>${u.lastActive?ago(u.lastActive):'—'}</td>
@@ -1040,7 +1061,7 @@ async function renderUserDetail(uid){
     <button class="back-link" id="u-back">← All users</button>
     <div class="card">
       <div class="idtop">
-        <div class="uav lg ${row.atRisk?'risk':(num(row.workouts)>0?'hot':'')}">${esc(initials(row))}</div>
+        <div class="uav lg ${row.atRisk?'risk':(eng(row)>0?'hot':'')}">${esc(initials(row))}</div>
         <div style="flex:1;min-width:0">
           <div class="big sm" style="margin:0">${esc(name)}</div>
           <div class="qsub mono" style="overflow-wrap:anywhere">${esc(a?.email||uid)}</div>
@@ -1052,8 +1073,11 @@ async function renderUserDetail(uid){
         </div>
       </div>
 
-      ${row.atRisk?`<div class="warnline"><b>${num(row.workouts)} workouts and ${num(row.daysOnPlan)} days of history on an anonymous account.</b>
+      ${row.atRisk?`<div class="warnline"><b>${engagementClaim(row)} on an anonymous account.</b>
         A reinstall loses all of it — and this is the most convertible kind of account you have.</div>`:''}
+      ${!row.atRisk && row.type==='guest' && row.loggedInApp===0 && num(row.importedWorkouts)>0
+        ? `<div class="warnline" style="border-color:rgba(255,255,255,.12);color:var(--muted)"><b>${num(row.importedWorkouts)} workouts, all imported from Apple Health — none logged in Qwota.</b>
+        Joined ${a?.createdAt?ago(a.createdAt):'—'}; Health still has these, so a reinstall loses nothing. Not an at-risk account.</div>`:''}
 
       <div class="qa" style="margin-top:14px">
         <button class="btn" data-ua="extendTrial"><span class="i">＋</span> Comp / extend trial</button>
@@ -1079,9 +1103,11 @@ async function renderUserDetail(uid){
 
     <div class="section-t">Engagement</div>
     <div class="pulsegrid">
-      <div class="pcard"><div class="pl">Workouts</div><div class="pn">${num(row.workouts)}</div><div class="pd">${num(row.workoutsThisWeek)} this week</div></div>
+      <div class="pcard"><div class="pl">Workouts</div><div class="pn">${eng(row)}</div><div class="pd">${row.loggedInApp!=null
+          ? `in Qwota · ${num(row.importedWorkouts)} from Health`
+          : `${num(row.workoutsThisWeek)} this week · incl. Health imports`}</div></div>
       <div class="pcard"><div class="pl">Adherence</div><div class="pn">${num(row.adherence)?num(row.adherence)+'%':'—'}</div><div class="pd">${num(row.streak)}-day streak</div></div>
-      <div class="pcard"><div class="pl">Avg session</div><div class="pn">${num(row.avgSessionMinutes)||'—'}</div><div class="pd">minutes · ${num(row.daysOnPlan)}d on plan</div></div>
+      <div class="pcard"><div class="pl">Avg session</div><div class="pn">${num(row.avgSessionMinutes)||'—'}</div><div class="pd">minutes · ${row.activeDays!=null?num(row.activeDays)+' active days':num(row.daysOnPlan)+'d since first entry'}</div></div>
     </div>
 
     ${neverSynced(r.docs) ? `<div class="card" style="margin-top:16px;border-color:rgba(74,158,255,.35)">
