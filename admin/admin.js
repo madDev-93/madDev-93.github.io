@@ -915,7 +915,7 @@ function renderUserList(){
       <td class="text-center ${eng(u)>0?'':'d'}">${eng(u)}</td>
       <td class="text-center ${num(u.adherence)?'':'d'}">${num(u.adherence)?num(u.adherence)+'%':'—'}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
-      <td>${u.lastActive?ago(u.lastActive):'—'}</td>
+      <td>${u.lastActive?ago(u.lastActive):(u.observable?'—':'<span class="d" title="never sent a heartbeat — unknown, not zero">unobserved</span>')}</td>
       <td class="mono">${u.appVersion?esc(u.appVersion):'—'}</td>
       <td>${u.flags.map(f=>`<span class="chip-s ${flagClass(f)}">${esc(f)}</span>`).join('')||'—'}</td>
     </tr>`).join('')}
@@ -1113,7 +1113,15 @@ async function renderUserDetail(uid){
 
       <div class="detail-grid" style="margin-top:16px">
         <div><div class="l">Joined</div><div class="v">${a?.createdAt?ago(a.createdAt):'—'}</div></div>
-        <div><div class="l">Last active</div><div class="v">${row.lastActive?ago(row.lastActive):'—'}</div></div>
+        <!-- "Last active" is heartbeat-derived, and the heartbeat only started reporting
+             reliably in the build after ec502bc — before that a cold launch that never
+             backgrounded reported nothing. So a dash here means "we never heard", NOT
+             "they never came back", and the two must not look the same. -->
+        <div><div class="l">Last active</div><div class="v">${row.lastActive?ago(row.lastActive):(row.observable?'—':'<span class="d">not observable</span>')}</div></div>
+        <!-- Firebase Auth stamps this whenever the app runs. No client code, every build,
+             every account — the only signal that can falsify "they never returned". -->
+        <div><div class="l">App last ran</div><div class="v">${row.lastRefresh?ago(row.lastRefresh):'<span class="d">—</span>'}</div></div>
+        <div><div class="l">Launches</div><div class="v">${row.sessionLaunches!=null?num(row.sessionLaunches):'<span class="d">not reported</span>'}</div></div>
         <div><div class="l">Last synced</div><div class="v">${sup.lastSyncedAt?ago(sup.lastSyncedAt):'—'}</div></div>
         <div><div class="l">Push</div><div class="v ${pushOff?'wn':''}">${pushOff?'No token':'Reachable'}</div></div>
         <div><div class="l">App version</div><div class="v">${sup.appVersion?esc(sup.appVersion)+(sup.buildNumber?' <span class="d">('+esc(sup.buildNumber)+')</span>':''):'<span class="d">not reported</span>'}</div></div>
