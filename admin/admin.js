@@ -284,7 +284,10 @@ function renderCockpit(){
     ${pcard('Activation', activationPct+'%', 'activationPct', activationPct<25?'var(--crit)':'var(--teal)', 'activation')}
     ${pcard('MRR', money(mo.mrrEstimate), 'mrr', 'var(--teal)', 'mrr', v=>'$'+v.toFixed(2))}
   </div>
-  <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users${u.internalExcluded?` · ${num(u.internalExcluded)} internal hidden`:''}${num(u.nonUserHidden)?` · ${num(u.nonUserHidden)} not people`:''} · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
+  <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
+  <!-- What was excluded stays reported, but as provenance rather than a headline figure —
+       it sat in the same line as the live counts and read like part of the audience. -->
+  <div class="qsub d" style="margin-top:4px;opacity:.62;font-size:11px">Excluded from every number above: ${num(u.nonUserHidden)} not people${u.internalExcluded?`, ${num(u.internalExcluded)} internal`:''}</div>
 
   <div class="section-t">Activation funnel</div>
   ${d.coverage?`<div class="card" style="margin-bottom:10px;border-color:rgba(74,158,255,.3)">
@@ -881,8 +884,14 @@ function renderUserList(){
     <input id="u-search" placeholder="Search name / email / UID" value="${esc(USER_VIEW.q)}">
   </div>
   <div class="fbar">
-    ${SEGMENTS.map(sg=>`<button class="fpill${seg===sg.k?' on':''}" data-seg="${esc(sg.k)}">${esc(sg.label)} <span class="pc">${cnt(sg.k)}</span></button>`).join('')}
+    ${SEGMENTS.filter(sg=>sg.k!=='nonuser').map(sg=>`<button class="fpill${seg===sg.k?' on':''}" data-seg="${esc(sg.k)}">${esc(sg.label)} <span class="pc">${cnt(sg.k)}</span></button>`).join('')}
     <button class="fpill${INCLUDE_INTERNAL?' on':''}" id="u-internal">Internal${USERS_HIDDEN&&!INCLUDE_INTERNAL?' '+USERS_HIDDEN:''}</button>
+  </div>
+  <!-- Not-people is still reachable, just not sitting in the segment row competing with
+       the segments that describe actual users. It is provenance, not a cohort. -->
+  <div style="margin:0 2px 10px">
+    <button class="fpill${seg==='nonuser'?' on':''}" data-seg="nonuser"
+            style="${seg==='nonuser'?'':'opacity:.55;font-size:11px'}">Not people <span class="pc">${cnt('nonuser')}</span></button>
   </div>
   ${q?`<div class="qsub d" style="margin:0 2px 10px">Searching all ${USERS.length} accounts · ${rows.length} match${rows.length===1?'':'es'}</div>`:renderUserCharts()}
 
