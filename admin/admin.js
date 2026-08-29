@@ -678,10 +678,53 @@ async function loadHealthExtras(){
     const b=$('auditbox'); if(b) b.innerHTML=renderAudit(AUDIT); }
 }
 
+// Every notification Qwota can send, and how many people each one can actually reach.
+//
+// This exists because the daily summary spent months reaching 2 accounts out of 21 — its
+// query asked for isPro == true and reverse-trial users never have that field written —
+// and nothing on this console would have shown it. `Can reach` is the number that would
+// have. A channel where "opted in" is far above "can reach" is the shape of that bug.
+function renderNotifications(){
+  const n=DATA.notifications;
+  if(!n) return '';
+  const cell=(v,dash='—')=>v==null?`<span class="d">${dash}</span>`:num(v);
+  const rows=(n.channels||[]).map(c=>{
+    const gap = c.kind==='server' && c.optedIn!=null && c.eligible!=null && c.optedIn>c.eligible;
+    return `<tr>
+      <td><b>${esc(c.name)}</b><div class="qsub d">${esc(c.schedule)}</div></td>
+      <td><span class="chip-s ${c.kind==='server'?'':'internal'}">${esc(c.kind)}</span></td>
+      <td class="qsub">${esc(c.audience)}</td>
+      <td style="text-align:right">${cell(c.optedIn,'n/a')}</td>
+      <td style="text-align:right" class="${gap?'cr':''}">${cell(c.eligible,'on device')}</td>
+      <td style="text-align:right">${cell(c.sends30d,'not logged')}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="section-t">Notifications</div>
+  <div class="card" style="overflow-x:auto">
+    <table class="ntable" style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>
+        <th style="text-align:left">Channel</th><th style="text-align:left">Where</th>
+        <th style="text-align:left">Who it's for</th>
+        <th style="text-align:right">Opted in</th><th style="text-align:right">Can reach</th>
+        <th style="text-align:right">Sent 30d</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="qsub d" style="margin-top:10px">
+      ${num(n.reachable)} of ${num(n.prefsDocs)} accounts hold a push token — that is the ceiling on
+      every server channel. Rows marked <i>on device</i> are scheduled by the app itself, so the
+      server cannot see their reach or delivery. A red <i>Can reach</i> means people opted in and
+      still cannot receive it.
+    </div>
+  </div>`;
+}
+
 function renderHealth(){
   const h=DATA.health;
   const pp=DATA.pipeline||{revenueCat:{total:0,last24h:0},appStore:{total:0,last24h:0},pendingQueue:0};
   return `
+  ${renderNotifications()}
   <div class="section-t">Purchase pipeline</div>
   <div class="grid3">
     ${pipeCell('RevenueCat webhook', pp.revenueCat, pp.revenueCat.total===0?'Not yet receiving — configure in RC dashboard.':'')}
