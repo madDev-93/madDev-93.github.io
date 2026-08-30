@@ -679,49 +679,99 @@ async function loadHealthExtras(){
     const b=$('auditbox'); if(b) b.innerHTML=renderAudit(AUDIT); }
 }
 
-// Every notification Qwota can send, and how many people each one can actually reach.
+// Every notification Qwota can send, written for someone deciding whether it is working.
 //
-// This exists because the daily summary spent months reaching 2 accounts out of 21 — its
-// query asked for isPro == true and reverse-trial users never have that field written —
-// and nothing on this console would have shown it. `Can reach` is the number that would
-// have. A channel where "opted in" is far above "can reach" is the shape of that bug.
+// The daily summary spent months reaching 2 accounts out of 21 — its query asked for
+// isPro == true and reverse-trial users never have that field written — and nothing on this
+// console would have shown it. The number that would have is "Can receive". So the page
+// leads with the verdict rather than making the operator infer it from three bare figures.
 function renderNotifications(){
   const n=DATA&&DATA.notifications;
   // Its own tab now, so a missing payload has to say something rather than render blank.
   // This is the shape an older deployed backend produces, which is exactly when an
   // operator most needs to be told why the page is empty.
-  if(!n) return `<div class="section-t">Notifications</div>
+  if(!n) return `<div class="section-t">Push notifications</div>
     <div class="card"><div class="qsub">No notification data in this console response —
     the backend is likely an older deploy. Redeploy <code>adminConsole</code>.</div></div>`;
-  const cell=(v,dash='—')=>v==null?`<span class="d">${dash}</span>`:num(v);
-  const rows=(n.channels||[]).map(c=>{
-    const gap = c.kind==='server' && c.optedIn!=null && c.eligible!=null && c.optedIn>c.eligible;
-    return `<tr>
-      <td><b>${esc(c.name)}</b><div class="qsub d">${esc(c.schedule)}</div></td>
-      <td><span class="chip-s ${c.kind==='server'?'':'internal'}">${esc(c.kind)}</span></td>
-      <td class="qsub">${esc(c.audience)}</td>
-      <td style="text-align:right">${cell(c.optedIn,'n/a')}</td>
-      <td style="text-align:right" class="${gap?'cr':''}">${cell(c.eligible,'on device')}</td>
-      <td style="text-align:right">${cell(c.sends30d,'not logged')}</td>
-    </tr>`;
-  }).join('');
+
+  const server=(n.channels||[]).filter(c=>c.kind==='server');
+  const local=(n.channels||[]).filter(c=>c.kind!=='server');
+
+  // A channel is "stuck" when people asked for it and cannot get it. That is the only
+  // state worth interrupting someone over, so it drives both the headline and the row chip.
+  const stuck=server.filter(c=>c.optedIn!=null&&c.eligible!=null&&c.optedIn>c.eligible);
+  const dead=server.filter(c=>c.eligible===0);
+  const headline = stuck.length
+    ? `${stuck.length} channel${stuck.length===1?'':'s'} ${stuck.length===1?'has':'have'} people who turned it on but cannot receive it`
+    : 'Every channel can reach the people who turned it on';
+
+  const verdict=(c)=>{
+    if(c.eligible==null) return `<span class="chip-s internal">can't measure</span>`;
+    if(c.eligible===0)   return `<span class="chip-s risk">reaches nobody</span>`;
+    if(c.optedIn!=null&&c.optedIn>c.eligible)
+      return `<span class="chip-s risk">${num(c.optedIn-c.eligible)} can't receive</span>`;
+    return `<span class="chip-s">working</span>`;
+  };
+
+  const row=(c)=>`<tr>
+    <td><b>${esc(c.name)}</b><div class="qsub d">${esc(c.schedule)}</div></td>
+    <td class="qsub">${esc(c.audience)}</td>
+    <td style="text-align:right">${c.optedIn==null?'<span class="d">—</span>':num(c.optedIn)}</td>
+    <td style="text-align:right"><b>${c.eligible==null?'<span class="d">—</span>':num(c.eligible)}</b></td>
+    <td style="text-align:right">${c.sends30d==null?'<span class="d">—</span>':num(c.sends30d)}</td>
+    <td style="text-align:right">${verdict(c)}</td>
+  </tr>`;
+
   return `
-  <div class="section-t">Notifications</div>
+  <div class="section-t">Push notifications</div>
+
+  <div class="card" style="border-color:${stuck.length?'rgba(255,90,80,.35)':'rgba(45,212,167,.3)'}">
+    <div class="qlabel"><span class="tick" style="background:${stuck.length?'var(--crit)':'var(--teal)'}"></span>Status</div>
+    <div class="big sm ${stuck.length?'cr':'ok'}" style="font-size:19px;line-height:1.35">${esc(headline)}</div>
+    <div class="qsub" style="margin-top:8px">
+      <b>Opted in</b> is how many people asked for it. <b>Can receive</b> is how many will
+      actually get it once every gate is applied — entitlement, a working push token, the
+      lot. When the second is lower than the first, someone said yes and Qwota is not
+      delivering.${dead.length?' A channel reaching <b>nobody</b> is either switched off or gated on something no one satisfies.':''}
+    </div>
+  </div>
+
+  <div class="section-t">Sent from the server — these are the ones you control</div>
   <div class="card" style="overflow-x:auto">
     <table class="ntable" style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr>
-        <th style="text-align:left">Channel</th><th style="text-align:left">Where</th>
+        <th style="text-align:left">Notification</th>
         <th style="text-align:left">Who it's for</th>
-        <th style="text-align:right">Opted in</th><th style="text-align:right">Can reach</th>
-        <th style="text-align:right">Sent 30d</th>
+        <th style="text-align:right">Opted in</th>
+        <th style="text-align:right">Can receive</th>
+        <th style="text-align:right">Tried · 30d</th>
+        <th style="text-align:right">Status</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody>${server.map(row).join('')}</tbody>
     </table>
     <div class="qsub d" style="margin-top:10px">
-      ${num(n.reachable)} of ${num(n.prefsDocs)} accounts hold a push token — that is the ceiling on
-      every server channel. Rows marked <i>on device</i> are scheduled by the app itself, so the
-      server cannot see their reach or delivery. A red <i>Can reach</i> means people opted in and
-      still cannot receive it.
+      <b>${num(n.reachable)} of ${num(n.prefsDocs)} accounts hold a push token</b> — no server
+      notification can reach more people than that, whatever the settings say.
+      <b>Tried</b> counts attempts, not arrivals: the row is written before the push is
+      handed to Apple, so a message that bounced off a dead token still counts here.
+    </div>
+  </div>
+
+  <div class="section-t">Scheduled on the phone — the server can't see these</div>
+  <div class="card" style="overflow-x:auto">
+    <table class="ntable" style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr>
+        <th style="text-align:left">Notification</th>
+        <th style="text-align:left">Who it's for</th>
+      </tr></thead>
+      <tbody>${local.map(c=>`<tr>
+        <td><b>${esc(c.name)}</b><div class="qsub d">${esc(c.schedule)}</div></td>
+        <td class="qsub">${esc(c.audience)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div class="qsub d" style="margin-top:10px">
+      The app schedules these itself, so there is no reach or delivery figure to report —
+      not zero, unknown. They are listed so this page answers "what does Qwota send?" in full.
     </div>
   </div>`;
 }
