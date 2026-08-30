@@ -153,6 +153,7 @@ function render(){
   const banner = (DATA && STALE) ? '<div class="card" style="border-color:rgba(245,166,35,.45);margin-bottom:16px"><div class="qsub"><b style="color:var(--warn)">Stale snapshot</b> — the last refresh failed, these numbers are from the previous successful load. Hit ↻ to retry.</div></div>' : '';
   if(TAB==='cockpit'){ m.innerHTML = banner + renderCockpit(); wire(); loadAppStore(); }
   else if(TAB==='money'){ m.innerHTML = banner + renderMoney(); wire(); }
+  else if(TAB==='push'){ m.innerHTML = banner + renderNotifications(); wire(); }
   else if(TAB==='health'){ m.innerHTML = banner + renderHealth(); wire(); loadHealthExtras(); }
   else if(TAB==='users'){ renderUsersTab(); }
 }
@@ -685,8 +686,13 @@ async function loadHealthExtras(){
 // and nothing on this console would have shown it. `Can reach` is the number that would
 // have. A channel where "opted in" is far above "can reach" is the shape of that bug.
 function renderNotifications(){
-  const n=DATA.notifications;
-  if(!n) return '';
+  const n=DATA&&DATA.notifications;
+  // Its own tab now, so a missing payload has to say something rather than render blank.
+  // This is the shape an older deployed backend produces, which is exactly when an
+  // operator most needs to be told why the page is empty.
+  if(!n) return `<div class="section-t">Notifications</div>
+    <div class="card"><div class="qsub">No notification data in this console response —
+    the backend is likely an older deploy. Redeploy <code>adminConsole</code>.</div></div>`;
   const cell=(v,dash='—')=>v==null?`<span class="d">${dash}</span>`:num(v);
   const rows=(n.channels||[]).map(c=>{
     const gap = c.kind==='server' && c.optedIn!=null && c.eligible!=null && c.optedIn>c.eligible;
@@ -724,7 +730,6 @@ function renderHealth(){
   const h=DATA.health;
   const pp=DATA.pipeline||{revenueCat:{total:0,last24h:0},appStore:{total:0,last24h:0},pendingQueue:0};
   return `
-  ${renderNotifications()}
   <div class="section-t">Purchase pipeline</div>
   <div class="grid3">
     ${pipeCell('RevenueCat webhook', pp.revenueCat, pp.revenueCat.total===0?'Not yet receiving — configure in RC dashboard.':'')}
