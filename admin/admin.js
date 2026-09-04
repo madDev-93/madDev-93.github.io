@@ -346,6 +346,7 @@ function renderCockpit(){
   </div>
 
   ${renderAcquisition()}
+  ${renderWelcome()}
   ${renderJourney()}
   ${renderRetention()}
   ${renderReputation()}
@@ -444,6 +445,67 @@ function renderReputation(){
   </div>`;
 }
 
+function renderWelcome(){
+  const W=DATA.welcome; if(!W||!W.window90) return '';
+  // The screens BEFORE an account exists. Every other panel starts at the uid, and the uid
+  // is created by the Apple/Guest buttons on the welcome screen, so the journey's "Opened
+  // the app" is really "got past welcome". This is keyed by a per-install id instead.
+  //
+  // 90 days by default, not 7: at the current install rate a week is a handful of
+  // installs and a percentage of five people is noise dressed as a finding.
+  const a=W.window90, w30=W.window30||{}, w7=W.window7||{};
+  const installs=APPSTORE?num(APPSTORE.installs7d):null;
+  if(!num(a.opened) && !num(a.testFlight)){
+    return `<div class="section-t">Before the account</div>
+    <div class="card"><div class="qsub">No welcome-screen data yet. Only installs running ${W.minBuild?`build ${num(W.minBuild)} or later`:'a build that includes this update'} report it; earlier installs cannot appear here.</div></div>`;
+  }
+  const stages=[
+    { k:'Opened the welcome screen', v:num(a.opened), why:null },
+    { k:'Tapped Get started', v:num(a.getStarted),
+      why:'They watched Bill\'s demo and left without tapping the one button on the screen. That is the first impression failing — the demo, the copy, or the wait.' },
+    { k:'Chose Apple or Guest', v:num(a.chose),
+      why:'They tapped Get started, saw the name field and the two sign-in buttons, and left. The name is optional; the choice is what stopped them.' },
+    { k:'Signed in', v:num(a.identity),
+      why:'They tapped a sign-in button and no account followed. This is a failure, not a choice — the class of bug that got 2.3.3 rejected (a sign-in hanging on a cold App Attest).' },
+  ];
+  const top=stages[0].v||1;
+  let worstIdx=-1, worstDrop=-1;
+  stages.forEach((st,i)=>{ if(!i) return; const prev=stages[i-1].v;
+    st.drop=prev>0?Math.round(((prev-st.v)/prev)*100):0; st.from=prev;
+    if(st.drop>worstDrop){worstDrop=st.drop;worstIdx=i;} });
+  // A "biggest loss" on fewer than ten people is a coin toss, not a finding.
+  const MIN_N=10; if(stages[0].v<MIN_N) worstIdx=-1;
+
+  const gap = installs!=null ? installs-num(w7.opened) : null;
+  return `<div class="section-t">Before the account</div>
+  <div class="card">
+    <div class="funnel">
+      ${stages.map((st,i)=>`<div class="fstage"><span class="nm">${esc(st.k)}</span>
+        <div class="ftrack"><div class="ffill${i===worstIdx?' worst':''}" style="width:${Math.max(Math.round((st.v/top)*100),2)}%"></div></div>
+        <span class="v"><b>${st.v}</b>${i?` · ${top>0?Math.round((st.v/top)*100):0}%`:''}</span>
+        ${i&&st.drop>0?`<span class="drop${i===worstIdx?' worst':''}">↓ ${st.drop}% lost from ${st.from}${i===worstIdx?' — the biggest single loss':''}</span>`:''}
+      </div>`).join('')}
+    </div>
+    ${worstIdx>0?`<div class="qsub" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+      <b style="color:var(--warn)">${esc(stages[worstIdx].k)}</b> — ${esc(stages[worstIdx].why||'')}</div>`
+      :(stages[0].v<MIN_N?`<div class="qsub" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">Fewer than ${MIN_N} installs so far — no single stage is called out until there are enough people for a percentage to mean anything.</div>`:'')}
+
+    <div class="grid2" style="margin-top:16px">
+      <div><div class="l">Apple vs Guest</div><div class="big sm">${num(a.apple)} <span class="qsub">/</span> ${num(a.guest)}</div>
+        <div class="qsub">${num(a.newAccounts)} of the ${num(a.identity)} who signed in made a NEW account here; the rest signed back into one that already existed (a reinstall, or a second device). ${num(a.named)} typed a name — optional, so not a stage.</div></div>
+      <div><div class="l">Opened welcome · last 7 days</div><div class="big sm">${num(w7.opened)}</div>
+        <div class="qsub">${installs!=null?`Apple recorded ${installs} first-time install${installs===1?'':'s'} in the same week. ${gap>0?`<b style="color:var(--warn)">${gap} install${gap===1?'':'s'} never reached the welcome screen</b> — downloaded and never launched, on a build too old to report, or the first report was lost.`:`Every install launched at least once.`}`:'App Store figures still loading.'}${num(a.choseNoIdentity)?` <b style="color:var(--warn)">${num(a.choseNoIdentity)} tapped a sign-in button and got no account</b> (90 days).`:''}</div></div>
+    </div>
+
+    <div class="note">
+      Keyed by a random id the app makes on first launch — one per install, not per person; a reinstall is a new install here just as it is in Apple's figures.
+      Simulators, Xcode debug builds, test sessions and staff are excluded. ${num(a.testFlight)?`${num(a.testFlight)} TestFlight install${num(a.testFlight)===1?'':'s'} (which includes App Review) are counted separately and left out above.`:''}
+      Reported by ${W.minBuild?`build ${num(W.minBuild)} and later`:'builds that include this update'} only — anyone on an older build is invisible here by construction, so this understates until the update spreads.
+      Last 30 days: ${num(w30.opened)} opened, ${num(w30.getStarted)} tapped Get started, ${num(w30.chose)} chose, ${num(w30.identity)} signed in. Last 7: ${num(w7.opened)} → ${num(w7.getStarted)} → ${num(w7.chose)} → ${num(w7.identity)}.${W.truncated?' <b style="color:var(--warn)">Capped at 5,000 installs — figures are a sample.</b>':''}
+    </div>
+  </div>`;
+}
+
 function renderJourney(){
   const J=DATA.journey; if(!J||!J.allTime) return '';
   const a=J.allTime, w30=J.window30||{}, w7=J.window7||{};
@@ -487,7 +549,7 @@ function renderJourney(){
 
     <div class="note">
       Only staff, simulators and self-declared test sessions are excluded here — unlike every other panel, an account that did nothing is kept, because it IS the question.
-      "Opened the app" = an auth account exists, which the app creates on launch.
+      "Opened the app" = an auth account exists, created when they chose Apple or Guest on the welcome screen — NOT on launch. Everything before that button is in "Before the account" above.
       "Finished setup" = a userProfiles document exists, written when onboarding completes.
       Last 30 days: ${num(w30.opened)} opened, ${num(w30.onboarded)} finished setup, ${num(w30.activated)} trained.
     </div>
