@@ -17,7 +17,11 @@ const LIMIT = 500;
 const POS_BY_ESPN = { 1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "DST" };
 const TEAM_BY_ESPN = { 0: "FA", 1: "ATL", 2: "BUF", 3: "CHI", 4: "CIN", 5: "CLE", 6: "DAL", 7: "DEN", 8: "DET", 9: "GB", 10: "TEN", 11: "IND", 12: "KC", 13: "LV", 14: "LAR", 15: "MIA", 16: "MIN", 17: "NE", 18: "NO", 19: "NYG", 20: "NYJ", 21: "PHI", 22: "ARI", 23: "PIT", 24: "LAC", 25: "SF", 26: "SEA", 27: "TB", 28: "WAS", 29: "CAR", 30: "JAX", 33: "BAL", 34: "HOU" };
 const normTeam = (t) => ({ LA: "LAR", JAC: "JAX", WSH: "WAS", OAK: "LV", SD: "LAC", STL: "LAR" }[t] || t || "FA");
-const key = (name, pos) => `${name.toLowerCase().replace(/[^a-z]/g, "")}|${pos}`;
+// Sources disagree on suffixes ("Kenneth Walker" vs "Kenneth Walker III", "Patrick Mahomes II") and
+// accents ("Piñeiro"); a strict key silently dropped their ADP/ECR. Team defenses are named three
+// different ways ("Texans D/ST" / "Houston Texans" / "Houston Defense"), so they join on team instead.
+const key = (name, pos, team) => pos === "DST" ? `DST|${normTeam(team)}`
+  : `${name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b/g, "").replace(/[^a-z]/g, "")}|${pos}`;
 
 async function get(url, opts = {}, as = "json") {
   const r = await fetch(url, { ...opts, headers: { "user-agent": "Mozilla/5.0 (draft-board build)", ...(opts.headers || {}) } });
@@ -55,7 +59,7 @@ for (const row of espn.players) {
     history: {},
   };
   if (last && last.appliedTotal > 0) rec.history[SEASON - 1] = { pts: +(+last.appliedTotal).toFixed(1), ppg: +(+last.appliedAverage).toFixed(2), games: null };
-  players.set(key(rec.name, pos), rec);
+  players.set(key(rec.name, pos, rec.team), rec);
 }
 console.error(`  ${players.size} players`);
 
@@ -68,8 +72,8 @@ try {
   const ecr = JSON.parse(m[1]);
   let hit = 0;
   for (const e of ecr.players || []) {
-    const pos = e.player_position_id === "DST" ? "DST" : e.player_position_id;
-    const rec = players.get(key(e.player_name, pos)); if (!rec) continue;
+    const pos = e.player_position_id;
+    const rec = players.get(key(e.player_name, pos, e.player_team_id)); if (!rec) continue;
     hit++;
     rec.ecr = e.rank_ecr; rec.ecrAvg = +e.rank_ave; rec.ecrStd = +e.rank_std; rec.ecrMin = e.rank_min; rec.ecrMax = e.rank_max;
     rec.posRank = e.pos_rank; rec.tier = e.tier; rec.bye = e.player_bye_week ? +e.player_bye_week : null;
@@ -83,8 +87,8 @@ try {
   const ffc = await get(`https://fantasyfootballcalculator.com/api/v1/adp/ppr?teams=${TEAMS}&year=${SEASON}`);
   let hit = 0;
   for (const f of ffc.players || []) {
-    const pos = f.position === "DEF" ? "DST" : f.position;
-    const rec = players.get(key(f.name, pos)); if (!rec) continue;
+    const pos = f.position === "DEF" ? "DST" : f.position === "PK" ? "K" : f.position;
+    const rec = players.get(key(f.name, pos, f.team)); if (!rec) continue;
     hit++; rec.adp = +f.adp; rec.adpStd = +f.stdev; rec.adpHigh = +f.high; rec.adpLow = +f.low; rec.bye ??= f.bye ? +f.bye : null;
   }
   console.error(`  matched ${hit} of ${ffc.players?.length} (${ffc.meta?.total_drafts} drafts ${ffc.meta?.start_date}→${ffc.meta?.end_date})`);
@@ -116,12 +120,21 @@ try {
 console.error("Sleeper…");
 try {
   const sl = await get("https://api.sleeper.app/v1/players/nfl");
-  const byEspn = new Map(); for (const v of Object.values(sl)) if (v.espn_id) byEspn.set(String(v.espn_id), v);
+  // Sleeper carries espn_id for only half its rows — and almost none of the stars — so fall back to
+  // name+position among rostered players (unique for every top-200 player when checked 2026-09-04).
+  const byEspn = new Map(), byName = new Map();
+  for (const v of Object.values(sl)) {
+    if (v.espn_id) byEspn.set(String(v.espn_id), v);
+    if (v.full_name && v.position && v.team) { const k = key(v.full_name, v.position); byName.set(k, byName.has(k) ? null : v); }
+  }
   let hit = 0;
   for (const rec of players.values()) {
-    const s = byEspn.get(rec.id); if (!s) continue; hit++;
+    const s = byEspn.get(rec.id) ?? (rec.pos === "DST" ? null : byName.get(key(rec.name, rec.pos))); if (!s) continue; hit++;
     rec.age = s.age ?? null; rec.exp ??= s.years_exp ?? null;
-    if (s.injury_status) { rec.injury ??= s.injury_status; rec.injuryNote = [s.injury_body_part, s.injury_notes].filter(Boolean).join(" — ") || null; }
+    if (s.injury_status) {
+      rec.injury ??= s.injury_status; rec.injuryStatusSleeper = s.injury_status;
+      rec.injuryNote = [s.injury_body_part, s.injury_notes].filter(Boolean).join(" — ") || null;
+    }
   }
   console.error(`  matched ${hit}`);
 } catch (e) { console.error("  Sleeper failed:", e.message); }
@@ -147,17 +160,34 @@ for (const p of list) {
   p.gamesLast = p.history[SEASON - 1]?.games ?? null;
   // Risk 0-100. Each term is a reason the ranking could be wrong, not a judgement of talent.
   let risk = 0; const why = [];
-  const injuryRisk = (st) => st ? (st === "INJURY_RESERVE" || st === "OUT" ? 45 : 25) : 0;
-  if (p.injury) { risk += injuryRisk(p.injury); why.push(p.injury.toLowerCase().replace("_", " ")); }
+  const inj = injuryRisk(p.injury, p.injuryNote, p.injuryStatusSleeper);
+  if (inj) { risk += inj; why.push(p.injury.toLowerCase().replace("_", " ")); }
   const ageCap = { RB: 27, WR: 30, TE: 31, QB: 36, K: 40, DST: 99 }[p.pos];
   if (p.age && p.age >= ageCap) { risk += Math.min(30, (p.age - ageCap + 1) * 10); why.push(`age ${p.age}`); }
+  // A veteran with no 2025 line at all didn't play — that is the worst durability case, not "unknown".
+  const missedSeason = p.gamesLast == null && !p.history[SEASON - 1] && p.exp != null && p.exp >= 1;
   if (p.exp === 0 || (p.seasons === 0 && p.exp != null && p.exp <= 1)) { risk += 20; why.push("rookie"); }
-  else if (p.gamesLast != null && p.gamesLast < 12) { risk += 15; why.push(`${p.gamesLast} games in ${SEASON - 1}`); }
+  else if ((p.gamesLast != null && p.gamesLast < 12) || missedSeason) { risk += 15; why.push(`${p.gamesLast ?? 0} games in ${SEASON - 1}`); }
   if (p.ecrStd != null && p.ecr != null) { const spread = p.ecrStd / Math.max(4, p.ecr * 0.25); if (spread > 1) { risk += Math.min(20, Math.round(spread * 8)); why.push("experts split"); } }
   p.risk = Math.min(100, Math.round(risk)); p.riskWhy = why;
   // Everything except the injury term, so the page can recompute risk when it pulls a fresh
   // injury status without re-running this script.
-  p.riskBase = Math.min(100, Math.round(risk - injuryRisk(p.injury)));
+  p.riskBase = Math.min(100, Math.round(risk - inj));
+}
+/* Injury risk graded by what the tag says about games missed — not the tag alone. In week 0 nearly
+   every "questionable" is a camp knock the experts have already shrugged off (Chase: ECR 1 with the
+   tightest spread on the board); a flat 25 there hid the consensus #1 behind players projected 10
+   points lower. The severe cases are the ones the note names: PUP/IR, surgery, ACL, Achilles.
+   Mirrored in draft.js (refreshRankings) — keep the two in step. */
+function injuryRisk(st, note, sleeperStatus) {
+  if (!st) return 0;
+  const s = String(st).toUpperCase(), sl = String(sleeperStatus || "").toUpperCase(), n = String(note || "").toLowerCase();
+  if (s === "INJURY_RESERVE" || s === "SUSPENSION" || sl === "IR" || sl === "PUP" || sl === "SUS") return 55;
+  if (s === "OUT" || sl === "OUT") return 45;
+  if (/acl|achilles|surgery|fractur|torn|broken/.test(n)) return 35;
+  if (sl === "NA") return 30;
+  if (s === "DOUBTFUL") return 20;
+  return n && !/undisclosed/.test(n) ? 10 : 8;
 }
 // Composite 0-100 within position, from rank consensus + projection + production + durability.
 const pct = (arr, v, lowerBetter = false) => { if (v == null || !arr.length) return null; const n = arr.filter((x) => lowerBetter ? x > v : x < v).length; return n / arr.length; };

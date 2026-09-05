@@ -41,13 +41,16 @@ function fillRoster(list) {
   const slots = [];
   for (const pos of POS_ORDER) for (let i = 0; i < (S.roster[pos] || 0); i++) slots.push({ pos, p: null });
   for (let i = 0; i < (S.roster.BE || 0); i++) slots.push({ pos: 'BE', p: null });
-  const left = [...list].sort((a, b) => (b.proj ?? 0) - (a.proj ?? 0));
+  const left = [...list].sort((a, b) => adj(b) - adj(a));
   for (const s of slots) if (s.pos !== 'FLEX' && s.pos !== 'BE') { const i = left.findIndex((p) => p.pos === s.pos); if (i >= 0) s.p = left.splice(i, 1)[0]; }
   for (const s of slots) if (s.pos === 'FLEX') { const i = left.findIndex((p) => FLEX_POS.has(p.pos)); if (i >= 0) s.p = left.splice(i, 1)[0]; }
   for (const s of slots) if (s.pos === 'BE' && left.length) s.p = left.shift();
   return { slots, extra: left };
 }
-const starterPoints = (list) => fillRoster(list).slots.filter((s) => s.pos !== 'BE' && s.p).reduce((t, s) => t + (s.p.proj || 0), 0);
+/* Lineup total in risk-adjusted points — the same currency every candidate is priced in, so a
+   McCaffrey already on the roster is banked at what he's expected to play, not a full 17 games. */
+const starterPoints = (list) => fillRoster(list).slots.filter((s) => s.pos !== 'BE' && s.p).reduce((t, s) => t + adj(s.p), 0);
+const emptyStarters = (list) => fillRoster(list).slots.filter((s) => s.pos !== 'BE' && !s.p).length;
 
 /* Recommendation: for each candidate, the roster's projected starter points if I take him now,
    minus what I'd expect to get at that position if I wait for my next pick. "Expected at next
@@ -59,7 +62,8 @@ const starterPoints = (list) => fillRoster(list).slots.filter((s) => s.pos !== '
 function baselines() {
   const r = S.roster, t = S.teams, flex = (r.FLEX || 0) * t;
   const starter = { QB: (r.QB || 1) * t, RB: (r.RB || 2) * t + flex * 0.45, WR: (r.WR || 2) * t + flex * 0.45, TE: (r.TE || 1) * t + flex * 0.10, K: (r.K || 1) * t, DST: (r.DST || 1) * t };
-  const waiver = { QB: 2 * t, RB: 4.5 * t, WR: 5.5 * t, TE: 2 * t, K: 1.2 * t, DST: 1.2 * t };
+  // QB/TE: a one-QB, one-TE room leaves the 14th on waivers, not the 20th — few teams carry a backup.
+  const waiver = { QB: 1.4 * t, RB: 4.5 * t, WR: 5.5 * t, TE: 1.4 * t, K: 1.2 * t, DST: 1.2 * t };
   const at = (pos, n) => { const sorted = DATA.players.filter((p) => p.pos === pos && p.proj != null).sort((a, b) => b.proj - a.proj); return sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(n) - 1))]?.proj ?? 0; };
   const out = { starter: {}, waiver: {} };
   for (const pos of Object.keys(starter)) { out.starter[pos] = at(pos, starter[pos]); out.waiver[pos] = at(pos, waiver[pos]); }
@@ -67,18 +71,47 @@ function baselines() {
   out.waiver.FLEX = Math.max(out.waiver.RB, out.waiver.WR, out.waiver.TE);
   return out;
 }
+/* Projection the model prices on: half ESPN's number, half what the expert consensus implies.
+   ESPN is ONE forecaster; FantasyPros' positional rank is the median of ~100. A player ESPN
+   projects as the 8th-best WR whom the experts rank WR3 gets priced between the two. "Implied" =
+   the k-th highest ESPN projection at his position, k = his consensus positional rank — the same
+   scale, so the blend is apples to apples. Falls back to ESPN alone when he has no consensus rank. */
+let posCurve = null;
+function consensusProj(p) {
+  if (!posCurve) { posCurve = {}; for (const x of DATA.players) if (x.proj != null) (posCurve[x.pos] ||= []).push(x.proj); for (const k in posCurve) posCurve[k].sort((a, b) => b - a); }
+  const k = parseInt(String(p.posRank || '').replace(/^[A-Z/]+/, ''), 10);
+  const curve = posCurve[p.pos];
+  if (!curve || !Number.isFinite(k) || k < 1) return null;
+  return curve[Math.min(k, curve.length) - 1];
+}
+const pv = (p) => { const c = consensusProj(p); return c == null ? (p.proj || 0) : 0.5 * (p.proj || 0) + 0.5 * c; };
 /* Risk-adjusted projection: a 100-risk player loses 30% of his season (Nacua "questionable" at
    25 → −7.5%, McCaffrey at 65 → −20%). Applied to candidates AND to the alternatives we compare
    them against, so a position isn't "safe to wait on" because its fallback is a hurt rookie. */
-const adj = (p) => (p.proj || 0) * (1 - 0.3 * (p.risk || 0) / 100);
+const adj = (p) => pv(p) * (1 - 0.3 * (p.risk || 0) / 100);
+/* Same grading as build-data.mjs — a fresh ESPN tag mid-draft gets the same weight the nightly build
+   would give it. Keep the two in step. */
+function injuryRisk(st, note, sleeperStatus) {
+  if (!st) return 0;
+  const s = String(st).toUpperCase(), sl = String(sleeperStatus || '').toUpperCase(), n = String(note || '').toLowerCase();
+  if (s === 'INJURY_RESERVE' || s === 'SUSPENSION' || sl === 'IR' || sl === 'PUP' || sl === 'SUS') return 55;
+  if (s === 'OUT' || sl === 'OUT') return 45;
+  if (/acl|achilles|surgery|fractur|torn|broken/.test(n)) return 35;
+  if (sl === 'NA') return 30;
+  if (s === 'DOUBTFUL') return 20;
+  return n && !/undisclosed/.test(n) ? 10 : 8;
+}
 /* Where the room takes him, on the 10-team scale. ESPN's ADP runs long; consensus rank is the
    last resort. `sd` is how spread real drafts are on him — the width of the "is he there?" bell. */
-const adpOf = (p) => p.adp ?? (p.adpEspn != null ? p.adpEspn / 1.1 : (p.rank ?? 400));
-const sdOf = (p) => Math.max(4, p.adpStd ?? 8);
+const adpOf = (p) => p.adp ?? (p.adpEspn != null && p.adpEspn < 169 ? p.adpEspn / 1.1 : (typeof p.rank === 'number' ? p.rank : 400));
+// ESPN's ADP saturates at ~169 (its 16-round default) — past that it's a floor, not a mean, and
+// consensus rank is the better guess. Players without a real ADP spread get a wider bell.
+const sdOf = (p) => Math.max(4, p.adpStd ?? 11);
 const Phi = (z) => 0.5 * (1 + Math.tanh(0.7978845608 * (z + 0.044715 * z * z * z)));  // normal CDF, close enough
 /* P(still on the board at pick n). ADP is a mean, not a floor: a player with ADP 22 is gone by
-   21 about half the time. */
-const pAvail = (p, n) => Phi((adpOf(p) - n) / sdOf(p));
+   21 about half the time. A faller (ADP already behind us) is treated as if the room had him
+   valued at THIS pick — he's demonstrably still here, but everyone is now getting a discount. */
+const pAvail = (p, n) => Phi((Math.max(adpOf(p), current()) - n) / sdOf(p));
 /* Expected best risk-adjusted projection among `pool` at pick n: walk the pool best-first and
    take each player's projection weighted by "he's there and nobody better was". */
 function expectedBest(pool, n) {
@@ -100,68 +133,96 @@ function recommend() {
   const bl = baselines();
   const count = (pos) => have.filter((x) => x.pos === pos).length;
   const isKD = (p) => p.pos === 'K' || p.pos === 'DST';
-  // Caps: one backup QB/TE at most, exactly one K and D/ST.
-  const startersOpen = fillRoster(have).slots.filter((s) => !s.p && s.pos !== 'BE' && !['K', 'DST'].includes(s.pos)).length;
+  const haveSlots = fillRoster(have).slots;
+  // Starting slots still empty: skill positions only, and every slot K/D-ST included.
+  const startersOpen = haveSlots.filter((s) => !s.p && s.pos !== 'BE' && !['K', 'DST'].includes(s.pos)).length;
+  const openAll = haveSlots.filter((s) => !s.p && s.pos !== 'BE').length;
   const picksLeft = myPicks().filter((n) => n >= cur).length;
-  // A backup QB/TE is a last-four-picks luxury once every starter is filled — never before, and
-  // never a third. Exactly one K and D/ST.
-  const backupOk = startersOpen === 0 && picksLeft <= 4;
-  const capped = (p) => (p.pos === 'QB' && count('QB') >= (S.roster.QB || 1) + (backupOk ? 1 : 0)) || (p.pos === 'TE' && count('TE') >= (S.roster.TE || 1) + (backupOk ? 1 : 0))
-    || (p.pos === 'K' && count('K') >= (S.roster.K || 1)) || (p.pos === 'DST' && count('DST') >= (S.roster.DST || 1));
-  // Every starting slot still empty, K/D-ST included. Once I have no more picks than empty
-  // slots, this is the last chance to fill them: an unfilled starter scores ZERO all season,
-  // which no bench upgrade can outweigh. (A 1000-league run ended with an empty K slot because
-  // the final pick compared a kicker against "a replacement-level kicker" and took a backup TE.)
-  const openAll = fillRoster(have).slots.filter((s) => !s.p && s.pos !== 'BE').length;
+  // Once I have no more picks than empty slots, this is the last chance to fill them: an
+  // unfilled starter scores ZERO all season, which no bench upgrade can outweigh. (A 1000-league
+  // run ended with an empty K slot because the final pick compared a kicker against "a
+  // replacement-level kicker" and took a backup TE.) "Fills" for this purpose means an EMPTY
+  // slot — a marginal upgrade over a starter I already have doesn't count.
   const mustFill = picksLeft <= openAll;
-  // K/D-ST: the last two picks, or sooner if they're what's left to fill.
-  const kdAllowed = picksLeft <= 2 || mustFill;
-  const byeCount = {}; for (const s of fillRoster(have).slots) if (s.p && s.pos !== 'BE' && s.p.bye) byeCount[s.p.bye] = (byeCount[s.p.bye] || 0) + 1;
+  const emptyBefore = emptyStarters(have);
+  // K/D-ST: only in the last three rounds, and only once my remaining picks are down to the empty
+  // slots plus one flyer. Their projected edges are the least reliable on the board, so a "20-pt"
+  // D/ST advantage is never worth a round-13 pick — unless I've left so many slots open that
+  // every remaining pick has to fill one.
+  const lastRounds = roundOf(cur) >= rounds() - 2;
+  const kdAllowed = (picksLeft <= openAll + 1 && lastRounds) || mustFill;
+  // A backup QB/TE is a last-four-picks luxury once every starter is filled — never before, and
+  // never a third. A second QB/TE who would START (a real upgrade) is never capped. Exactly one
+  // K and D/ST.
+  const backupOk = startersOpen === 0 && picksLeft <= 4;
+  const benchCapped = (p) => (p.pos === 'QB' && count('QB') >= (S.roster.QB ?? 1) + (backupOk ? 1 : 0)) || (p.pos === 'TE' && count('TE') >= (S.roster.TE ?? 1) + (backupOk ? 1 : 0));
+  const hardCapped = (p) => (p.pos === 'K' && count('K') >= (S.roster.K ?? 1)) || (p.pos === 'DST' && count('DST') >= (S.roster.DST ?? 1));
+  // Skill starters per bye week (K/D-ST byes are trivial to cover and don't count).
+  const byeCount = {}; for (const s of haveSlots) if (s.p && s.pos !== 'BE' && s.p.bye && !isKD(s.p)) byeCount[s.p.bye] = (byeCount[s.p.bye] || 0) + 1;
+  // Which position my FLEX is actually holding — that's the one whose depth count starts one later.
+  const flexPos = haveSlots.find((s) => s.pos === 'FLEX')?.p?.pos;
   // Candidate pool: the top of the board plus every K/D-ST once they're allowed (they rank ~180+).
-  const pool = avail.slice(0, 120).concat(kdAllowed ? avail.filter(isKD) : []);
-  const cands = pool.filter((p) => !capped(p) && (kdAllowed || !isKD(p))).map((p) => {
-    const gain = starterPoints([...have, p]) - base;      // marginal lineup gain — an upgrade counts only its edge
+  const pool = avail.filter((p, i) => i < 120 ? (kdAllowed || !isKD(p)) : (kdAllowed && isKD(p)));
+  const cands = pool.filter((p) => !hardCapped(p)).map((p) => {
+    const gain = starterPoints([...have, p]) - base;      // marginal lineup gain (risk-adjusted) — an upgrade counts only its edge
     let fills = gain > 0 ? filledSlot(have, p) : null;
     // A tight end in the FLEX is a bench-grade outcome in PPR; value him as depth, not a starter.
     if (fills === 'FLEX' && p.pos === 'TE') fills = null;
+    if (!fills && benchCapped(p)) return null;             // a third QB, or a second one before the endgame
+    const fillsEmpty = fills && emptyStarters([...have, p]) < emptyBefore;
     const slotPos = fills === 'FLEX' ? 'FLEX' : p.pos;
-    let value, opp = 0;
+    // Bench worth of this player (used as-is for depth picks, and as the floor for a fill):
+    // value over a FREE AGENT, discounted. RB/WR depth is real (bye weeks, injuries, FLEX); a backup
+    // QB/TE is a luxury for the last few picks only. Diminishing returns: each extra bench body at a
+    // position is worth less than the last — a seventh RB covers nothing a sixth didn't, while a
+    // third WR covers a bye week.
+    const over = Math.max(0, adj(p) - bl.waiver[p.pos]);
+    const benchAtPos = Math.max(0, count(p.pos) - (S.roster[p.pos] || 0) - (flexPos === p.pos ? 1 : 0));
+    const benchScale = ((p.pos === 'RB' || p.pos === 'WR') && !startersOpen ? 0.5 : 0.15) / (1 + 0.5 * benchAtPos);
+    const benchValue = over * benchScale;
+    let value, opp = 0, scale = 1;
     if (fills) {
       // What the same slot would get if I wait: the expected best at my horizon, minus the
-      // incumbent it would have to beat (0 for an empty slot). Waiting is only worth counting
-      // while I have spare picks — with 3 starters open and 4 picks left there's no waiting.
-      const incumbent = (p.proj || 0) - gain;
-      const later = avail.filter((x) => x.id !== p.id && (slotPos === 'FLEX' ? FLEX_POS.has(x.pos) : x.pos === p.pos));
+      // incumbent it would have to beat (0 for an empty slot). The candidate HIMSELF is in that
+      // pool — if the room won't take him before my next pick, waiting costs nothing and the
+      // reach prices itself; if he'll be gone, the pool falls to whoever is left. This holds even
+      // with no picks to spare (3 slots, 3 picks): the question is still which slot to fill FIRST,
+      // and that's the one whose best option won't survive — not the one with the biggest raw
+      // projection (a kicker's 170 is not worth more than an empty D/ST slot).
+      const incumbent = adj(p) - gain;
+      const later = avail.filter((x) => slotPos === 'FLEX' ? FLEX_POS.has(x.pos) : x.pos === p.pos);
       opp = next ? Math.max(0, expectedBest(later, next) - incumbent) : 0;
-      const waitW = Math.max(0, Math.min(1, (picksLeft - startersOpen) / 3));
-      const gainAdj = gain - (p.proj || 0) + adj(p);       // same marginal gain, risk-adjusted
-      // Floor: a real starter in hand is never worth less than a tenth of his gain — otherwise a
-      // round where every fill looks slightly negative gets decided by a zero-value bench tiebreak.
-      value = Math.max(gainAdj - opp * waitW, gainAdj * 0.1);
-      if (!next) value = adj(p) - bl.waiver[slotPos];       // last pick: no waiting math, just value over a free agent
+      // Floors: a starter in hand is never worth less than a tenth of his edge over the LAST
+      // starter-quality player at the position, nor less than he'd be worth as a bench body — a
+      // round where every fill looks slightly negative shouldn't be decided by a zero-value bench
+      // tiebreak, and a WR3 who'd start for me can't lose to the same WR3 valued as depth. The
+      // starter floor must not hand a QB credit for the whole position's scale (every QB1 "gains"
+      // 300+ into an empty slot).
+      const overLine = Math.max(0, adj(p) - bl.starter[slotPos]);
+      value = Math.max(gain - opp, overLine * 0.1, benchValue);
     } else {
-      // Bench: value over a FREE AGENT, discounted. RB/WR depth is real (bye weeks, injuries, FLEX);
-      // a backup QB/TE is a luxury for the last few picks only.
-      const over = Math.max(0, adj(p) - bl.waiver[p.pos]);
-      // Diminishing returns: each extra bench body at a position is worth less than the last —
-      // a seventh RB covers nothing a sixth didn't, while a third WR covers a bye week.
-      const benchAtPos = Math.max(0, count(p.pos) - (S.roster[p.pos] || 0) - (FLEX_POS.has(p.pos) ? 1 : 0));
-      const dim = 1 / (1 + 0.5 * benchAtPos);
-      value = (FLEX_POS.has(p.pos) ? over * (startersOpen ? 0.15 : 0.5) : over * 0.15) * dim;
+      scale = benchScale;
+      value = benchValue;
     }
-    // Market discipline: ADP carries what projections don't (replaceability, variance, how the
-    // room behaves). Each pick earlier than the room takes him, past a 3-pick grace, costs 2.5 —
-    // enough that a QB the room takes at 34 isn't the pick at 20, but can be at 27.
-    value -= Math.max(0, adpOf(p) - cur - 3) * 2.5;
-    // Out of picks to spare: anything that doesn't fill an empty starting slot is unaffordable.
-    if (mustFill && !fills) value -= 1000;
-    // Bye-week stack: don't put a third starter on the same bye.
-    if (p.bye && (byeCount[p.bye] || 0) >= 2 && fills) value -= 8;
+    // Market discipline, residual: the wait pool above already prices "he'd still be there". This
+    // covers what projections don't — replaceability, variance, how the room behaves. Each pick
+    // earlier than the room takes him, past a 3-pick grace, costs 1.5, scaled the same way the
+    // value was so a bench flyer's reach isn't priced like a starter's.
+    value -= Math.max(0, adpOf(p) - cur - 3) * 1.5 * scale;
+    // Nearly out of picks to spare: filling an empty starter now keeps my options open; deferring
+    // it to a forced last pick bets that the room drafts that position exactly as ADP says. Worth a
+    // few points against a bench body of similar value — applied to every fill alike, so which
+    // slot to fill first is still decided by scarcity above.
+    if (fillsEmpty && picksLeft - openAll <= 2) value += 4;
+    // Out of picks to spare: anything that doesn't fill an EMPTY starting slot is unaffordable.
+    if (mustFill && !fillsEmpty) value -= 1000;
+    // Bye-week stack: don't put a third skill starter on the same bye (K/D-ST byes are trivial to cover).
+    if (p.bye && (byeCount[p.bye] || 0) >= 2 && fills && !isKD(p)) value -= 8;
     // Consensus as a light tiebreak only.
     value += (p.score - 80) * 0.05;
     const tierDrop = tierDropBefore(p, avail, next);
     return { p, value, gain, opp, tierDrop, fills };
-  }).sort((a, b) => b.value - a.value);
+  }).filter(Boolean).sort((a, b) => b.value - a.value);
   return { cands, next };
 }
 function filledSlot(have, p) { const after = fillRoster([...have, p]).slots; for (let i = 0; i < after.length; i++) if (after[i].p?.id === p.id) return after[i].pos === 'BE' ? null : `${after[i].pos}${after[i].pos === 'FLEX' ? '' : after.slice(0, i + 1).filter((s) => s.pos === after[i].pos).length}`; return null; }
@@ -177,7 +238,7 @@ function whyText(c, next) {
     if (c.tierDrop >= 25) bits.push(`the best ${c.p.pos === 'DST' ? 'D/ST' : c.p.pos} likely left at your next pick (${nextWords}) projects <b>${Math.round(c.tierDrop)} pts</b> lower over the season`);
     else if (c.tierDrop <= 8 && c.gain > 0) bits.push(`${c.p.pos} options should still be there in ${nextWords}, so this is about talent, not scarcity`);
   }
-  const adpRef = c.p.adp ?? c.p.adpEspn;
+  const adpRef = adpOf(c.p);                                 // the same number the value was priced on
   if (adpRef && adpRef - current() >= 6) bits.push(`this is <b>${Math.round(adpRef - current())} picks</b> before the room usually takes him (ADP ${Math.round(adpRef)}) — a reach, priced in`);
   else if (adpRef && current() - adpRef >= 6) bits.push(`<b>${Math.round(current() - adpRef)} picks</b> past his ADP — a discount`);
   if (c.p.risk >= 40) bits.push(`risk is real: ${esc(c.p.riskWhy.join(', '))}`);
@@ -337,7 +398,7 @@ function renderBoard() {
       <span class="rk">${p.rank}</span>
       <span style="min-width:0">
         <span class="nm">${esc(p.name)}${w && w.team !== S.slot ? `<span class="who">T${w.team}</span>` : ''}</span>
-        <span class="sub"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)} · bye ${p.bye ?? '—'} · ${esc(p.posRank)}</span>${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replace('_', ' '))}</span>` : ''}</span>
+        <span class="sub"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)} · bye ${p.bye ?? '—'} · ${esc(p.posRank)}</span>${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replaceAll('_', ' '))}</span>` : ''}</span>
       </span>
       <span class="right"><span class="ppg">${fmt(p.ppgLast)}</span><span class="adp ${value ? 'val' : ''}">${t ? label(w.no) : adp != null ? (value ? 'ADP ' + fmt(adp, 0) + ' · value' : 'ADP ' + fmt(adp, 0)) : 'no ADP'}</span></span>
     </button>`;
@@ -373,7 +434,7 @@ function openPlayer(id) {
   const yrs = Object.keys(p.history).sort();
   openSheet(`
     <h2>${esc(p.name)}</h2>
-    <div class="meta"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)}</span><span>bye ${p.bye ?? '—'}</span>${p.age ? `<span>age ${p.age}</span>` : ''}${p.exp != null ? `<span>${p.exp === 0 ? 'rookie' : p.exp + ' yr' + (p.exp === 1 ? '' : 's')}</span>` : ''}${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replace('_', ' '))}</span>` : ''}</div>
+    <div class="meta"><span class="pos ${posClass(p.pos)}">${p.pos === 'DST' ? 'D/ST' : p.pos}</span><span>${esc(p.team)}</span><span>bye ${p.bye ?? '—'}</span>${p.age ? `<span>age ${p.age}</span>` : ''}${p.exp != null ? `<span>${p.exp === 0 ? 'rookie' : p.exp + ' yr' + (p.exp === 1 ? '' : 's')}</span>` : ''}${p.injury ? `<span style="color:var(--hi)">${esc(p.injury.toLowerCase().replaceAll('_', ' '))}</span>` : ''}</div>
     <div class="grid4">
       <div><div class="k">Overall</div><div class="v">${p.rank}</div></div>
       <div><div class="k">Position</div><div class="v">${esc(p.posRank)}</div></div>
@@ -452,16 +513,16 @@ async function refreshRankings(force) {
           changed++;
           p.injury = st;
           // Recompute risk from the stored non-injury base so a new tag actually moves the pick.
-          const add = st ? (st === 'INJURY_RESERVE' || st === 'OUT' ? 45 : 25) : 0;
-          p.risk = Math.min(100, (p.riskBase ?? p.risk) + add);
+          p.risk = Math.min(100, (p.riskBase ?? p.risk) + injuryRisk(st, p.injuryNote, p.injuryStatusSleeper));
           p.riskWhy = (p.riskWhy || []).filter((w) => !/(questionable|doubtful|^out$|injury reserve)/i.test(w));
-          if (st) p.riskWhy.unshift(st.toLowerCase().replace('_', ' '));
+          if (st) p.riskWhy.unshift(st.toLowerCase().replaceAll('_', ' '));
         }
         const proj = row.player.stats?.find((x) => x.seasonId === DATA.season && x.statSourceId === 1 && x.scoringPeriodId === 0);
         if (proj?.appliedTotal) p.proj = +(+proj.appliedTotal).toFixed(1);
       }
       notes.push(changed ? `${changed} injury change${changed === 1 ? '' : 's'} from ESPN` : 'no new injuries');
     } catch { notes.push("couldn't reach ESPN — file only"); }
+    posCurve = null;                                       // projections may have moved; rebuild the consensus curve
     try { localStorage.setItem('draftboard.refreshed', String(Date.now())); } catch {}
     render(); toast(notes.join(' · '));
   } catch (e) {
