@@ -617,7 +617,7 @@ function renderMoney(){
   return `
   <div class="pulsegrid">
     <div class="pcard"><div class="pl">MRR after Apple</div><div class="pn ok">${money(mo.netMrrEstimate)}</div><div class="pd">${money(mo.mrrEstimate)} gross</div></div>
-    <div class="pcard"><div class="pl">Paying</div><div class="pn">${num(mo.payingCount)}</div><div class="pd">${num(mo.churnedCount)} churned</div></div>
+    <div class="pcard"><div class="pl">Paying</div><div class="pn">${num(mo.payingCount)}</div><div class="pd">${num(mo.churnedCount)} churned${mo.compedCount?` · ${num(mo.compedCount)} comped`:''}</div></div>
     <div class="pcard"><div class="pl">Conversion</div><div class="pn ${num(mo.conversionPct)<5?'cr':''}">${num(mo.conversionPct)}%</div><div class="pd">of registered</div></div>
   </div>
 
@@ -673,7 +673,7 @@ function renderMoney(){
         <td>${esc((x.purchaseDate||'—').slice(0,10))}</td>
         <td class="mono">${esc(String(x.productId||'—').replace('com.qwota.pro.',''))}</td>
         <td class="text-center">${x.price!=null?money(x.price):'—'}</td>
-        <td class="d">${esc(x.source||'app')}${x.attributed?'':' <span class="cr">unattributed</span>'}</td>
+        <td class="d">${esc(x.source||'app')}${x.attributed?'':' <span class="cr">unattributed</span>'}${x.comped?' <span class="cr">comped</span>':''}</td>
       </tr>`).join('')}
     </tbody></table>`:'<div style="padding:16px"><div class="qsub d">No production purchases recorded.</div></div>'}
   </div>
@@ -682,11 +682,12 @@ function renderMoney(){
   <div class="card">
     ${segbar([
       {k:'Paying', v:num(mo.payingCount), c:'var(--c1)'},
+      {k:'Comped', v:num(mo.compedCount), c:'var(--c4)'},
       {k:'On trial', v:num(mo.onReverseTrial), c:'var(--c3)'},
       {k:'Entitled, unverified', v:num(mo.unverifiedEntitledCount), c:'var(--c2)'},
       {k:'Churned', v:num(mo.churnedCount), c:'var(--c0)'},
     ])}
-    <div class="note">${num(mo.lifetimePayerCount)} account(s) have ever paid. Never summed into one "Pro" number — entitlement includes TestFlight and trials, and a transaction counts as revenue only while its buyer is still entitled.</div>
+    <div class="note">${num(mo.lifetimePayerCount)} account(s) have ever paid${mo.compedCount?`, and ${num(mo.compedCount)} hold a comped entitlement that is deliberately excluded from every revenue figure on this page`:''}. Never summed into one "Pro" number — entitlement includes TestFlight and trials, and a transaction counts as revenue only while its buyer is still entitled.</div>
   </div>`;
 }
 

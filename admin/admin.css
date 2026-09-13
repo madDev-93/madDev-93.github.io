@@ -377,6 +377,7 @@ details.card[open] summary::before{content:'▾ '}
   --c1:#00996b;  /* series 1 */
   --c2:#b46e00;  /* series 2 */
   --c3:#8e6ac7;  /* series 3 */
+  --c4:#2f8f7a;  /* series 4 — comped access: real entitlement, no revenue */
   --c0:#39414f;  /* absence / dormant — a neutral, deliberately recessive */
   /* Sequential ramp, one hue. Validated against the BAR TRACK (#1c222d), not the
      card: the previous darkest step was 2.08:1 there and the bars read as empty. */
