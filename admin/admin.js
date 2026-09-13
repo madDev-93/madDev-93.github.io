@@ -69,6 +69,12 @@ function toast(msg, isErr){ const t=$('toast'); t.textContent=msg; t.className='
 // Workouts the user logged IN QWOTA when the client reports the split, the raw total otherwise.
 // Every list row, segment, bucket and avatar ranks on this — never on the import-inflated total.
 function eng(u){ return u.engaged!=null ? num(u.engaged) : (u.loggedInApp!=null ? num(u.loggedInApp) : num(u.workouts)); }
+// Did this account log anything HERE? eng() is a count, and the count can read zero for
+// someone who has plainly trained: clients before the DataStore fix reported their own
+// Watch-logged strength as Health imports, so workouts - imported hit 0. authoredInApp is
+// the server's positive evidence (exercise content in recentWorkouts). Trained-ness and
+// workout count are separate questions, and only the first one has an answer here.
+function trained(u){ return eng(u)>0 || u.authoredInApp===true; }
 function engagementClaim(row){
   const w=num(row.workouts);
   if(row.loggedInApp==null){
@@ -985,6 +991,10 @@ function rowSignal(u){
   const w=eng(u);
   if(!w){
     const imp=num(u.importedWorkouts);
+    // Trained, but the client's own numbers can't say how much. Don't call them untrained.
+    if(u.authoredInApp===true){
+      return [t, 'trained in Qwota · count unavailable until the app updates'].filter(Boolean).join(' · ');
+    }
     const none = u.type==='guest' ? 'no activity' : 'never trained';
     return [t, imp>0 ? `${none} · ${imp} Health import${imp===1?'':'s'} only` : none].filter(Boolean).join(' · ');
   }
@@ -1000,12 +1010,14 @@ function rowSignal(u){
 function renderUserCharts(){
   if(!USERS || !USERS.length) return '';
   const R = USERS.filter(real);
-  const active   = R.filter(u=>u.type!=='guest' && eng(u)>0).length;
+  const active   = R.filter(u=>u.type!=='guest' && trained(u)).length;
   const atRisk   = R.filter(u=>u.atRisk).length;
-  const silent   = R.filter(u=>u.type!=='guest' && !eng(u)).length;
-  const dormant  = R.filter(u=>u.type==='guest' && !eng(u)).length;
+  const silent   = R.filter(u=>u.type!=='guest' && !trained(u)).length;
+  const dormant  = R.filter(u=>u.type==='guest' && !trained(u)).length;
   const buckets = [
-    {k:'none',    v:R.filter(u=>eng(u)===0).length},
+    {k:'none',    v:R.filter(u=>!trained(u)).length},
+    // Trained, count unknown — belongs in neither "none" nor any numeric band.
+    {k:'?',       v:R.filter(u=>trained(u) && eng(u)===0).length},
     {k:'1–4',     v:R.filter(u=>eng(u)>=1 && eng(u)<5).length},
     {k:'5–19',    v:R.filter(u=>eng(u)>=5 && eng(u)<20).length},
     {k:'20–49',   v:R.filter(u=>eng(u)>=20 && eng(u)<50).length},
