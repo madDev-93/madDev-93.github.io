@@ -282,7 +282,7 @@ function renderCockpit(){
   <div class="section-t">Pulse</div>
   <div class="pulsegrid">
     ${pcard('Users', num(u.registered), 'registered', 'var(--teal)', 'users')}
-    ${pcard('Activation', activationPct+'%', 'activationPct', activationPct<25?'var(--crit)':'var(--teal)', 'activation')}
+    ${pcard('Activation', activationPct+'%', 'activationPct', activationPct<25?'var(--crit)':'var(--teal)', 'activation', v=>v.toFixed(1)+'pp')}
     ${pcard('MRR', money(mo.mrrEstimate), 'mrr', 'var(--teal)', 'mrr', v=>'$'+v.toFixed(2))}
   </div>
   <div class="qsub d" style="margin-top:8px">${num(u.guests)} guests · ${num(u.appUsers)} app users · DAU ${num(d.active.dau)} · WAU ${num(d.active.wau)}</div>
