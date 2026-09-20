@@ -1028,7 +1028,11 @@ function flagClass(f){ return f==='entitled-no-purchase' ? 'risk' : f==='churned
 // the most engaged account on the platform.
 const real = (u)=>!u.nonUser;
 const SEGMENTS = [
-  { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !eng(u)) },
+  // trained(), not raw eng(): a guest carrying in-app history whose client miscounts it as
+  // Health imports reads eng()===0, so she was dropped from the default landing segment and
+  // filed under "dormant guests — no activity" while the backend flagged her at-risk-guest
+  // on the same screen. Same contradiction, one section lower.
+  { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !trained(u)) },
   { k:'atrisk',  label:'At risk',      test:u=>real(u) && !!u.atRisk },
   { k:'trial',   label:'On trial',    test:u=>real(u) && u.access==='trial' },
   // Paying means money changed hands, the same thing the Money tab means by it. Comps
@@ -1136,7 +1140,7 @@ function renderUserList(){
     ? pool.slice().sort((a,b)=>num(a.trialExpiresAt, Infinity)-num(b.trialExpiresAt, Infinity))
     : pool;
   const shown = rows.slice(0, USER_VIEW.limit);
-  const dormant = (!q && seg==='look') ? USERS.filter(u=>real(u) && u.type==='guest' && !eng(u)) : [];
+  const dormant = (!q && seg==='look') ? USERS.filter(u=>real(u) && u.type==='guest' && !trained(u)) : [];
   const cnt = (k)=>USERS.filter(segTest(k)).length;
 
   return `<div class="utoolbar">
@@ -1182,7 +1186,7 @@ function renderUserList(){
            say the count is unknown instead of printing a zero next to their adherence. -->
       <td class="text-center ${eng(u)>0?'':'d'}">${eng(u)>0 ? eng(u)
         : (u.authoredInApp===true ? `<span title="trained in Qwota — exact count unavailable until the app updates">?</span>`
-        : (u.observable===false ? `<span title="never sent a heartbeat — unknown, not zero">—</span>` : 0))}</td>
+        : (u.observable!==true ? `<span title="${u.observable===null?'the activity source could not be read — unknown, not zero':'never sent a heartbeat — unknown, not zero'}">—</span>` : 0))}</td>
       <td class="text-center ${num(u.adherence)?'':'d'}">${u.adherence==null?'<span title="never synced — unknown, not zero">—</span>':num(u.adherence)+'%'}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
       <td>${u.lastActive?ago(u.lastActive):(u.observable?'—':'<span class="d" title="never sent a heartbeat — unknown, not zero">unobserved</span>')}</td>
@@ -1425,7 +1429,7 @@ async function renderUserDetail(uid){
     <div class="pulsegrid">
       <!-- Same rule as the list: never print a confident 0 over positive evidence of training. -->
       <div class="pcard"><div class="pl">Workouts</div><div class="pn">${eng(row)>0 ? eng(row)
-          : (row.authoredInApp===true ? '?' : (row.observable===false ? '—' : 0))}</div><div class="pd">${
+          : (row.authoredInApp===true ? '?' : (row.observable!==true ? '—' : 0))}</div><div class="pd">${
         eng(row)===0 && row.authoredInApp===true
           ? `trained in Qwota · count unavailable until the app updates${num(row.importedWorkouts)?` · ${num(row.importedWorkouts)} from Health`:''}`
           : row.loggedInApp!=null
