@@ -115,6 +115,9 @@ tr:last-child td{border-bottom:none}
 .chip-s.lifetime{background:linear-gradient(90deg,rgba(45,212,167,.2),rgba(74,158,255,.2));color:#7fe3c6;border:1px solid rgba(45,212,167,.35)}
 .chip-s.trial{background:rgba(74,158,255,.14);color:var(--info)}
 .chip-s.entitled{background:rgba(245,166,35,.14);color:var(--warn)}
+/* Granted, not bought. Deliberately not styled like paid/lifetime — a comp must never
+   read as revenue at a glance, which is the mistake the counts themselves used to make. */
+.chip-s.comped{background:rgba(167,139,250,.16);color:#c4b5fd;border:1px solid rgba(167,139,250,.3)}
 .chip-s.guest{background:rgba(140,148,166,.14)}
 .chip-s.risk{background:rgba(255,92,108,.14);color:var(--crit)}
 .chip-s.churned{background:rgba(255,92,108,.1);color:#ff8e98}

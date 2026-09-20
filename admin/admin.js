@@ -132,7 +132,6 @@ async function load(){
     // Badge the tab so triage is visible from any screen, including the bottom bar.
     const nb = document.querySelector('.nav-item[data-tab="cockpit"]');
     if(nb) nb.innerHTML = 'Cockpit'+(att?`<span class="nbadge">${att}</span>`:'');
-    render();
   }catch(e){
     // DATA deliberately keeps the last good snapshot — wiping the dashboard on a transient
     // failure is worse than showing it. But it must never masquerade as fresh: label it
@@ -142,6 +141,27 @@ async function load(){
     $('status').className = 'status bad';
     $('status-text').textContent = 'Refresh failed';
     $('main').innerHTML = '<div class="loading cr">Failed to load: '+esc(e.message)+(STALE?' <span class="d">— showing the last good snapshot on other tabs.</span>':'')+'</div>';
+    return; // nothing fresh to draw
+  }
+  // Rendering is OUTSIDE the fetch's try on purpose. It used to sit inside, so a template
+  // bug in this file reported itself as "Refresh failed … showing the last good snapshot"
+  // — blaming the network for a client-side exception and sending debugging the wrong way.
+  // A draw failure is now named as one.
+  safeRender();
+}
+
+// Every entry point into render() goes through this. render() is also called straight from
+// the nav click handler and the hashchange listener, where an exception left the nav
+// highlighting the new tab while #main still showed the previous one, with nothing logged
+// and nothing on screen. Fail loudly instead.
+function safeRender(){
+  try{ render(); }
+  catch(e){
+    console.error('render failed', e);
+    $('status').className = 'status bad';
+    $('status-text').textContent = 'Display error';
+    $('main').innerHTML = '<div class="loading cr">This screen failed to draw: '+esc(e && e.message ? e.message : String(e))
+      + ' <span class="d">— the data loaded fine; this is a bug in the console itself.</span></div>';
   }
 }
 
@@ -378,14 +398,21 @@ function renderCockpit(){
 }
 
 // Alerts must offer a way to act or verify — never just prose telling you to go elsewhere.
+// These matchers must track the titles adminConsole.ts actually emits. Three had drifted
+// and matched nothing: there is no title containing "Apple notification" (it reads "No
+// purchase events recorded on either path"), none containing "reverse-trial" (it reads
+// "... none granted a trial"), and the entitled-users matcher was plural-only while the
+// backend pluralises correctly — so at exactly one such account, the commonest case, the
+// button vanished. Match on the stable part of each phrase, and keep the pluralised words
+// optional. The principle this serves: an alert must offer a way to act or verify.
 function alertActions(n){
   const t=String(n.title||'');
-  if(/Apple notification/i.test(t)) return `<button class="ab p" data-test="appStore">Test delivery</button>
+  if(/purchase events recorded on either path/i.test(t)) return `<button class="ab p" data-test="appStore">Test delivery</button>
     <button class="ab" data-copy="https://us-central1-qwota-ai-coach.cloudfunctions.net/appStoreNotifications">Copy webhook URL</button>`;
   if(/RevenueCat/i.test(t)) return `<button class="ab p" data-test="revenueCat">Test delivery</button>`;
   if(/unattributed purchase/i.test(t)) return `<button class="ab p" data-go="users">Open the queue</button>`;
-  if(/entitled users with no verified purchase/i.test(t)) return `<button class="ab" data-go="users" data-filter="flagged">Show these users</button>`;
-  if(/[Rr]everse-trial/.test(t)) return `<button class="ab" data-act2="flag">Feature flags</button>`;
+  if(/entitled users? with no verified purchase/i.test(t)) return `<button class="ab" data-go="users" data-seg="unverified">Show these users</button>`;
+  if(/none granted a trial|reverse[- ]trial/i.test(t)) return `<button class="ab" data-act2="flag">Feature flags</button>`;
   return '';
 }
 
@@ -768,7 +795,16 @@ function renderNotifications(){
 
   // A channel is "stuck" when people asked for it and cannot get it. That is the only
   // state worth interrupting someone over, so it drives both the headline and the row chip.
-  const stuck=server.filter(c=>c.optedIn!=null&&c.eligible!=null&&c.optedIn>c.eligible);
+  // "Stuck" must mean: someone ASKED for this and cannot get it. Two things used to leak in.
+  // optedIn - eligible also counted people the gate correctly excludes (not Pro), and on a
+  // default-ON channel `optedIn` counts everyone who never opened the setting at all, so the
+  // subtraction reported a fixable failure where there was only an absent push token. The
+  // server now reports blockedNoToken directly — asked for it, entitled to it, unreachable —
+  // and marks the channels whose opt-in is merely a default.
+  const blocked=(c)=>c.blockedNoToken!=null
+    ? num(c.blockedNoToken)
+    : (c.optInIsDefault||c.optedIn==null||c.eligible==null ? 0 : Math.max(0,num(c.optedIn)-num(c.eligible)));
+  const stuck=server.filter(c=>blocked(c)>0);
   const dead=server.filter(c=>c.eligible===0);
   const headline = stuck.length
     ? `${stuck.length} channel${stuck.length===1?'':'s'} ${stuck.length===1?'has':'have'} people who turned it on but cannot receive it`
@@ -777,8 +813,12 @@ function renderNotifications(){
   const verdict=(c)=>{
     if(c.eligible==null) return `<span class="chip-s internal">can't measure</span>`;
     if(c.eligible===0)   return `<span class="chip-s risk">reaches nobody</span>`;
-    if(c.optedIn!=null&&c.optedIn>c.eligible)
-      return `<span class="chip-s risk">${num(c.optedIn-c.eligible)} can't receive</span>`;
+    if(blocked(c)>0)
+      return `<span class="chip-s risk">${blocked(c)} can't receive</span>`;
+    // Gated out by entitlement is the gate working, not a fault — say so rather than
+    // either hiding it or colouring it as a failure.
+    if(num(c.blockedNotEntitled)>0)
+      return `<span class="chip-s">working <span class="d">· ${num(c.blockedNotEntitled)} not entitled</span></span>`;
     return `<span class="chip-s">working</span>`;
   };
 
@@ -819,8 +859,15 @@ function renderNotifications(){
       <tbody>${server.map(row).join('')}</tbody>
     </table>
     <div class="qsub d" style="margin-top:10px">
-      <b>${num(n.reachable)} of ${num(n.prefsDocs)} accounts hold a push token</b> — no server
+      <b>${num(n.reachable)} of ${num((DATA.pushReach||{}).total ?? n.prefsDocs)} accounts hold a push token</b> — no server
       notification can reach more people than that, whatever the settings say.
+      <!-- Denominator is every app user, the same one the Cockpit's push-reach card uses.
+           It used to be prefsDocs — only the accounts that have ever written a
+           notificationPreferences document — so the identical numerator read 61% here and
+           23% on the Cockpit, and the honest ceiling (nobody without a token can be brought
+           back) silently excluded everyone who never granted permission. -->
+      ${(DATA.pushReach||{}).total!=null&&num(DATA.pushReach.total)!==num(n.prefsDocs)
+        ? `<span class="d">(${num(n.prefsDocs)} of them have ever saved notification settings.)</span>` : ''}
       <b>Tried</b> counts attempts, not arrivals: the row is written before the push is
       handed to Apple, so a message that bounced off a dead token still counts here.
     </div>
@@ -903,8 +950,11 @@ function renderHealth(){
   })()}</div>
 
   <div class="section-t">Recent errors</div>
-  <div class="card">${h.recentErrors.length?`<table><thead><tr><th>When</th><th>Type</th><th>User</th><th>Error</th></tr></thead><tbody>
-    ${h.recentErrors.map(e=>`<tr><td>${ago(e.at)}</td><td><span class="badge">${esc(e.type)}</span></td><td class="mono">${esc((e.userId||'—').slice(0,10))}</td><td>${esc(e.error||'—')}</td></tr>`).join('')}
+  <!-- overflow-x like every other wide table here. e.error is a raw exception message and
+       can be long and unbroken; without this it pushed the card past a 375px viewport with
+       no way to scroll it. word-break stops a single token doing the same. -->
+  <div class="card" style="overflow-x:auto">${h.recentErrors.length?`<table><thead><tr><th>When</th><th>Type</th><th>User</th><th>Error</th></tr></thead><tbody>
+    ${h.recentErrors.map(e=>`<tr><td>${ago(e.at)}</td><td><span class="badge">${esc(e.type)}</span></td><td class="mono">${esc((e.userId||'—').slice(0,10))}</td><td style="word-break:break-word;max-width:44ch">${esc(e.error||'—')}</td></tr>`).join('')}
   </tbody></table>`:'<div class="qsub ok">No errors in the last 24h 🎉</div>'}</div>
   <div class="section-t">Self-check invariants</div>
   <div class="card"><table><tbody>${DATA.reconcile.invariants.map(i=>`<tr><td>${esc(i.name)}</td><td class="text-center">${i.pass?'<span class="ok">✓</span>':'<span class="cr">✗</span>'}</td></tr>`).join('')}</tbody></table></div>`;
@@ -962,7 +1012,13 @@ const SEGMENTS = [
   { k:'look',    label:'Worth a look', test:u=>real(u) && !(u.type==='guest' && !eng(u)) },
   { k:'atrisk',  label:'At risk',      test:u=>real(u) && !!u.atRisk },
   { k:'trial',   label:'On trial',    test:u=>real(u) && u.access==='trial' },
+  // Paying means money changed hands, the same thing the Money tab means by it. Comps
+  // carry `access:'comped'` now precisely so they cannot fall in here — this filter used
+  // to match them via 'lifetime' and report 7 where the Money tab reported 6.
   { k:'paid',    label:'Paying',       test:u=>real(u) && (u.access==='paid'||u.access==='lifetime') },
+  { k:'comped',  label:'Comped',       test:u=>real(u) && u.access==='comped' },
+  // The destination for the "entitled, no verified purchase" alert — it had nowhere to go.
+  { k:'unverified', label:'Entitled, unverified', test:u=>real(u) && (u.flags||[]).includes('entitled-no-purchase') },
   { k:'lapsed',  label:'Lapsed',       test:u=>real(u) && !!u.lapsed },
   { k:'silent',  label:'Never trained',test:u=>real(u) && !!u.silent },
   { k:'all',     label:'All real',     test:u=>real(u) },
@@ -1037,7 +1093,10 @@ function renderUserCharts(){
 }
 
 function renderUserList(){
-  const q = USER_VIEW.q.toLowerCase();
+  // Trimmed: a lone space is truthy, matched every row (every string contains " "), and
+  // put the list into "searching all accounts" mode — hiding the population charts to
+  // show a search for nothing.
+  const q = USER_VIEW.q.trim().toLowerCase();
   const seg = USER_VIEW.seg;
   const matchesQ = (u)=>!q || ((u.email||'')+' '+(u.name||'')+' '+u.uid).toLowerCase().includes(q);
   // A search should look at everyone, not just the active segment — you're hunting a
@@ -1056,8 +1115,13 @@ function renderUserList(){
   return `<div class="utoolbar">
     <input id="u-search" placeholder="Search name / email / UID" value="${esc(USER_VIEW.q)}">
   </div>
-  <div class="fbar">
-    ${SEGMENTS.filter(sg=>sg.k!=='nonuser').map(sg=>`<button class="fpill${seg===sg.k?' on':''}" data-seg="${esc(sg.k)}">${esc(sg.label)} <span class="pc">${cnt(sg.k)}</span></button>`).join('')}
+  <!-- While a search is active the segment is deliberately ignored (you are hunting a
+       person, not browsing a cohort) — but the pills used to keep rendering as selected,
+       stay clickable, and show counts computed from the whole population, so clicking one
+       lit it up, left its count unchanged and did nothing to the list. Show them as
+       inactive for the duration of the search instead of lying about what is applied. -->
+  <div class="fbar"${q?' style="opacity:.45" title="Segments do not apply while searching — clear the search to filter"':''}>
+    ${SEGMENTS.filter(sg=>sg.k!=='nonuser').map(sg=>`<button class="fpill${!q&&seg===sg.k?' on':''}" data-seg="${esc(sg.k)}">${esc(sg.label)} <span class="pc">${cnt(sg.k)}</span></button>`).join('')}
     <button class="fpill${INCLUDE_INTERNAL?' on':''}" id="u-internal">Internal${USERS_HIDDEN&&!INCLUDE_INTERNAL?' '+USERS_HIDDEN:''}</button>
   </div>
   <!-- Not-people is still reachable, just not sitting in the segment row competing with
@@ -1066,7 +1130,7 @@ function renderUserList(){
     <button class="fpill${seg==='nonuser'?' on':''}" data-seg="nonuser"
             style="${seg==='nonuser'?'':'opacity:.55;font-size:11px'}">Not people <span class="pc">${cnt('nonuser')}</span></button>
   </div>
-  ${q?`<div class="qsub d" style="margin:0 2px 10px">Searching all ${USERS.length} accounts · ${rows.length} match${rows.length===1?'':'es'}</div>`:renderUserCharts()}
+  ${q?`<div class="qsub d" style="margin:0 2px 10px">Searching all ${USERS.length} accounts · ${rows.length} match${rows.length===1?'':'es'} <span class="d">· segments not applied</span></div>`:renderUserCharts()}
 
   <div class="ucards">
     ${shown.length?shown.map(u=>`<button class="urow ${u.internal?'internal-row':''}" data-uid="${esc(u.uid)}">
@@ -1085,8 +1149,14 @@ function renderUserList(){
       <td><div class="uname">${esc(u.name||(u.type==='guest'?'Anonymous':'—'))}</div><div class="uemail">${esc(u.email||u.uid.slice(0,14))}</div></td>
       <td>${esc(u.type)}${u.internal?' <span class="chip-s internal">internal</span>':''}</td>
       <td><span class="chip-s ${esc(u.access)}">${esc(u.access)}</span></td>
-      <td class="text-center ${eng(u)>0?'':'d'}">${eng(u)}</td>
-      <td class="text-center ${num(u.adherence)?'':'d'}">${num(u.adherence)?num(u.adherence)+'%':'—'}</td>
+      <!-- A bare 0 here is a claim we often cannot support. eng() is in-app workouts, and a
+           client that reported its own Watch strength as a Health import drives it to 0 for
+           someone training daily. Where the server has positive evidence (authoredInApp),
+           say the count is unknown instead of printing a zero next to their adherence. -->
+      <td class="text-center ${eng(u)>0?'':'d'}">${eng(u)>0 ? eng(u)
+        : (u.authoredInApp===true ? `<span title="trained in Qwota — exact count unavailable until the app updates">?</span>`
+        : (u.observable===false ? `<span title="never sent a heartbeat — unknown, not zero">—</span>` : 0))}</td>
+      <td class="text-center ${num(u.adherence)?'':'d'}">${u.adherence==null?'<span title="never synced — unknown, not zero">—</span>':num(u.adherence)+'%'}</td>
       <td class="text-center">${num(u.aiCalls)}</td>
       <td>${u.lastActive?ago(u.lastActive):(u.observable?'—':'<span class="d" title="never sent a heartbeat — unknown, not zero">unobserved</span>')}</td>
       <td class="mono">${u.appVersion?esc(u.appVersion):'—'}</td>
@@ -1244,8 +1314,26 @@ let AIACT = null;
 let AUDIT = null, CONFIG = null;
 async function renderUserDetail(uid){
   const m=$('main');
-  const row = (USERS||[]).find(u=>u.uid===uid) || {};
   m.innerHTML='<div class="loading">Loading user…</div>';
+  // This view reads half its fields from the USERS cache (access, flags, aiCalls,
+  // paidProduct, sessionLaunches, atRisk) and half from adminLookupUser. The cache can be
+  // empty here in two ordinary flows — a cold deep link straight to #/user/<uid>, which is
+  // the "paste a UID from a support email" path, and every action button, which calls
+  // load() and load() clears USERS before re-rendering the very page you are looking at.
+  // `|| {}` then rendered a paying subscriber as access "free", $0.00 AI spend, no paid
+  // product and "not reported" launches, with nothing on screen saying anything failed.
+  // Fetch it rather than degrade silently.
+  if(!USERS){
+    try{
+      const r=(await call('adminUsers')({ includeInternal: INCLUDE_INTERNAL })).data;
+      USERS=r.users; USERS_HIDDEN=num(r.internalHidden); USERS_NONREAL=num(r.nonUserCount); USERS_REASONS=r.nonUserReasons||{};
+    }catch(e){
+      // Say so instead of drawing a confident, wrong page.
+      m.innerHTML='<div class="loading cr">Could not load the account list: '+esc(e.message)+'</div>';
+      return;
+    }
+  }
+  const row = (USERS||[]).find(u=>u.uid===uid) || {};
   let r; try{ r=(await call('adminLookupUser')({uid})).data; }catch(e){ m.innerHTML='<div class="loading cr">'+esc(e.message)+'</div>'; return; }
   const a=r.auth, sup=r.support||{};
   const isGuest=(row.type||'')==='guest' || (a && a.providers && a.providers.length===0);
@@ -1308,7 +1396,12 @@ async function renderUserDetail(uid){
 
     <div class="section-t">Engagement</div>
     <div class="pulsegrid">
-      <div class="pcard"><div class="pl">Workouts</div><div class="pn">${eng(row)}</div><div class="pd">${row.loggedInApp!=null
+      <!-- Same rule as the list: never print a confident 0 over positive evidence of training. -->
+      <div class="pcard"><div class="pl">Workouts</div><div class="pn">${eng(row)>0 ? eng(row)
+          : (row.authoredInApp===true ? '?' : (row.observable===false ? '—' : 0))}</div><div class="pd">${
+        eng(row)===0 && row.authoredInApp===true
+          ? `trained in Qwota · count unavailable until the app updates${num(row.importedWorkouts)?` · ${num(row.importedWorkouts)} from Health`:''}`
+          : row.loggedInApp!=null
           ? `in Qwota · ${num(row.importedWorkouts)} from Health`
           : `${num(row.workoutsThisWeek)} this week · incl. Health imports`}</div></div>
       <div class="pcard"><div class="pl">Adherence</div><div class="pn">${num(row.adherence)?num(row.adherence)+'%':'—'}</div><div class="pd">${num(row.streak)}-day streak</div></div>
@@ -1366,8 +1459,10 @@ function wire(){
     catch{ toast('Copy failed — select it manually', true); }
   });
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
-    if(b.dataset.filter) USER_VIEW.type=b.dataset.filter;
-    TAB=b.dataset.go; render();
+    // USER_VIEW.type was written here and read nowhere — the list keys off `seg`, and the
+    // value passed ("flagged") was not a segment either, so this button changed nothing.
+    if(b.dataset.seg && SEGMENTS.some(s=>s.k===b.dataset.seg)){ USER_VIEW.seg=b.dataset.seg; USER_VIEW.q=''; USER_VIEW.limit=25; }
+    TAB=b.dataset.go; safeRender();
   });
   document.querySelectorAll('[data-act2]').forEach(b=>b.onclick=()=>openAction(b.dataset.act2));
   document.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>runPipelineTest(b));
@@ -1395,13 +1490,23 @@ async function runPipelineTest(btn){
 const PROVENANCE = {
   users: ()=>({ t:'Registered users', v:num(DATA.users.registered),
     p:`Firebase Auth is the source of truth, not a Firestore collection. <b>${num(DATA.users.guests)} guests</b> are counted separately — they are anonymous auth records, not registrations.${DATA.users.internalExcluded?` <b>${num(DATA.users.internalExcluded)} internal accounts</b> are hidden.`:''}`,
-    s:'auth.listUsers()\n  where providerData includes "apple.com"\n  minus config/adminSettings.internalUids' }),
+    // These sheets exist so the numbers are CHECKABLE, which makes a stale one worse than
+    // none: anyone auditing against the stated query gets a different answer and stops
+    // trusting the console. The non-person filter removes far more accounts than the
+    // internal list does, and omitting it was the biggest gap here.
+    s:'auth.listUsers()\n  where providerData includes "apple.com"\n  minus config/adminSettings.internalUids\n  minus non-people (simulators, seeded fixtures,\n    App Review sign-ins, test-email domains,\n    never-active anonymous installs)' }),
   activation: ()=>({ t:'Activation', v:(DATA.users.registered>0?Math.round((DATA.northStar.activatedUsers/DATA.users.registered)*100):0)+'%',
     p:`<b>${num(DATA.northStar.activatedUsers)} of ${num(DATA.users.registered)}</b> registered users have logged at least one workout. Guests are excluded from both sides so the denominator matches the numerator.`,
-    s:'userData.totalWorkouts > 0\n  ∩ classified "registered"\n  ÷ registered' }),
+    // Was 'userData.totalWorkouts > 0' — the retired Pro-only basis, still reported beside
+    // this one as activatedProOnlyBasis. The displayed value has been activatedHonest for
+    // some time; userData only syncs for AI-Coach-entitled accounts, so the old query
+    // answered a different question than the number above it.
+    s:'loggedWorkouts − importedWorkouts > 0\n  or authoredInApp (exercise content on record)\n  or userData.totalWorkouts > 0  [fallback]\n  ∩ classified "registered"\n  ÷ registered' }),
   mrr: ()=>({ t:'MRR estimate', v:money(DATA.money.mrrEstimate),
     p:`<b>${num(DATA.money.payingCount)} active payers.</b> Monthly at full price, yearly ÷ 12; lifetime is one-time and contributes nothing. A purchase counts only while the buyer is still entitled — ${num(DATA.money.churnedCount)} churned ${num(DATA.money.churnedCount)===1?'payer is':'payers are'} excluded.`,
-    s:'transactionMappings\n  where environment == "Production"\n  and status != "revoked"\n  ∩ notificationPreferences.isPro == true' })
+    // The comp exclusion and the app-user restriction were both missing — the two
+    // subtractions most likely to make an auditor's recomputation disagree.
+    s:'transactionMappings\n  where environment == "Production"\n  and status != "revoked"\n  minus config/adminSettings.compedUids\n  ∩ notificationPreferences.isPro == true\n  ∩ is an app user\n  monthly × 1, yearly ÷ 12, lifetime × 0' })
 };
 function openProvenance(key){
   const f=PROVENANCE[key]; if(!f) return;
@@ -1422,7 +1527,7 @@ function openModal(title, bodyHtml){ $('modal-title').textContent=title; $('moda
 function closeModal(){ $('modal').hidden=true; }
 
 function openAction(act){
-  if(act==='findUser'){ TAB='users'; render(); return; }
+  if(act==='findUser'){ TAB='users'; safeRender(); return; }
   const forms={
     extendTrial:{title:'Comp / extend reverse trial', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div><div class="field"><label>Days to add</label><input id="a-days" type="number" value="30"></div><div class="qsub">Added on top of any time the user has left — never shortens an existing comp.</div>`, run:async()=>{const r=await call('adminExtendReverseTrial')({uid:$('a-uid').value.trim(),days:+$('a-days').value}); return (r.data.extendedFromExisting?'Added to existing trial — now expires ':'Trial set to expire ')+String(r.data.expiresAt).slice(0,10);}},
     forceRefresh:{title:'Force AI deep-context refresh', fields:`<div class="field"><label>User UID</label><input id="a-uid"></div>`, run:async()=>{await call('adminForceRefresh')({uid:$('a-uid').value.trim()}); return 'Refresh complete.';}},
@@ -1449,7 +1554,7 @@ function toggleInternal(){
 $('internal-toggle').onclick=toggleInternal;
 $('modal-close').onclick=closeModal;
 $('modal').onclick=(e)=>{ if(e.target===$('modal')) closeModal(); };
-document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{ TAB=b.dataset.tab; render(); });
+document.querySelectorAll('.nav-item').forEach(b=>b.onclick=()=>{ TAB=b.dataset.tab; safeRender(); });
 
 // Deep link: #/user/<uid> should open that person on a cold load, so a UID pasted
 // from a support email works as a URL. Writing the hash without reading it back was
@@ -1462,7 +1567,7 @@ function routeFromHash(){
 window.addEventListener('hashchange', ()=>{
   const wanted = /^#\/user\/([A-Za-z0-9_-]{6,})$/.exec(location.hash||'');
   const uid = wanted ? wanted[1] : null;
-  if(uid !== USER_VIEW.uid){ USER_VIEW.uid = uid; if(uid) TAB='users'; render(); }
+  if(uid !== USER_VIEW.uid){ USER_VIEW.uid = uid; if(uid) TAB='users'; safeRender(); }
 });
 
 auth.onAuthStateChanged((user)=>{
