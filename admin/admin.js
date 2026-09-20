@@ -156,13 +156,7 @@ async function load(){
 // and nothing on screen. Fail loudly instead.
 function safeRender(){
   try{ render(); }
-  catch(e){
-    console.error('render failed', e);
-    $('status').className = 'status bad';
-    $('status-text').textContent = 'Display error';
-    $('main').innerHTML = '<div class="loading cr">This screen failed to draw: '+esc(e && e.message ? e.message : String(e))
-      + ' <span class="d">— the data loaded fine; this is a bug in the console itself.</span></div>';
-  }
+  catch(e){ renderFailure(e); }
 }
 
 // ---------- render ----------
@@ -181,7 +175,23 @@ function render(){
   else if(TAB==='money'){ m.innerHTML = banner + renderMoney(); wire(); }
   else if(TAB==='push'){ m.innerHTML = banner + renderNotifications(); wire(); }
   else if(TAB==='health'){ m.innerHTML = banner + renderHealth(); wire(); loadHealthExtras(); }
-  else if(TAB==='users'){ renderUsersTab(); }
+  // renderUsersTab is async and crosses an await (it fetches adminUsers whenever the cache
+  // is cold, which load() guarantees on every refresh). An exception after that await is an
+  // unhandled rejection, not something safeRender()'s try can see: the screen stayed on
+  // "Loading users…" while the status bar still read "All systems normal". Catch it here,
+  // on the tab carrying most of the recent changes.
+  else if(TAB==='users'){ renderUsersTab().catch(renderFailure); }
+}
+
+// Shared by safeRender() and any async render path.
+function renderFailure(e){
+  console.error('render failed', e);
+  try{
+    $('status').className = 'status bad';
+    $('status-text').textContent = 'Display error';
+    $('main').innerHTML = '<div class="loading cr">This screen failed to draw: '+esc(e && e.message ? e.message : String(e))
+      + ' <span class="d">— the data loaded fine; this is a bug in the console itself.</span></div>';
+  }catch{ /* last resort: the console is already broken */ }
 }
 
 // ---------- trend helpers ----------
@@ -664,7 +674,11 @@ function renderMoney(){
       <div><div class="l">Gross MRR</div><div class="v">${money(mo.mrrEstimate)}</div></div>
       <div><div class="l">Net MRR</div><div class="v ok">${money(mo.netMrrEstimate)}</div></div>
       <div><div class="l">Booked at purchase</div><div class="v">${money(mo.grossBooked)}</div></div>
-      <div><div class="l">ARPU · paying</div><div class="v">${money(mo.arpuPaying)}/mo</div></div>
+      <!-- Labelled by the denominator it actually uses. Lifetime holders are payers but
+           contribute nothing recurring, so dividing MRR by every payer dragged ARPU toward
+           zero as lifetime sales grew; dividing by subscribers is right, but calling it
+           "per paying" then broke the identity with the Paying count on this same card. -->
+      <div><div class="l">ARPU · subscriber${num(mo.subscriberCount)===1?'':'s'}</div><div class="v">${money(mo.arpuPaying)}/mo${mo.subscriberCount!=null?` <span class="d">· ${num(mo.subscriberCount)} recurring</span>`:''}</div></div>
     </div>
     ${num(mo.sbpUpsidePerMonth)>0?`<div class="warnline" style="margin-top:14px"><b>Apple is taking ${cutPct}%.</b>
       The Small Business Program drops that to 15% for under $1M/year — worth ${money(mo.sbpUpsidePerMonth)}/month at today's MRR, and it scales with every sale. Enrolment is a form in App Store Connect.</div>`:''}
@@ -801,9 +815,14 @@ function renderNotifications(){
   // subtraction reported a fixable failure where there was only an absent push token. The
   // server now reports blockedNoToken directly — asked for it, entitled to it, unreachable —
   // and marks the channels whose opt-in is merely a default.
-  const blocked=(c)=>c.blockedNoToken!=null
-    ? num(c.blockedNoToken)
-    : (c.optInIsDefault||c.optedIn==null||c.eligible==null ? 0 : Math.max(0,num(c.optedIn)-num(c.eligible)));
+  // The default-on test has to come FIRST. On a channel nobody opts into, blockedNoToken
+  // is arithmetically identical to optedIn − eligible, so checking it first made this
+  // whole change a no-op for the one channel it was written for: the red headline kept
+  // counting every account without a push token as "turned it on but cannot receive it".
+  // Nobody turned it on; the reach line already reports those accounts.
+  const blocked=(c)=>c.optInIsDefault===true ? 0
+    : (c.blockedNoToken!=null ? num(c.blockedNoToken)
+    : (c.optedIn==null||c.eligible==null ? 0 : Math.max(0,num(c.optedIn)-num(c.eligible))));
   const stuck=server.filter(c=>blocked(c)>0);
   const dead=server.filter(c=>c.eligible===0);
   const headline = stuck.length
@@ -1068,7 +1087,14 @@ function renderUserCharts(){
   const R = USERS.filter(real);
   const active   = R.filter(u=>u.type!=='guest' && trained(u)).length;
   const atRisk   = R.filter(u=>u.atRisk).length;
-  const silent   = R.filter(u=>u.type!=='guest' && !trained(u)).length;
+  // Split on the same observation gate the server's `silent` flag uses, or this bar and
+  // the "Never trained" pill below it answer different questions under one label: the bar
+  // counted every unheard-from account as never-trained, the pill counts only the ones we
+  // have actually observed, so the chart read 12 and clicking through gave 2 rows.
+  // "Never heard from" is not the same finding as "opened it and never trained".
+  const seen     = (u)=>u.observable===true;
+  const silent   = R.filter(u=>u.type!=='guest' && !trained(u) && seen(u)).length;
+  const unheard  = R.filter(u=>u.type!=='guest' && !trained(u) && !seen(u)).length;
   const dormant  = R.filter(u=>u.type==='guest' && !trained(u)).length;
   const buckets = [
     {k:'none',    v:R.filter(u=>!trained(u)).length},
@@ -1085,6 +1111,7 @@ function renderUserCharts(){
       {k:'Training', v:active,  c:'var(--c1)'},
       {k:'At risk',  v:atRisk,  c:'var(--c2)'},
       {k:'Never trained', v:silent, c:'var(--c3)'},
+      {k:'Never heard from', v:unheard, c:'var(--c4)'},
       {k:'Dormant guests', v:dormant, c:'var(--c0)'},
     ])}</div>
     <div class="qlabel" style="margin-top:20px">Workouts logged · per account</div>
@@ -1404,7 +1431,9 @@ async function renderUserDetail(uid){
           : row.loggedInApp!=null
           ? `in Qwota · ${num(row.importedWorkouts)} from Health`
           : `${num(row.workoutsThisWeek)} this week · incl. Health imports`}</div></div>
-      <div class="pcard"><div class="pl">Adherence</div><div class="pn">${num(row.adherence)?num(row.adherence)+'%':'—'}</div><div class="pd">${num(row.streak)}-day streak</div></div>
+      <!-- Same null-vs-zero rule as the list, or the two disagree about one account on one
+           load: the row said "—" and this card said "0%", or the reverse. -->
+      <div class="pcard"><div class="pl">Adherence</div><div class="pn">${row.adherence==null?'—':num(row.adherence)+'%'}</div><div class="pd">${row.streak!=null?num(row.streak)+'-day streak':'streak unknown'}</div></div>
       <div class="pcard"><div class="pl">Avg session</div><div class="pn">${num(row.avgSessionMinutes)||'—'}</div><div class="pd">minutes · ${row.activeDays!=null?num(row.activeDays)+' active days':num(row.daysOnPlan)+'d since first entry'}</div></div>
     </div>
 
@@ -1462,6 +1491,10 @@ function wire(){
     // USER_VIEW.type was written here and read nowhere — the list keys off `seg`, and the
     // value passed ("flagged") was not a segment either, so this button changed nothing.
     if(b.dataset.seg && SEGMENTS.some(s=>s.k===b.dataset.seg)){ USER_VIEW.seg=b.dataset.seg; USER_VIEW.q=''; USER_VIEW.limit=25; }
+    // renderUsersTab short-circuits on USER_VIEW.uid, so without clearing it this lands on
+    // whichever account was last opened instead of the list — with the requested segment
+    // set invisibly behind it. Harmless while the button was inert; now that it works, not.
+    if(b.dataset.go==='users'){ USER_VIEW.uid=null; if(location.hash) history.replaceState(null,'',location.pathname+location.search); }
     TAB=b.dataset.go; safeRender();
   });
   document.querySelectorAll('[data-act2]').forEach(b=>b.onclick=()=>openAction(b.dataset.act2));
