@@ -824,20 +824,28 @@ function renderNotifications(){
     : (c.blockedNoToken!=null ? num(c.blockedNoToken)
     : (c.optedIn==null||c.eligible==null ? 0 : Math.max(0,num(c.optedIn)-num(c.eligible))));
   const stuck=server.filter(c=>blocked(c)>0);
-  const dead=server.filter(c=>c.eligible===0);
+  // Zero reachable only because everyone entitled is away is the design working: they are
+  // getting the come-back nudge instead. It must not read as a dead channel.
+  const allAway=(c)=>c.eligible===0 && num(c.blockedAway)>0;
+  const dead=server.filter(c=>c.eligible===0 && !allAway(c));
   const headline = stuck.length
     ? `${stuck.length} channel${stuck.length===1?'':'s'} ${stuck.length===1?'has':'have'} people who turned it on but cannot receive it`
     : 'Every channel can reach the people who turned it on';
 
   const verdict=(c)=>{
     if(c.eligible==null) return `<span class="chip-s internal">can't measure</span>`;
-    if(c.eligible===0)   return `<span class="chip-s risk">reaches nobody</span>`;
+    if(c.eligible===0 && !allAway(c)) return `<span class="chip-s risk">reaches nobody</span>`;
     if(blocked(c)>0)
       return `<span class="chip-s risk">${blocked(c)} can't receive</span>`;
     // Gated out by entitlement is the gate working, not a fault — say so rather than
     // either hiding it or colouring it as a failure.
-    if(num(c.blockedNotEntitled)>0)
-      return `<span class="chip-s">working <span class="d">· ${num(c.blockedNotEntitled)} not entitled</span></span>`;
+    // Away users get the come-back nudge instead of the daily summary. That is also the
+    // design working, so it is shown the same way as not-entitled, never coloured as a fault.
+    const notes=[];
+    if(num(c.blockedNotEntitled)>0) notes.push(`${num(c.blockedNotEntitled)} not entitled`);
+    if(num(c.blockedAway)>0) notes.push(`${num(c.blockedAway)} away`);
+    if(notes.length)
+      return `<span class="chip-s">working <span class="d">· ${notes.join(' · ')}</span></span>`;
     return `<span class="chip-s">working</span>`;
   };
 
