@@ -383,6 +383,7 @@ function renderCockpit(){
 
   ${renderAcquisition()}
   ${renderWelcome()}
+  ${renderFirstRun()}
   ${renderJourney()}
   ${renderRetention()}
   ${renderReputation()}
@@ -545,6 +546,91 @@ function renderWelcome(){
       Simulators, Xcode debug builds, test sessions and staff are excluded. ${num(a.testFlight)?`${num(a.testFlight)} TestFlight install${num(a.testFlight)===1?'':'s'} (which includes App Review) are counted separately and left out above.`:''}
       Reported by ${W.minBuild?`build ${num(W.minBuild)} and later`:'builds that include this update'} only — anyone on an older build is invisible here by construction, so this understates until the update spreads.
       Last 30 days: ${num(w30.opened)} opened, ${num(w30.getStarted)} tapped Get started, ${num(w30.chose)} chose, ${num(w30.identity)} signed in. Last 7: ${num(w7.opened)} → ${num(w7.getStarted)} → ${num(w7.chose)} → ${num(w7.identity)}.${W.truncated?' <b style="color:var(--warn)">Capped at 5,000 installs — figures are a sample.</b>':''}
+    </div>
+  </div>`;
+}
+
+function renderFirstRun(){
+  const F=DATA.firstRun; if(!F||!F.window30) return '';
+  // Kettle Bill's intro + guided tour, keyed by uid on userActivity — same real-user set as
+  // every other panel (appUids: admin/internal/non-people already excluded server-side).
+  const a=F.window30, w7=F.window7||{}, w90=F.window90||{}, all=F.allTime||{};
+  const intro=a.intro||{shown:0,endReasons:{}}, tour=a.tour||{count:0,completed:0,endReasons:{},sources:{},dropOff:[]};
+  if(!num(intro.shown) && !num(tour.count)){
+    return `<div class="section-t">First run</div>
+    <div class="card"><div class="chart-empty">No first-run telemetry yet (last 30 days) — it fills in as Kettle Bill's intro and guided tour report back from the field.</div></div>`;
+  }
+  const shown=num(intro.shown)||1;
+  const introStages=[
+    { k:'Showed the intro', v:num(intro.shown) },
+    { k:'Reached capabilities', v:num(intro.reachedCapabilities) },
+    { k:'Reached workout', v:num(intro.reachedWorkout) },
+    { k:'Reached meal', v:num(intro.reachedMeal) },
+    { k:'Reached wrap-up', v:num(intro.reachedWrapUp) },
+  ];
+  let worstIdx=-1, worstDrop=-1;
+  introStages.forEach((st,i)=>{ if(!i) return; const prev=introStages[i-1].v;
+    st.drop=prev>0?Math.round(((prev-st.v)/prev)*100):0; st.from=prev;
+    if(st.drop>worstDrop){worstDrop=st.drop;worstIdx=i;} });
+  const top=introStages[0].v||1;
+
+  const introEnds=Object.entries(intro.endReasons||{}).map(([k,v])=>({k, v:num(v), label:String(num(v))}));
+  const tourEnds=Object.entries(tour.endReasons||{}).map(([k,v])=>({k, v:num(v), label:String(num(v))}));
+  const tourSources=Object.entries(tour.sources||{});
+  const dropOff=(tour.dropOff||[]).map(x=>({k:x.stepId, v:num(x.endedHere),
+    label:`${num(x.endedHere)}${x.avgStepIndex!=null?' · avg step '+x.avgStepIndex:''}`}));
+
+  return `<div class="section-t">First run</div>
+  <div class="card">
+    <div class="qlabel">Kettle Bill's intro · last 30 days</div>
+    <div class="funnel" style="margin-top:10px">
+      ${introStages.map((st,i)=>`<div class="fstage"><span class="nm">${esc(st.k)}</span>
+        <div class="ftrack"><div class="ffill${i===worstIdx?' worst':''}" style="width:${Math.max(Math.round((st.v/top)*100),2)}%"></div></div>
+        <span class="v"><b>${st.v}</b>${i?` · ${Math.round((st.v/shown)*100)}% of shown`:''}</span>
+        ${i&&st.drop>0?`<span class="drop${i===worstIdx?' worst':''}">↓ ${st.drop}% lost from ${st.from}${i===worstIdx?' — the biggest single loss':''}</span>`:''}
+      </div>`).join('')}
+    </div>
+
+    <div class="grid2" style="margin-top:16px">
+      <div><div class="l">Picked a day vs. "Not yet"</div><div class="big sm">${num(intro.pickedDay)} <span class="qsub">/</span> ${num(intro.pickedNotYet)}</div>
+        <div class="qsub">of ${shown} shown the intro.</div></div>
+      <div><div class="l">First meal</div><div class="big sm">${num(intro.mealSent)} <span class="qsub">/</span> ${num(intro.mealLogged)}</div>
+        <div class="qsub">sent vs. actually logged.</div></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="l">How the intro ended</div>
+      <div style="margin-top:6px">${hbars(introEnds,{seq:true,empty:'No end reasons recorded yet.'})}</div>
+    </div>
+
+    <div class="note" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+      Last 7 days: ${num(w7.intro?.shown)} shown, ${num(w7.intro?.reachedWrapUp)} reached wrap-up. Last 90: ${num(w90.intro?.shown)} shown. All-time: ${num(all.intro?.shown)} shown.
+      Real users only — same exclusions as every other panel (staff, simulators, test sessions, seeded fixtures, non-people).
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="qlabel">Guided tour · last 30 days</div>
+    <div class="grid2" style="margin-top:10px">
+      <div><div class="l">Ran the tour</div><div class="big sm">${num(tour.count)}</div>
+        <div class="qsub">${num(tour.completed)} completed it${num(tour.count)>0?` (${Math.round((num(tour.completed)/num(tour.count))*100)}%)`:''}.</div></div>
+      <div><div class="l">Where it started</div><div class="qsub" style="margin-top:8px">${tourSources.length
+        ?tourSources.map(([k,v])=>`${esc(k)}: <b>${num(v)}</b>`).join(' · ')
+        :'No source data yet.'}</div></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="l">Where the tour ends, by step</div>
+      <div style="margin-top:6px">${hbars(dropOff,{seq:true,empty:'No tour drop-off recorded yet.'})}</div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="l">How the tour ended</div>
+      <div style="margin-top:6px">${hbars(tourEnds,{seq:true,empty:'No end reasons recorded yet.'})}</div>
+    </div>
+
+    <div class="note" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px">
+      First run only — replays opened later from a tab or Settings (tourLatest) aren't in this panel. Steps are ordered by their average reported index, the closest proxy available to the tour's real order.
     </div>
   </div>`;
 }
