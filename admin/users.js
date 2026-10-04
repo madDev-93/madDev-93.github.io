@@ -81,7 +81,8 @@ function userCard(u){
   const dev=shortDevice(u.deviceModel);
   const meta=[u.language?esc(u.language):null, dev?esc(dev):null, u.appVersion?'v'+esc(u.appVersion):null,
     u.lastActive?ago(u.lastActive):(u.observable===false?'never heard from':null)].filter(Boolean).join(' · ');
-  const tl=u.access==='trial' && u.trialDaysLeft!=null ? Math.max(0,Math.min(1,num(u.trialDaysLeft)/7)) : null;
+  // Fraction of THEIR trial left (grants have been 3 and 7 days long).
+  const tl=u.access==='trial' && u.trialDaysLeft!=null ? Math.max(0,Math.min(1,num(u.trialDaysLeft)/Math.max(1,num(u.trialDays,3)))) : null;
   return `<button class="ucard${u.internal?' internal-row':''}" data-uid="${esc(u.uid)}">
     <span class="uc-h"><span class="uav2">${esc(initials(u))}<span class="live ${liveClass(u)}"></span></span>
       <span class="uc-mid"><span class="uc-nm">${esc(u.name||(u.type==='guest'?'Anonymous':'No name'))} ${stageChip(u)}</span>
@@ -306,7 +307,6 @@ function renderProfileTab(tab, r, prof){
 // ---- Overview (O1): journey + notes ----
 function tabOverview(r, prof){
   const docs=prof.docs||{}, act=docs.userActivity||{}, prefs=docs.notificationPreferences||{}, a=prof.auth||{};
-  const cur=currentInstall(prof);
   const ev=[];
   if(a.createdAt) ev.push({at:a.createdAt, t:'Account created', s:(a.providers&&a.providers.length?'Signed in with '+a.providers.join(', ').replace('apple.com','Apple'):'Guest')+(prof.previousUids&&prof.previousUids.length?` · came from ${prof.previousUids.length} guest account${prof.previousUids.length>1?'s':''}`:'')});
   const f=(prof.funnel||[])[0];
@@ -346,7 +346,7 @@ function tabOverview(r, prof){
   const notesHtml=`${notes.slice().reverse().map(n=>`<div class="note2">${esc(n.text)}<div class="w">${esc(String(n.at||'').slice(0,10))} <button class="lnk" data-del-note="${esc(n.id)}">delete</button></div></div>`).join('')}
     <textarea id="note-text" maxlength="1000" rows="2" placeholder="Support facts only. No health guesses."></textarea>
     <button class="btn" id="note-add" style="margin-top:6px">＋ Add note</button>`;
-  return box('Journey', journey, cur&&cur.asOf?'':'') + box('Notes', notesHtml, notes.length?String(notes.length):'');
+  return box('Journey', journey) + box('Notes', notesHtml, notes.length?String(notes.length):'');
 }
 
 // ---- Activity (A2): by visit ----

@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20261004a';
+const BUILD = '20261004b';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
