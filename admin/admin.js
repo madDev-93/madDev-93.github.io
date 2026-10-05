@@ -8,7 +8,7 @@
 //
 // Reloads at most once per tab (sessionStorage guard) — a mismatch that survives the
 // reload means the HTML itself is cached, and looping on it would spin forever.
-const BUILD = '20261004b';
+const BUILD = '20261005a';
 (async () => {
   try {
     // Guard on the build we are RUNNING, not the one we are moving to. Storing the
@@ -1025,6 +1025,11 @@ function renderHealth(){
       : `<div class="card"><div class="qlabel">AI failures · 24h</div><div class="big ${h.aiFailures24h?'cr':'ok'}">${num(h.aiFailures24h)}</div></div>`}
     <div class="card"><div class="qlabel">Console self-check</div><div class="big ${DATA.reconcile.ok?'ok':'cr'}">${DATA.reconcile.ok?'✓':'✗'}</div><div class="qsub">${DATA.reconcile.invariants.filter(i=>i.pass).length}/${DATA.reconcile.invariants.length} invariants pass</div></div>
     <div class="card"><div class="qlabel">AI active users</div><div class="big">${DATA.ai.activeUsers7d}</div><div class="qsub">${DATA.ai.activeUsers24h} in 24h</div></div>
+    ${(()=>{const pc=h.portionChecks24h; if(!pc||!pc.photo) return '';
+      const line=(t,label)=>{if(!t.scans) return `${label}: none checked yet`; const codes=Object.entries(t.codes||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${esc(k)} ${num(v)}`).join(', ');
+        return `${label}: ${num(t.flagged)} of ${num(t.scans)}${codes?` (${codes})`:''}`;};
+      const pct=pc.photo.scans?Math.round(100*pc.photo.flagged/pc.photo.scans)+'%':'—';
+      return `<div class="card"><div class="qlabel">Photo scans flagged · 24h</div><div class="big">${pct}</div><div class="qsub">${line(pc.photo,'Photo')}<br>${line(pc.text,'Typed')}</div></div>`;})()}
   </div>
   ${(()=>{
     const gb=DATA.guestBursts;
