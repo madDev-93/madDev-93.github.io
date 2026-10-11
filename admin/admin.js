@@ -912,7 +912,9 @@ function renderNotifications(){
   const stuck=server.filter(c=>blocked(c)>0);
   // Zero reachable only because everyone entitled is away is the design working: they are
   // getting the come-back nudge instead. It must not read as a dead channel.
-  const allAway=(c)=>c.eligible===0 && num(c.blockedAway)>0;
+  // The weekly's by-design skips (another account owns the phone, a guest doc, a test device…)
+  // count the same way: zero reachable because of them is not a dead channel.
+  const allAway=(c)=>c.eligible===0 && (num(c.blockedAway)+num(c.blockedOther))>0;
   const dead=server.filter(c=>c.eligible===0 && !allAway(c));
   const headline = stuck.length
     ? `${stuck.length} channel${stuck.length===1?'':'s'} ${stuck.length===1?'has':'have'} people who turned it on but cannot receive it`
@@ -930,6 +932,11 @@ function renderNotifications(){
     const notes=[];
     if(num(c.blockedNotEntitled)>0) notes.push(`${num(c.blockedNotEntitled)} not entitled`);
     if(num(c.blockedAway)>0) notes.push(`${num(c.blockedAway)} away`);
+    // Weekly: skipped by design (the phone belongs to another account, an abandoned guest doc,
+    // a known-dead token, a test session or a simulator) — not a delivery failure.
+    if(num(c.blockedOther)>0) notes.push(`${num(c.blockedOther)} skipped`);
+    // Weekly is on by default for people who never chose; say how many of "opted in" that is.
+    if(num(c.onByDefault)>0) notes.push(`${num(c.onByDefault)} on by default`);
     if(notes.length)
       return `<span class="chip-s">working <span class="d">· ${notes.join(' · ')}</span></span>`;
     return `<span class="chip-s">working</span>`;

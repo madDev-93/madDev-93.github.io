@@ -490,7 +490,7 @@ function tabAccount(r, prof){
     ['Push token', sup.hasPushToken?'<span class="ok">on file</span>':'<span class="wn">none</span>'],
     ['Notifications allowed', reach.pushAuth?esc(nice(reach.pushAuth)):(hasTelemetry(prof)?D:`<span class="d">needs ${NEEDS_APP}</span>`)],
     ['Daily summary', sup.dailySummaryEnabled?'on':'off'],
-    ['Weekly summary', sup.weeklySummaryEnabled?'on':'off'],
+    ['Weekly summary', sup.weeklySummaryState ? (sup.weeklySummaryState==='default' ? 'default (on while Pro or in a trial)' : sup.weeklySummaryState==='server_off' ? 'off (switched off by the server: lapse or delivery failure)' : sup.weeklySummaryState) : (sup.weeklySummaryEnabled?'on':'off')],
     ['Come-back nudges', sup.reEngagementEnabled?'on':'off'],
     ['Reminders', reach.reminders!=null?String(num(reach.reminders)):D],
     ['Apple Health integration', yn(reach.healthIntegration)],
