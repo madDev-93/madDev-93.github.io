@@ -224,7 +224,7 @@ async function renderUserDetail(uid){
       <div class="hero-acts">${v.action?`<button class="btn-primary hero-go" id="v-go">${esc(v.action.label)}</button>`:''}<button class="btn more" id="v-more">⋯</button></div>
       <div class="more-menu" id="more-menu" hidden>
         <button class="btn" data-ua="extendTrial">＋ Comp / extend trial</button>
-        <button class="btn" data-ua="sendPush" ${prof.support&&prof.support.hasPushToken===false?'disabled title="No push token on file"':''}>✉ Send push</button>
+        <button class="btn" data-ua="sendPush" ${prof.support&&prof.support.hasPushToken===false?'disabled title="No push token on file"':(prof.support&&prof.support.pushTokenDead?'title="This token bounced as dead: the app was likely deleted"':'')}>✉ Send push</button>
         <button class="btn" data-ua="forceRefresh">↻ Force AI refresh</button>
         <button class="btn" data-ua="note">✎ Add note</button>
         <button class="btn" data-ua="internal">${r.internal?'✓ Unmark internal':'⊘ Mark internal'}</button>
@@ -487,10 +487,11 @@ function tabAccount(r, prof){
     ['Webhook events', (prof.webhooks||[]).length?esc(prof.webhooks.slice(0,4).map(w=>nice(String(w.type||'').toLowerCase().replace(/_/g,' '))).join(', ')):null],
   ]);
   const reachHtml=kvs([
-    ['Push token', sup.hasPushToken?'<span class="ok">on file</span>':'<span class="wn">none</span>'],
+    ['Push token', !sup.hasPushToken?'<span class="wn">none</span>':(sup.pushTokenDead?'<span class="wn">dead (app deleted?)</span>':'<span class="ok">on file</span>')],
+    ...(sup.lapsedReason?[['Last lapse', esc(String(sup.lapsedReason).replace(/_/g,' '))]]:[]),
     ['Notifications allowed', reach.pushAuth?esc(nice(reach.pushAuth)):(hasTelemetry(prof)?D:`<span class="d">needs ${NEEDS_APP}</span>`)],
     ['Daily summary', sup.dailySummaryEnabled?'on':'off'],
-    ['Weekly summary', sup.weeklySummaryState ? (sup.weeklySummaryState==='default' ? 'default (on while Pro or in a trial)' : sup.weeklySummaryState==='server_off' ? 'off (switched off by the server: lapse or delivery failure)' : sup.weeklySummaryState) : (sup.weeklySummaryEnabled?'on':'off')],
+    ['Weekly summary', sup.weeklySummaryState ? (sup.weeklySummaryState==='default' ? 'default (on while Pro or in a trial)' : sup.weeklySummaryState==='server_off' ? 'off (switched off by the server, before 2026-10-12)' : sup.weeklySummaryState) : (sup.weeklySummaryEnabled?'on':'off')],
     ['Come-back nudges', sup.reEngagementEnabled?'on':'off'],
     ['Reminders', reach.reminders!=null?String(num(reach.reminders)):D],
     ['Apple Health integration', yn(reach.healthIntegration)],
