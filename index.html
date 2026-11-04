@@ -4,14 +4,14 @@
   <script>document.documentElement.classList.remove('no-js');document.documentElement.classList.add('js');</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Qwota is one app for everything you lift, eat, and recover — with an AI coach that reads your real numbers and tells you what's next. iPhone & Apple Watch.">
+  <meta name="description" content="Qwota logs your workouts, meals and sleep in one app, with a coach that reads your real numbers and tells you what to do next. For iPhone and Apple Watch.">
   <meta name="keywords" content="strength training app, workout log, macro tracker, AI fitness coach, RPE, 1RM, HRV recovery, Apple Watch gym">
   <meta name="author" content="Qwota">
   <meta name="theme-color" content="#0c0c0d">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://qwota.app/">
   <meta property="og:title" content="Qwota — One coach for everything you lift, eat & recover">
-  <meta property="og:description" content="Sets, macros, and recovery in one app — read together by an AI coach that actually knows your numbers.">
+  <meta property="og:description" content="Workouts, meals and recovery in one app, with a coach that reads your real numbers.">
   <meta property="og:image" content="images/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Qwota — Lift. Fuel. Recover.">
@@ -23,8 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"></noscript>
-  <link rel="stylesheet" href="css/qwota-v2.css?v=2">
-  <link rel="stylesheet" href="css/qwota-v2-fx.css?v=1">
+  <link rel="stylesheet" href="css/qwota-v2.css?v=3">
 </head>
 <body>
 
@@ -48,10 +47,9 @@
 
     <!-- HERO -->
     <section class="hero">
-      <div class="hero__copy reveal">
-        <p class="eyebrow"><span class="dot"></span>QWOTA&nbsp;2.0</p>
+      <div class="hero__copy">
         <h1 class="hero__title">Lift.<br>Fuel.<br><span class="accent">Recover.</span></h1>
-        <p class="hero__sub">One app logs every set, every meal, and your recovery — then a coach who knows all of it tells you what to do next.</p>
+        <p class="hero__sub">Log your workouts, meals and sleep in one app. Kettle Bill, the built-in coach, reads all of it and tells you what to do next.</p>
         <div class="hero__cta">
           <a href="https://apps.apple.com/app/id6755733372" target="_blank" rel="noopener" class="appstore" aria-label="Download on the App Store">
             <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" width="156" height="52">
@@ -60,56 +58,48 @@
         </div>
       </div>
 
-      <div class="hero__stage reveal">
+      <div class="hero__stage">
         <div class="device">
           <div class="device__notch"></div>
           <video class="device__screen" data-src="media/hero.mp4" preload="none" poster="images/v2-home.webp" autoplay muted loop playsinline></video>
         </div>
-        <div class="annot annot--1" aria-hidden="true">Readiness <b>82</b></div>
-        <div class="annot annot--2" aria-hidden="true">Today <b>2,150&nbsp;kcal</b></div>
-        <div class="annot annot--3" aria-hidden="true">New PR <b>142.5&nbsp;kg</b></div>
       </div>
     </section>
 
-    <!-- MANIFESTO -->
-    <section class="manifesto reveal">
-      <p>Most fitness apps are <em>silos</em>. A tracker here, a macro counter there, a coach that ignores both.</p>
-      <p class="manifesto__turn">Qwota is <span class="accent-text">one system</span> — your training, your food, and your recovery, finally read together.</p>
-    </section>
 
     <!-- COACH -->
     <section class="feature feature--coach" id="coach">
-      <div class="feature__media reveal">
+      <div class="feature__media">
         <div class="device device--sm">
           <div class="device__notch"></div>
-          <img class="device__screen" src="images/v2-coach.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Kettle Bill — readiness, programs, and progress">
+          <img class="device__screen" src="images/v2-coach.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Kettle Bill with readiness, programs and progress">
         </div>
         <img src="images/bill-grin.webp" width="240" height="240" loading="lazy" alt="Kettle Bill, the Qwota coach" class="bill bill--coach">
       </div>
-      <div class="feature__copy reveal">
-        <p class="eyebrow"><span class="idx">01</span>The Coach · Kettle Bill</p>
+      <div class="feature__copy">
+        <p class="eyebrow">Coach</p>
         <h2>A coach that<br>reads your numbers.</h2>
-        <p>Ask Kettle Bill anything. He sees your last workout, your week of macros, your sleep and HRV — and answers like a trainer who actually remembers you.</p>
+        <p>Ask Kettle Bill anything. He sees your last workout, your week of macros, your sleep and HRV, and answers like a trainer who remembers you.</p>
         <ul class="ticks">
-          <li>"How's my recovery today?" — pulled from real HRV &amp; sleep</li>
+          <li>Ask "How's my recovery today?" and get an answer from your HRV and sleep</li>
           <li>Change your goal in chat; your macros recalculate</li>
-          <li>Every plan cites the data it came from — no guessing</li>
+          <li>Every plan shows the numbers it came from</li>
         </ul>
       </div>
     </section>
 
     <!-- TRAIN -->
     <section class="feature feature--reverse" id="train">
-      <div class="feature__media reveal">
+      <div class="feature__media">
         <div class="device device--sm">
           <div class="device__notch"></div>
-          <img class="device__screen" src="images/v2-training.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Workouts — calendar, programs, and weekly volume">
+          <img class="device__screen" src="images/v2-training.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Workouts with calendar, programs and weekly volume">
         </div>
       </div>
-      <div class="feature__copy reveal">
-        <p class="eyebrow"><span class="idx">02</span>Training</p>
+      <div class="feature__copy">
+        <p class="eyebrow">Training</p>
         <h2>Log every set.<br>Time every rest.</h2>
-        <p>Run a proven program or build your own. Track reps, weight, and RPE — rest timers and supersets keep the work moving.</p>
+        <p>Run a proven program or build your own. Track reps, weight and RPE, with rest timers and supersets built in.</p>
         <div class="chips">
           <span>nSuns</span><span>5/3/1</span><span>StrongLifts</span><span>GZCLP</span><span>PPL</span><span>RPE</span><span>1RM trends</span><span>PR alerts</span>
         </div>
@@ -118,18 +108,18 @@
 
     <!-- FUEL -->
     <section class="feature" id="fuel">
-      <div class="feature__media reveal">
+      <div class="feature__media">
         <div class="device device--sm">
           <div class="device__notch"></div>
-          <img class="device__screen" src="images/v2-nutrition.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Nutrition — calories and macros tracked against your targets">
+          <img class="device__screen" src="images/v2-nutrition.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Nutrition with calories and macros against your targets">
         </div>
       </div>
-      <div class="feature__copy reveal">
-        <p class="eyebrow"><span class="idx">03</span>Nutrition</p>
-        <h2>Snap the plate.<br>Macros, counted.</h2>
-        <p>Snap a photo, scan a barcode, or just describe your plate — Qwota does the counting. Calories and protein, carbs, and fat tracked against targets that move with your goal.</p>
+      <div class="feature__copy">
+        <p class="eyebrow">Nutrition</p>
+        <h2>Log a meal<br>in seconds.</h2>
+        <p>Take a photo, scan a barcode, or type what you ate, and Qwota counts it. Calories, protein, carbs and fat are tracked against targets that move with your goal.</p>
         <ul class="ticks">
-          <li>AI photo &amp; text logging</li>
+          <li>Log by photo or text</li>
           <li>Barcode scanner</li>
           <li>Targets that adapt to your goal weight</li>
         </ul>
@@ -137,11 +127,11 @@
     </section>
 
     <!-- WATCH -->
-    <section class="watch reveal" id="watch">
+    <section class="watch" id="watch">
       <div class="watch__head">
-        <p class="eyebrow"><span class="idx">04</span>Apple Watch</p>
+        <p class="eyebrow">Apple Watch</p>
         <h2>Your whole workout,<br>on your wrist.</h2>
-        <p>Start a session, log every set, and watch the rest timer count down — no phone required.</p>
+        <p>Start a workout, log each set and run the rest timer from your watch. Your phone can stay in the locker.</p>
       </div>
       <div class="watch__row">
         <figure><img src="images/v2-watch-templates.webp" width="416" height="496" loading="lazy" alt="Workout templates on Apple Watch"><figcaption>Pick a workout</figcaption></figure>
@@ -150,25 +140,15 @@
       </div>
     </section>
 
-    <!-- STATS (inverted) -->
-    <section class="stats reveal">
-      <div class="stats__grid">
-        <div><span class="stats__num">3</span><span class="stats__label">tabs — train, fuel, coach</span></div>
-        <div><span class="stats__num">40+</span><span class="stats__label">programs &amp; templates</span></div>
-        <div><span class="stats__num">HRV</span><span class="stats__label">recovery-aware coaching</span></div>
-        <div><span class="stats__num">6</span><span class="stats__label">languages</span></div>
-      </div>
-      <p class="stats__line">Built for people who lift — and want the numbers to mean something.</p>
-    </section>
 
     <!-- PRICING -->
     <section class="pricing" id="pricing">
-      <div class="pricing__head reveal">
-        <p class="eyebrow">PRICING</p>
-        <h2>Start free. Upgrade when it earns it.</h2>
+      <div class="pricing__head">
+        <p class="eyebrow">Pricing</p>
+        <h2>Free to start.</h2>
       </div>
       <div class="plans">
-        <article class="plan reveal">
+        <article class="plan">
           <h3>Free</h3>
           <p class="plan__price">$0</p>
           <p class="plan__note">Everything to get started</p>
@@ -179,11 +159,10 @@
           </ul>
           <a href="https://apps.apple.com/app/id6755733372" target="_blank" rel="noopener" class="btn btn--ghost">Download free</a>
         </article>
-        <article class="plan plan--best reveal">
-          <p class="plan__flag">Most popular</p>
+        <article class="plan plan--best">
           <h3>Pro</h3>
           <p class="plan__price">$4<span>/mo</span></p>
-          <p class="plan__note">billed yearly — $48/yr, save 20%<br>or $4.99 month to month</p>
+          <p class="plan__note">billed yearly at $48, save 20%<br>or $4.99 month to month</p>
           <ul>
             <li>Kettle Bill AI coach</li>
             <li>AI food scanner</li>
@@ -193,7 +172,7 @@
           </ul>
           <a href="https://apps.apple.com/app/id6755733372" target="_blank" rel="noopener" class="btn btn--solid">Get Pro</a>
         </article>
-        <article class="plan reveal">
+        <article class="plan">
           <h3>Lifetime</h3>
           <p class="plan__price">$99.99</p>
           <p class="plan__note">Pay once, own forever</p>
@@ -208,9 +187,9 @@
     </section>
 
     <!-- CTA -->
-    <section class="cta reveal" id="download">
+    <section class="cta" id="download">
       <img src="images/bill-happy.webp" width="240" height="240" loading="lazy" alt="" class="bill bill--cta">
-      <h2>Everything you lift, eat,<br>and recover — in one app.</h2>
+      <h2>Your training, food and recovery<br>in one app.</h2>
       <a href="https://apps.apple.com/app/id6755733372" target="_blank" rel="noopener" class="appstore" aria-label="Download on the App Store">
         <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" width="156" height="52">
       </a>
@@ -238,6 +217,5 @@
   </footer>
 
   <script src="js/qwota-v2.js?v=2"></script>
-  <script src="js/qwota-v2-fx.js?v=1"></script>
 </body>
 </html>
