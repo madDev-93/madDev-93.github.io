@@ -2,7 +2,6 @@
    Qwota Website - Premium Dark Athletic Design
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* --------------------------------------------------------------------------
    Design Tokens
@@ -24,7 +23,7 @@
 
   --text-primary: #F9FAFB;
   --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
+  --text-muted: #8B92A0;
 
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-glow: rgba(20, 184, 166, 0.3);
@@ -104,7 +103,7 @@
 
   --text-primary: #111827;
   --text-secondary: #4B5563;
-  --text-muted: #9CA3AF;
+  --text-muted: #6B7280;
 
   --border-subtle: rgba(0, 0, 0, 0.06);
   --shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
@@ -1416,7 +1415,7 @@ p { color: var(--text-secondary); }
   max-width: 280px;
 }
 
-.footer__column h4 {
+.footer__column h4, .footer__heading {
   font-size: var(--text-xs);
   font-weight: 600;
   text-transform: uppercase;
@@ -1599,8 +1598,6 @@ p { color: var(--text-secondary); }
   padding: var(--space-10);
   text-align: center;
   margin-top: var(--space-12);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-glow);
 }
 
 .contact-card h3 {
