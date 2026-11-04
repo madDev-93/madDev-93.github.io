@@ -88,7 +88,7 @@ section p{max-width:46ch}
 .hero__title .accent{border-bottom:.12em solid var(--teal)}
 .hero__sub{font-size:clamp(1.05rem,1.6vw,1.3rem);color:var(--muted);max-width:42ch;margin-bottom:2.4rem}
 .hero__cta{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
-.hero__fine{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--faint);max-width:30ch}
+.hero__fine{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--muted);max-width:30ch}
 
 .hero__stage{position:relative;display:flex;justify-content:center}
 .annot{position:absolute;font-family:var(--mono);font-size:12.5px;color:var(--muted);
@@ -208,7 +208,7 @@ section p{max-width:46ch}
 .footer__brand img{border-radius:8px}
 .footer__nav{display:flex;flex-wrap:wrap;gap:22px;font-size:14px;color:var(--muted)}
 .footer__nav a:hover{color:var(--ink)}
-.footer__fine{font-family:var(--mono);font-size:11.5px;color:var(--faint);width:100%}
+.footer__fine{font-family:var(--mono);font-size:11.5px;color:var(--muted);width:100%}
 
 /* ============================== REVEAL ============================== */
 .reveal{opacity:0;transition:opacity .7s ease}   /* opacity-only — no Framer-default fade-up */

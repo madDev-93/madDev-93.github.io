@@ -17,12 +17,13 @@
   <meta name="twitter:title" content="Qwota — Lift. Fuel. Recover.">
   <meta name="twitter:description" content="One app, one coach. Every number that matters.">
   <title>Qwota — Lift. Fuel. Recover.</title>
-  <link rel="icon" type="image/png" href="images/app-icon.png?v=2">
-  <link rel="apple-touch-icon" href="images/app-icon.png?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+  <link rel="apple-touch-icon" href="images/apple-touch-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/qwota-v2.css?v=1">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="css/qwota-v2.css?v=2">
   <link rel="stylesheet" href="css/qwota-v2-fx.css?v=1">
 </head>
 <body>
@@ -30,7 +31,7 @@
   <!-- NAV -->
   <header class="nav" id="nav">
     <a class="nav__brand" href="#top" aria-label="Qwota home">
-      <img src="images/app-icon.png?v=2" alt="" class="nav__icon" width="28" height="28">
+      <img src="images/app-icon-96.webp" alt="" class="nav__icon" width="28" height="28">
       <span>Qwota</span>
     </a>
     <nav class="nav__links">
@@ -53,7 +54,7 @@
         <p class="hero__sub">One app logs every set, every meal, and your recovery — then a coach who knows all of it tells you what to do next.</p>
         <div class="hero__cta">
           <a href="https://apps.apple.com/app/id6755733372" target="_blank" rel="noopener" class="appstore" aria-label="Download on the App Store">
-            <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="52">
+            <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" width="156" height="52">
           </a>
           <p class="hero__fine">Free to start · iPhone &amp; Apple&nbsp;Watch</p>
         </div>
@@ -62,7 +63,7 @@
       <div class="hero__stage reveal">
         <div class="device">
           <div class="device__notch"></div>
-          <video class="device__screen" src="media/hero.mp4" poster="images/v2-home.png" autoplay muted loop playsinline></video>
+          <video class="device__screen" data-src="media/hero.mp4" preload="none" poster="images/v2-home.webp" autoplay muted loop playsinline></video>
         </div>
         <div class="annot annot--1" aria-hidden="true">Readiness <b>82</b></div>
         <div class="annot annot--2" aria-hidden="true">Today <b>2,150&nbsp;kcal</b></div>
@@ -81,9 +82,9 @@
       <div class="feature__media reveal">
         <div class="device device--sm">
           <div class="device__notch"></div>
-          <img class="device__screen" src="images/v2-coach.png" alt="Kettle Bill — readiness, programs, and progress">
+          <img class="device__screen" src="images/v2-coach.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Kettle Bill — readiness, programs, and progress">
         </div>
-        <img src="images/bill-grin.png" alt="Kettle Bill, the Qwota coach" class="bill bill--coach">
+        <img src="images/bill-grin.webp" width="240" height="240" loading="lazy" alt="Kettle Bill, the Qwota coach" class="bill bill--coach">
       </div>
       <div class="feature__copy reveal">
         <p class="eyebrow"><span class="idx">01</span>The Coach · Kettle Bill</p>
@@ -102,7 +103,7 @@
       <div class="feature__media reveal">
         <div class="device device--sm">
           <div class="device__notch"></div>
-          <img class="device__screen" src="images/v2-training.png" alt="Workouts — calendar, programs, and weekly volume">
+          <img class="device__screen" src="images/v2-training.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Workouts — calendar, programs, and weekly volume">
         </div>
       </div>
       <div class="feature__copy reveal">
@@ -120,7 +121,7 @@
       <div class="feature__media reveal">
         <div class="device device--sm">
           <div class="device__notch"></div>
-          <img class="device__screen" src="images/v2-nutrition.png" alt="Nutrition — calories and macros tracked against your targets">
+          <img class="device__screen" src="images/v2-nutrition.webp" width="760" height="1652" loading="lazy" decoding="async" alt="Nutrition — calories and macros tracked against your targets">
         </div>
       </div>
       <div class="feature__copy reveal">
@@ -143,9 +144,9 @@
         <p>Start a session, log every set, and watch the rest timer count down — no phone required.</p>
       </div>
       <div class="watch__row">
-        <figure><img src="images/v2-watch-templates.png" alt="Workout templates on Apple Watch"><figcaption>Pick a workout</figcaption></figure>
-        <figure><img src="images/v2-watch-session.png" alt="Logging a set on Apple Watch"><figcaption>Live session</figcaption></figure>
-        <figure><img src="images/v2-watch-rest.png" alt="Rest timer on Apple Watch"><figcaption>Rest timer</figcaption></figure>
+        <figure><img src="images/v2-watch-templates.webp" width="416" height="496" loading="lazy" alt="Workout templates on Apple Watch"><figcaption>Pick a workout</figcaption></figure>
+        <figure><img src="images/v2-watch-session.webp" width="416" height="496" loading="lazy" alt="Logging a set on Apple Watch"><figcaption>Live session</figcaption></figure>
+        <figure><img src="images/v2-watch-rest.webp" width="416" height="496" loading="lazy" alt="Rest timer on Apple Watch"><figcaption>Rest timer</figcaption></figure>
       </div>
     </section>
 
@@ -208,10 +209,10 @@
 
     <!-- CTA -->
     <section class="cta reveal" id="download">
-      <img src="images/bill-happy.png" alt="" class="bill bill--cta">
+      <img src="images/bill-happy.webp" width="240" height="240" loading="lazy" alt="" class="bill bill--cta">
       <h2>Everything you lift, eat,<br>and recover — in one app.</h2>
       <a href="https://apps.apple.com/app/id6755733372" target="_blank" rel="noopener" class="appstore" aria-label="Download on the App Store">
-        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="52">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" width="156" height="52">
       </a>
       <p class="hero__fine">Free to start · iPhone &amp; Apple Watch · No account required</p>
     </section>
@@ -221,7 +222,7 @@
   <!-- FOOTER -->
   <footer class="footer">
     <div class="footer__brand">
-      <img src="images/app-icon.png?v=2" alt="" width="32" height="32">
+      <img src="images/app-icon-96.webp" alt="" width="32" height="32" loading="lazy">
       <span>Qwota</span>
     </div>
     <nav class="footer__nav">
@@ -236,7 +237,7 @@
     <p class="footer__fine">© 2026 Qwota · Made for lifters.</p>
   </footer>
 
-  <script src="js/qwota-v2.js?v=1"></script>
+  <script src="js/qwota-v2.js?v=2"></script>
   <script src="js/qwota-v2-fx.js?v=1"></script>
 </body>
 </html>

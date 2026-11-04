@@ -28,10 +28,18 @@
     items.forEach(function (el) { io.observe(el); });
   }
 
-  // Autoplay safety net: muted inline videos occasionally need a kick.
-  document.querySelectorAll("video").forEach(function (v) {
-    v.muted = true;
-    var p = v.play();
-    if (p && p.catch) p.catch(function () {});
-  });
+  // Videos with data-src start loading only after the page has loaded, so the hero
+  // video (the heaviest file) doesn't hold up the fonts and the first screen. The
+  // poster shows meanwhile. Autoplay safety net: muted inline videos occasionally
+  // need a kick.
+  function startVideos() {
+    document.querySelectorAll("video").forEach(function (v) {
+      if (v.dataset.src && !v.getAttribute("src")) v.src = v.dataset.src;
+      v.muted = true;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {});
+    });
+  }
+  if (document.readyState === "complete") startVideos();
+  else window.addEventListener("load", startVideos);
 })();
